@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-base text-text font-sans antialiased;
+  background-image:
+    radial-gradient(60rem 60rem at 85% -10%, rgba(203, 166, 247, 0.10), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 20%, rgba(137, 180, 250, 0.08), transparent 55%),
+    radial-gradient(40rem 40rem at 50% 120%, rgba(148, 226, 213, 0.06), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* film grain overlay for depth */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: rgba(203, 166, 247, 0.3);
+  color: #fff;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #181825;
+}
+::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 999px;
+  border: 2px solid #181825;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
+
+@layer components {
+  .glass {
+    @apply border border-white/[0.06] bg-mantle/60 backdrop-blur-xl;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] px-2.5 py-1 text-xs font-mono tracking-tight;
+  }
+  .prose-answer {
+    @apply text-subtext1 leading-relaxed;
+  }
+  .prose-answer strong {
+    @apply text-text font-semibold;
+  }
+  .prose-answer code {
+    @apply rounded bg-crust px-1.5 py-0.5 font-mono text-[0.85em] text-peach;
+  }
+  .prose-answer ul {
+    @apply my-2 list-disc space-y-1 pl-5;
+  }
+  .prose-answer ol {
+    @apply my-2 list-decimal space-y-1 pl-5;
+  }
+  .prose-answer p {
+    @apply my-2;
+  }
+}

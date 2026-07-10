@@ -1,0 +1,1704 @@
+{
+  "questions": [
+    {
+      "id": "q001",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["fundamentals", "definitions"],
+      "question": "What is the difference between Artificial Intelligence, Machine Learning, and Deep Learning?",
+      "answer": "These are nested concepts. **AI** is the broadest field: building systems that perform tasks requiring human-like intelligence (reasoning, perception, planning). **Machine Learning (ML)** is a subset of AI where systems *learn patterns from data* rather than being explicitly programmed with rules. **Deep Learning (DL)** is a subset of ML that uses multi-layered **neural networks** to learn hierarchical representations, excelling at unstructured data like images, audio, and text.\n\nA quick way to frame it:\n- AI includes rule-based/symbolic systems that need no learning.\n- ML learns from data (e.g., decision trees, SVMs).\n- DL is ML with deep neural nets requiring large data and compute.\n\nSo every DL model is ML, and every ML model is AI, but not vice versa.",
+      "quiz": {
+        "choices": [
+          "They are three different names for the same technology",
+          "Deep Learning is a subset of Machine Learning, which is a subset of AI",
+          "Machine Learning is a subset of Deep Learning, which is a subset of AI",
+          "AI is a subset of Machine Learning"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q002",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["turing-test", "history"],
+      "question": "What is the Turing Test and what does it measure?",
+      "answer": "The **Turing Test**, proposed by Alan Turing in 1950 (originally the 'Imitation Game'), is a test of a machine's ability to exhibit intelligent behavior *indistinguishable from a human*. A human evaluator holds text conversations with both a machine and a human without knowing which is which. If the evaluator cannot reliably tell them apart, the machine is said to have passed.\n\nKey points:\n- It measures **behavioral indistinguishability**, not genuine understanding or consciousness.\n- It focuses on natural-language conversation.\n- Critics (e.g., Searle's **Chinese Room** argument) note that passing the test does not prove the machine truly *understands*.\n\nModern LLMs can often fool people in short exchanges, which has renewed debate about whether the test is still a meaningful benchmark for intelligence.",
+      "quiz": {
+        "choices": [
+          "It measures how fast a machine can solve math problems",
+          "It measures whether a machine's conversation is indistinguishable from a human's",
+          "It measures a model's accuracy on a labeled dataset",
+          "It measures the energy efficiency of an AI system"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q003",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["learning-paradigms", "fundamentals"],
+      "question": "Explain the difference between supervised, unsupervised, and reinforcement learning.",
+      "answer": "These are the three main learning paradigms:\n\n- **Supervised learning**: The model learns from **labeled** data (input-output pairs). Goal is to map inputs to known outputs. Examples: classification (spam vs not spam), regression (predicting price).\n- **Unsupervised learning**: The model works with **unlabeled** data to find hidden structure. Examples: clustering (customer segmentation), dimensionality reduction (PCA).\n- **Reinforcement learning (RL)**: An **agent** learns by interacting with an environment, receiving **rewards or penalties**, and optimizing cumulative reward over time. Examples: game playing (AlphaGo), robotics.\n\nThe key distinction: supervised needs labels, unsupervised finds patterns without them, and RL learns from trial-and-error feedback signals rather than a fixed labeled dataset.",
+      "quiz": {
+        "choices": [
+          "Supervised uses rewards, unsupervised uses labels, RL uses clusters",
+          "Supervised uses labeled data, unsupervised finds structure in unlabeled data, RL learns from reward feedback",
+          "All three require labeled data but differ in model size",
+          "Unsupervised learning requires a human to label every example"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q004",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["agents", "fundamentals"],
+      "question": "What is an intelligent agent in AI?",
+      "answer": "An **intelligent agent** is an entity that **perceives** its environment through sensors and **acts** upon it through actuators to achieve goals. The classic model is: `percept -> agent function -> action`.\n\nAgents are often categorized by sophistication:\n- **Simple reflex agents**: act only on the current percept using condition-action rules.\n- **Model-based agents**: maintain internal state to track the world.\n- **Goal-based agents**: choose actions that move toward a goal.\n- **Utility-based agents**: maximize a utility function when there are trade-offs.\n- **Learning agents**: improve performance over time from experience.\n\nA **rational agent** selects actions expected to maximize its performance measure given its knowledge. Modern 'LLM agents' extend this idea, using a language model plus tools/memory to plan and act autonomously.",
+      "quiz": {
+        "choices": [
+          "A dataset used to train a neural network",
+          "An entity that perceives its environment and acts to achieve goals",
+          "A type of loss function used in optimization",
+          "A hardware chip that accelerates matrix multiplication"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q005",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["search", "algorithms"],
+      "question": "What is the difference between Breadth-First Search (BFS) and Depth-First Search (DFS)?",
+      "answer": "Both are uninformed graph/tree traversal strategies used in AI search problems.\n\n- **BFS** explores level by level, visiting all nodes at the current depth before going deeper. It uses a **queue (FIFO)**. It is **complete** and finds the **shortest path** in terms of number of edges, but has high memory cost `O(b^d)`.\n- **DFS** explores as deep as possible along one branch before backtracking. It uses a **stack (LIFO)** or recursion. It is **memory-efficient** `O(b·d)` but is **not guaranteed** to find the shortest path and can get stuck in deep/infinite branches.\n\nRule of thumb: use BFS when the solution is shallow or you need the shortest path; use DFS when memory is limited or solutions are deep.",
+      "quiz": {
+        "choices": [
+          "BFS uses a stack; DFS uses a queue",
+          "BFS explores level by level using a queue; DFS goes deep using a stack",
+          "DFS always finds the shortest path; BFS never does",
+          "Both use the same data structure and give identical results"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q006",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["heuristics", "search"],
+      "question": "What is a heuristic in AI search, and what makes one admissible?",
+      "answer": "A **heuristic** is a function `h(n)` that estimates the cost from a node `n` to the goal. Heuristics guide **informed search** algorithms toward promising paths, reducing the search space compared to blind search.\n\nA heuristic is **admissible** if it **never overestimates** the true cost to reach the goal (it is optimistic). Admissibility guarantees that **A\\*** search finds an optimal solution.\n\nA stronger property is **consistency (monotonicity)**: `h(n) <= cost(n, n') + h(n')` for every neighbor `n'`. Consistency implies admissibility and ensures A* never needs to re-expand nodes.\n\nExample: for a grid path-finding problem, **straight-line (Euclidean) distance** is an admissible heuristic because the actual path can only be equal to or longer than the straight line.",
+      "quiz": {
+        "choices": [
+          "A heuristic that always overestimates the cost to the goal",
+          "A function that estimates cost-to-goal and is admissible if it never overestimates",
+          "A random guess with no relationship to the goal",
+          "A heuristic is admissible only if it equals the exact cost"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q007",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["a-star", "search", "algorithms"],
+      "question": "How does the A* search algorithm work?",
+      "answer": "**A\\*** is an informed best-first search that finds the least-cost path. It evaluates each node using:\n\n`f(n) = g(n) + h(n)`\n\nwhere `g(n)` is the actual cost from the start to `n`, and `h(n)` is the heuristic estimate from `n` to the goal.\n\nProcess:\n1. Maintain a **priority queue (open set)** ordered by lowest `f(n)`.\n2. Expand the node with the smallest `f`, generate its neighbors, and update their costs.\n3. Repeat until the goal is expanded.\n\nA* is **optimal and complete** when `h` is **admissible** (never overestimates); with a **consistent** heuristic it never re-expands nodes. It balances Dijkstra's guaranteed optimality (`g`) with greedy best-first's speed (`h`). If `h(n)=0`, A* reduces to Dijkstra's algorithm.",
+      "quiz": {
+        "choices": [
+          "It expands nodes in random order until it finds the goal",
+          "It expands the node with the lowest f(n) = g(n) + h(n)",
+          "It only uses the heuristic h(n) and ignores path cost",
+          "It always uses depth-first traversal to save memory"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q008",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["minimax", "game-theory", "pruning"],
+      "question": "Explain the minimax algorithm and alpha-beta pruning.",
+      "answer": "**Minimax** is a decision rule for two-player, zero-sum games (e.g., chess, tic-tac-toe). One player (MAX) tries to maximize the score while the opponent (MIN) tries to minimize it. The algorithm recursively explores the game tree, assuming both play optimally, and backs up values: MAX nodes take the max of children, MIN nodes take the min.\n\n**Alpha-beta pruning** is an optimization that eliminates branches that cannot affect the final decision. It keeps two bounds:\n- **alpha**: best value MAX can guarantee so far.\n- **beta**: best value MIN can guarantee so far.\n\nWhen `alpha >= beta`, further exploration of that branch is pruned. This yields the **same result** as plain minimax but explores far fewer nodes—with perfect move ordering it can reduce complexity from `O(b^d)` to about `O(b^{d/2})`, effectively doubling the searchable depth.",
+      "quiz": {
+        "choices": [
+          "Alpha-beta pruning changes the final result but runs faster",
+          "Minimax assumes optimal play; alpha-beta prunes branches that cannot change the result",
+          "Minimax only works for single-player games",
+          "Alpha-beta pruning randomly skips half of the branches"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q009",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["knowledge-representation", "knowledge-graph"],
+      "question": "What is a knowledge graph?",
+      "answer": "A **knowledge graph** is a structured representation of information as a network of **entities** (nodes) connected by **relationships** (edges). Facts are typically stored as **triples**: `(subject, predicate, object)`, e.g., `(Paris, capitalOf, France)`.\n\nKey characteristics:\n- Captures semantic relationships, enabling **reasoning** and **inference** (e.g., transitive relations).\n- Supports flexible queries and traversal across connected facts.\n- Often built on ontologies/schemas that define entity types and valid relations.\n\nUses include search engines (Google's Knowledge Graph), recommendation systems, question answering, and grounding LLMs with factual data (a form of retrieval to reduce hallucination). They combine well with graph databases (e.g., Neo4j) and RDF/SPARQL standards.",
+      "quiz": {
+        "choices": [
+          "A chart showing model accuracy over time",
+          "A network of entities connected by relationships, often stored as triples",
+          "A neural network layer that stores weights",
+          "A visualization of a decision tree"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q010",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["nlp", "fundamentals"],
+      "question": "What is Natural Language Processing (NLP) and what are some common tasks?",
+      "answer": "**Natural Language Processing (NLP)** is the branch of AI focused on enabling machines to understand, interpret, and generate human language (text and speech).\n\nCommon tasks include:\n- **Tokenization**: splitting text into words/subwords.\n- **Named Entity Recognition (NER)**: identifying names, places, dates.\n- **Sentiment analysis**: classifying opinion/emotion.\n- **Machine translation**: converting between languages.\n- **Text summarization** and **question answering**.\n- **Part-of-speech tagging** and **parsing**.\n\nModern NLP is dominated by **transformer-based** models (BERT, GPT) that learn contextual word representations from massive text corpora. Earlier approaches used bag-of-words, TF-IDF, and RNNs. Preprocessing (lowercasing, stopword removal, stemming/lemmatization) is still common for classical pipelines.",
+      "quiz": {
+        "choices": [
+          "A method for compressing images",
+          "The field of AI focused on understanding and generating human language",
+          "A database indexing technique",
+          "A hardware standard for GPUs"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q011",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["llm", "transformers"],
+      "question": "At a high level, how does a large language model (LLM) generate text?",
+      "answer": "An **LLM** is a neural network (usually a **transformer**) trained to predict the **next token** given previous tokens. Text generation is **autoregressive**:\n\n1. Input text is split into **tokens** and converted to embeddings.\n2. The transformer processes them through stacked **self-attention** and feed-forward layers, producing a probability distribution over the vocabulary for the next token.\n3. A token is **sampled** (greedy, top-k, top-p/nucleus, or temperature-based) and appended to the sequence.\n4. Steps 2-3 repeat until a stop condition.\n\nDuring **pretraining**, the model learns from massive text via self-supervised next-token prediction. It may then be **fine-tuned** and aligned (e.g., with RLHF) to follow instructions. The model has no built-in database of facts—knowledge is encoded implicitly in its weights, which is why it can **hallucinate**.",
+      "quiz": {
+        "choices": [
+          "It looks up answers in a fixed database",
+          "It predicts the next token autoregressively using a transformer",
+          "It translates text into SQL and queries a table",
+          "It uses a decision tree over the entire vocabulary"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q012",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["attention", "transformers"],
+      "question": "What is the self-attention mechanism in transformers?",
+      "answer": "**Self-attention** lets each token in a sequence weigh the relevance of every other token, capturing context and long-range dependencies. Each token produces three vectors: **Query (Q)**, **Key (K)**, and **Value (V)**.\n\nThe attention output is computed as:\n\n`Attention(Q, K, V) = softmax(QKᵀ / √dₖ) V`\n\n- `QKᵀ` measures similarity between tokens.\n- Dividing by `√dₖ` (scaling) keeps gradients stable.\n- **Softmax** turns scores into weights that sum to 1.\n- The weighted sum of `V` produces a context-aware representation.\n\n**Multi-head attention** runs several attention operations in parallel with different learned projections, letting the model attend to different types of relationships simultaneously. Unlike RNNs, self-attention processes all positions **in parallel** and directly connects distant tokens, which is a major reason transformers scale so well.",
+      "quiz": {
+        "choices": [
+          "A pooling layer that averages all token embeddings",
+          "A mechanism where each token weighs others using Query, Key, and Value vectors",
+          "A technique to reduce the vocabulary size",
+          "A method that only looks at the previous single token"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q013",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["prompt-engineering", "llm"],
+      "question": "What is prompt engineering and why does it matter?",
+      "answer": "**Prompt engineering** is the practice of designing the input text (prompt) given to an LLM to elicit accurate, relevant, and well-formatted outputs. Because LLM behavior is highly sensitive to phrasing, good prompts can dramatically improve results without changing the model.\n\nCommon techniques:\n- **Clear instructions** and specifying the desired **output format**.\n- **Few-shot prompting**: providing examples in the prompt.\n- **Chain-of-thought**: asking the model to 'think step by step' to improve reasoning.\n- **Role/persona** framing and providing **context/constraints**.\n- **Delimiters** to separate instructions from data.\n\nIt matters because it is the cheapest, fastest way to adapt a general model to a specific task—often good enough to avoid costly fine-tuning. It is also central to reliability and safety (reducing hallucination and prompt injection risk).",
+      "quiz": {
+        "choices": [
+          "Retraining a model's weights on new data",
+          "Designing input text to guide an LLM toward better outputs",
+          "Compressing the model to run on smaller hardware",
+          "Encrypting the prompt before sending it"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q014",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["rag", "llm", "retrieval"],
+      "question": "What is Retrieval-Augmented Generation (RAG)?",
+      "answer": "**RAG** combines a retrieval system with a generative LLM so the model can answer using **external, up-to-date knowledge** rather than relying solely on its trained weights.\n\nTypical pipeline:\n1. **Index**: documents are chunked, embedded into vectors, and stored in a **vector database**.\n2. **Retrieve**: the user query is embedded, and the most **semantically similar** chunks are fetched (often via cosine similarity / ANN search).\n3. **Augment**: retrieved chunks are inserted into the prompt as context.\n4. **Generate**: the LLM answers grounded in that context.\n\nBenefits: reduces **hallucination**, enables citing sources, keeps knowledge current without retraining, and works with private/domain data. Challenges include chunking strategy, retrieval quality, context-window limits, and ensuring the model actually uses the retrieved evidence.",
+      "quiz": {
+        "choices": [
+          "A technique to prune neurons from a network",
+          "Combining external document retrieval with LLM generation for grounded answers",
+          "A method to compress prompts into fewer tokens",
+          "A reinforcement learning reward model"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q015",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["fine-tuning", "llm", "transfer-learning"],
+      "question": "When would you fine-tune an LLM instead of using prompting or RAG?",
+      "answer": "**Fine-tuning** updates a model's weights on task-specific data, whereas **prompting** and **RAG** leave weights unchanged.\n\nFine-tune when you need:\n- A **consistent style, tone, or format** that is hard to specify in a prompt.\n- To teach a **specialized skill or domain behavior** not covered by prompting.\n- **Lower latency/cost** at inference by baking behavior in (shorter prompts).\n- Improved performance on a **narrow, well-defined task** with ample labeled examples.\n\nPrefer **RAG** when the need is **factual, changing knowledge** (docs, policies)—fine-tuning is a poor way to inject facts and can become stale. Prefer **prompting** for quick iteration and general tasks.\n\nModern practice often uses **parameter-efficient fine-tuning (PEFT)** like **LoRA**, which trains small adapter weights instead of the full model, cutting cost dramatically. Many systems combine RAG + light fine-tuning.",
+      "quiz": {
+        "choices": [
+          "Whenever you want the model to know today's news",
+          "When you need consistent style/behavior on a specific task with enough labeled data",
+          "Only when RAG and prompting are unavailable",
+          "Fine-tuning is always preferred over RAG and prompting"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q016",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["hallucination", "llm", "reliability"],
+      "question": "What is hallucination in LLMs and how can it be mitigated?",
+      "answer": "**Hallucination** is when an LLM produces text that is **fluent and confident but factually incorrect or fabricated** (e.g., inventing citations, dates, or APIs). It happens because the model is optimized to predict plausible next tokens, not to verify truth—it has no built-in fact-checking.\n\nMitigation strategies:\n- **RAG**: ground answers in retrieved, authoritative sources.\n- **Prompting**: ask the model to cite sources or say 'I don't know' when unsure.\n- **Lower temperature** for more deterministic, conservative outputs.\n- **Verification/guardrails**: post-hoc fact-checking, tool use, and validation.\n- **Fine-tuning/alignment** on high-quality data.\n\nNo method fully eliminates hallucination, so critical applications should keep a human in the loop and verify outputs.",
+      "quiz": {
+        "choices": [
+          "When a model crashes due to memory limits",
+          "When a model produces confident but factually incorrect content",
+          "When a model refuses to answer any question",
+          "When training loss increases unexpectedly"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q017",
+      "topic": "AI",
+      "difficulty": "hard",
+      "tags": ["rlhf", "alignment", "llm"],
+      "question": "Explain Reinforcement Learning from Human Feedback (RLHF).",
+      "answer": "**RLHF** aligns an LLM's behavior with human preferences. It typically has three stages:\n\n1. **Supervised fine-tuning (SFT)**: fine-tune the base model on curated, high-quality demonstration data of desired responses.\n2. **Reward model training**: humans rank multiple model outputs for the same prompt. A **reward model** is trained to predict which output humans prefer, producing a scalar reward.\n3. **RL optimization**: the LLM (policy) is optimized to maximize the reward model's score, usually with **PPO (Proximal Policy Optimization)**. A **KL-divergence penalty** against the SFT model prevents the policy from drifting too far and 'gaming' the reward.\n\nThe result is a model that is more helpful, honest, and harmless. Limitations include reward hacking, cost of human labeling, and reward-model bias. Newer alternatives like **DPO (Direct Preference Optimization)** skip the explicit reward model and RL loop, optimizing preferences directly.",
+      "quiz": {
+        "choices": [
+          "Training a model purely on unlabeled text",
+          "Aligning a model using a human-preference reward model and RL optimization (e.g., PPO)",
+          "A method to compress models via quantization",
+          "Using humans to manually write every model response at inference"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q018",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["reinforcement-learning", "exploration"],
+      "question": "What is the exploration-exploitation trade-off in reinforcement learning?",
+      "answer": "The **exploration-exploitation trade-off** is a core dilemma in RL and decision-making under uncertainty:\n\n- **Exploitation**: choose the action currently believed to give the highest reward (leverage what you know).\n- **Exploration**: try less-certain actions to gather information that may reveal better long-term options.\n\nToo much exploitation risks getting stuck in a **local optimum**; too much exploration wastes reward on suboptimal actions. Balancing them maximizes **cumulative long-term reward**.\n\nCommon strategies:\n- **ε-greedy**: pick a random action with probability ε, otherwise the best-known action.\n- **Decaying ε**: explore more early, exploit more later.\n- **Upper Confidence Bound (UCB)**: favor actions with high uncertainty.\n- **Thompson sampling**: sample from a posterior over action values.\n\nThe multi-armed bandit problem is the canonical setting for studying this trade-off.",
+      "quiz": {
+        "choices": [
+          "Choosing between CPU and GPU training",
+          "Balancing trying new actions vs. using the best-known action to maximize long-term reward",
+          "Deciding how many layers a neural network should have",
+          "The trade-off between training time and dataset size"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q019",
+      "topic": "AI",
+      "difficulty": "hard",
+      "tags": ["mdp", "reinforcement-learning", "math"],
+      "question": "What is a Markov Decision Process (MDP)?",
+      "answer": "A **Markov Decision Process** is the mathematical framework for modeling sequential decision-making under uncertainty. It is defined by the tuple `(S, A, P, R, γ)`:\n\n- **S**: set of states.\n- **A**: set of actions.\n- **P(s' | s, a)**: transition probability of reaching state `s'` from state `s` after action `a`.\n- **R(s, a)**: reward function.\n- **γ**: discount factor in `[0,1]` weighting future rewards.\n\nIt relies on the **Markov property**: the future depends only on the current state, not the full history.\n\nThe goal is to find a **policy π(a|s)** that maximizes expected discounted return. The **Bellman equation** underpins solutions:\n\n`V(s) = max_a [ R(s,a) + γ Σ P(s'|s,a) V(s') ]`\n\nMDPs are solved via **value iteration**, **policy iteration**, or, when `P`/`R` are unknown, model-free RL like Q-learning.",
+      "quiz": {
+        "choices": [
+          "A supervised model for classifying states",
+          "A framework (S, A, P, R, γ) for sequential decision-making with the Markov property",
+          "A clustering algorithm for states",
+          "A neural network architecture for time series"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q020",
+      "topic": "AI",
+      "difficulty": "hard",
+      "tags": ["q-learning", "reinforcement-learning"],
+      "question": "How does Q-learning work?",
+      "answer": "**Q-learning** is a **model-free, off-policy** reinforcement learning algorithm that learns the optimal action-value function `Q(s, a)`—the expected discounted return of taking action `a` in state `s` and acting optimally thereafter.\n\nIt updates estimates via the **temporal-difference** rule:\n\n`Q(s,a) ← Q(s,a) + α [ r + γ·max_a' Q(s',a') − Q(s,a) ]`\n\nwhere `α` is the learning rate, `γ` the discount factor, and `r` the observed reward. The `max` over next actions makes it **off-policy**: it learns the greedy optimal policy while behaving with an exploratory policy (e.g., ε-greedy).\n\nGiven sufficient exploration and a decaying learning rate, tabular Q-learning **provably converges** to the optimal Q-values. For large/continuous state spaces, the table is replaced by a neural network—**Deep Q-Networks (DQN)**—with tricks like experience replay and target networks for stability.",
+      "quiz": {
+        "choices": [
+          "It requires a full model of transition probabilities",
+          "It learns Q(s,a) via TD updates using r + γ·max Q(s',a')",
+          "It is a supervised classification algorithm",
+          "It only works when the reward is always zero"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q021",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["cnn", "computer-vision", "deep-learning"],
+      "question": "Why are Convolutional Neural Networks (CNNs) well-suited for images?",
+      "answer": "**CNNs** exploit the spatial structure of images through three key ideas:\n\n- **Local receptive fields**: convolutional filters look at small patches, detecting local patterns (edges, textures) that combine into complex features in deeper layers.\n- **Parameter sharing**: the same filter slides across the whole image, drastically reducing parameters versus fully connected layers and enabling **translation invariance** (a feature is detected regardless of position).\n- **Pooling**: downsampling (e.g., max pooling) reduces spatial dimensions, adds robustness to small shifts, and expands the receptive field.\n\nStacking convolution + activation + pooling builds a **hierarchy of features** from edges to object parts to whole objects. Compared to fully connected nets, CNNs are far more data- and compute-efficient for grid-like data (images, and adapted forms for audio/video). This is why they long dominated computer vision tasks like classification, detection, and segmentation.",
+      "quiz": {
+        "choices": [
+          "They use one giant fully connected layer for the whole image",
+          "They use local filters, parameter sharing, and pooling to exploit spatial structure",
+          "They require no training data",
+          "They convert images into SQL tables before processing"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q022",
+      "topic": "AI",
+      "difficulty": "easy",
+      "tags": ["computer-vision", "fundamentals"],
+      "question": "What is computer vision and name a few core tasks?",
+      "answer": "**Computer vision (CV)** is the field of AI that enables machines to interpret and understand visual information from images and video—essentially giving computers the ability to 'see'.\n\nCore tasks include:\n- **Image classification**: assign a label to a whole image.\n- **Object detection**: locate and classify objects with bounding boxes (e.g., YOLO, Faster R-CNN).\n- **Semantic/instance segmentation**: label every pixel by class/object.\n- **Face/landmark recognition**.\n- **Optical Character Recognition (OCR)**.\n- **Pose estimation** and **image generation**.\n\nModern CV relies heavily on deep learning—**CNNs** and increasingly **Vision Transformers (ViT)**. Applications span autonomous driving, medical imaging, retail, security, and augmented reality.",
+      "quiz": {
+        "choices": [
+          "A method for querying relational databases",
+          "The field enabling machines to interpret images and video",
+          "A technique for compressing audio files",
+          "A protocol for network communication"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q023",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["symbolic-ai", "connectionism", "history"],
+      "question": "What is the difference between symbolic AI and connectionist (neural) AI?",
+      "answer": "These are two contrasting paradigms:\n\n- **Symbolic AI (GOFAI)**: represents knowledge explicitly with **symbols, logic, and rules** (e.g., expert systems, logic programming). It is **interpretable** and good at reasoning/planning, but brittle—it struggles with noisy, ambiguous, or perceptual data and requires manual knowledge engineering.\n- **Connectionist AI (neural networks)**: learns **distributed, sub-symbolic representations** from data. It excels at perception (vision, speech) and generalization from examples, but is often a **black box**, data-hungry, and weaker at explicit logical reasoning.\n\nSymbolic systems are top-down and rule-driven; connectionist systems are bottom-up and data-driven. A growing area, **neuro-symbolic AI**, aims to combine the strengths of both—neural perception plus symbolic reasoning—for more robust and explainable systems.",
+      "quiz": {
+        "choices": [
+          "Symbolic AI learns from data; connectionist AI uses hand-written rules",
+          "Symbolic AI uses explicit rules/logic; connectionist AI learns representations from data",
+          "They are identical approaches with different names",
+          "Connectionist AI cannot handle images"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q024",
+      "topic": "AI",
+      "difficulty": "medium",
+      "tags": ["ethics", "bias", "responsible-ai"],
+      "question": "What are the main sources of bias in AI systems and how can you address them?",
+      "answer": "**Bias** in AI leads to unfair or inaccurate outcomes for certain groups. Main sources:\n\n- **Data bias**: training data that under-represents groups or reflects historical discrimination.\n- **Sampling bias**: non-representative data collection.\n- **Labeling bias**: subjective or inconsistent human annotations.\n- **Algorithmic/aggregation bias**: models optimizing overall accuracy while harming subgroups.\n- **Deployment/feedback loops**: predictions influence future data (e.g., predictive policing).\n\nMitigations:\n- **Diverse, representative data** and careful auditing.\n- **Fairness metrics** (demographic parity, equalized odds) and subgroup evaluation.\n- **Pre-/in-/post-processing** techniques (reweighting, constraints, threshold adjustment).\n- **Transparency, documentation** (model/data cards), and **human oversight**.\n\nBias cannot be fully 'solved'; it must be continuously measured and managed with domain and ethical context. Fairness definitions can also conflict, requiring explicit trade-off decisions.",
+      "quiz": {
+        "choices": [
+          "Bias only comes from the choice of programming language",
+          "Bias arises from data, labeling, and algorithmic choices and is addressed via auditing and fairness metrics",
+          "Bias can always be completely eliminated by adding more layers",
+          "Bias is irrelevant as long as overall accuracy is high"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q025",
+      "topic": "AI",
+      "difficulty": "hard",
+      "tags": ["sampling", "llm", "decoding"],
+      "question": "Explain temperature, top-k, and top-p (nucleus) sampling in LLM decoding.",
+      "answer": "These are **decoding strategies** that control randomness when selecting the next token from the model's probability distribution.\n\n- **Temperature (T)**: scales the logits before softmax (`logits / T`). `T < 1` sharpens the distribution (more deterministic/conservative); `T > 1` flattens it (more random/creative); `T → 0` approaches **greedy** decoding.\n- **Top-k sampling**: restrict sampling to the **k most probable** tokens, then renormalize. Removes the long tail of unlikely tokens but uses a fixed cutoff.\n- **Top-p (nucleus) sampling**: choose the **smallest set of tokens whose cumulative probability ≥ p**, then sample. The candidate set size adapts to the distribution's shape—narrow when the model is confident, wider when uncertain.\n\nIn practice, low temperature (and/or low top-p) suits factual, deterministic tasks; higher values suit creative generation. Top-p is often preferred over top-k because it adapts dynamically. These can be combined.",
+      "quiz": {
+        "choices": [
+          "They are model training hyperparameters set before pretraining",
+          "They are decoding controls: temperature scales logits, top-k/top-p limit the sampling candidate set",
+          "They determine the number of transformer layers",
+          "They are loss functions used during fine-tuning"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q026",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["classification", "regression", "fundamentals"],
+      "question": "What is the difference between classification and regression?",
+      "answer": "Both are **supervised learning** tasks, differing in the type of target variable:\n\n- **Classification** predicts a **discrete/categorical** label. Examples: spam vs. not spam (binary), digit 0-9 (multiclass). Outputs are classes, often with probabilities. Metrics: accuracy, precision, recall, F1, AUC.\n- **Regression** predicts a **continuous numeric** value. Examples: house price, temperature. Metrics: MSE, RMSE, MAE, R².\n\nAlgorithms can sometimes do both (e.g., decision trees, neural nets) with different output layers and loss functions—cross-entropy for classification, squared error for regression. A common source of confusion: **logistic regression** is actually a **classification** algorithm despite its name, because it predicts class probabilities.",
+      "quiz": {
+        "choices": [
+          "Classification predicts continuous values; regression predicts categories",
+          "Classification predicts discrete labels; regression predicts continuous values",
+          "They are the same and use identical loss functions",
+          "Regression can only be used for images"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q027",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["overfitting", "generalization"],
+      "question": "What is overfitting and how can you prevent it?",
+      "answer": "**Overfitting** occurs when a model learns the **training data too well**—including its noise and idiosyncrasies—so it performs great on training data but poorly on unseen data. It signals **high variance** and poor generalization. The telltale sign is a large gap between training and validation performance.\n\nPrevention techniques:\n- **More/augmented training data**.\n- **Regularization** (L1/L2, dropout for neural nets).\n- **Simpler models** / fewer parameters.\n- **Cross-validation** to tune and monitor.\n- **Early stopping** during training.\n- **Feature selection** to remove noise.\n- **Ensembling** (e.g., bagging) to reduce variance.\n- **Pruning** for decision trees.\n\nThe opposite problem is **underfitting** (too simple to capture the pattern). The goal is the sweet spot that balances bias and variance for best generalization.",
+      "quiz": {
+        "choices": [
+          "The model performs poorly on both training and test data",
+          "The model fits training data (including noise) well but generalizes poorly to new data",
+          "The model has too few parameters to learn anything",
+          "The model trains too slowly"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q028",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["train-test-split", "validation"],
+      "question": "Why do we split data into training, validation, and test sets?",
+      "answer": "Splitting data ensures an **unbiased estimate of generalization** and prevents information leakage:\n\n- **Training set**: used to **fit** the model's parameters.\n- **Validation set**: used to **tune hyperparameters** and make model-selection decisions (e.g., which architecture, regularization strength) and to monitor for overfitting/early stopping.\n- **Test set**: used **once, at the very end**, to estimate real-world performance on truly unseen data.\n\nIf you tuned on the test set, its performance estimate would be **optimistically biased**—you would be indirectly fitting to it. A common split is 60/20/20 or 70/15/15. With limited data, **k-fold cross-validation** is used instead of a fixed validation set. It is crucial to fit preprocessing (scaling, encoders) on training data only, then apply to validation/test to avoid leakage.",
+      "quiz": {
+        "choices": [
+          "To make training faster by using less data",
+          "To fit on train, tune on validation, and get an unbiased final estimate on test",
+          "Because more splits always improve accuracy",
+          "The test set is used to update model weights"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q029",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["linear-regression", "fundamentals"],
+      "question": "How does linear regression work and what are its key assumptions?",
+      "answer": "**Linear regression** models a continuous target as a **linear combination** of input features:\n\n`ŷ = β₀ + β₁x₁ + ... + βₙxₙ`\n\nIt finds coefficients that **minimize the sum of squared residuals** (ordinary least squares), which has a closed-form solution or can be optimized with gradient descent.\n\nKey assumptions:\n- **Linearity**: relationship between features and target is linear.\n- **Independence** of errors.\n- **Homoscedasticity**: constant error variance.\n- **Normality** of residuals (mainly for inference/confidence intervals).\n- **Little multicollinearity** among features.\n\nCoefficients are interpretable: `βᵢ` is the expected change in `y` per unit change in `xᵢ`, holding others constant. Violations (e.g., nonlinearity, heteroscedasticity) can bias estimates or invalidate inference, and may call for transformations or different models.",
+      "quiz": {
+        "choices": [
+          "It predicts categories by drawing a decision boundary",
+          "It fits a linear combination of features by minimizing squared residuals",
+          "It requires no assumptions about the data",
+          "It maximizes the margin between two classes"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q030",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["logistic-regression", "classification"],
+      "question": "What is logistic regression and how does it differ from linear regression?",
+      "answer": "**Logistic regression** is a **classification** algorithm (despite the name) that models the probability of a binary outcome. It applies the **sigmoid (logistic) function** to a linear combination of features:\n\n`P(y=1|x) = 1 / (1 + e^{-(β₀ + βᵀx)})`\n\nThe output is squeezed into `[0,1]` and thresholded (commonly at 0.5) to assign a class. It is trained by minimizing **log-loss (cross-entropy)** via gradient descent, not least squares.\n\nDifferences from **linear regression**:\n- Predicts **probabilities/classes**, not continuous values.\n- Uses a **sigmoid** link and **log-loss** instead of a linear output and squared error.\n- The decision boundary is linear in feature space.\n\nCoefficients are interpretable as **log-odds** changes. It extends to multiclass via **softmax (multinomial) regression**.",
+      "quiz": {
+        "choices": [
+          "It predicts continuous values using squared-error loss",
+          "It predicts class probabilities using a sigmoid and log-loss",
+          "It is an unsupervised clustering method",
+          "It always outputs exactly 0 or 1 with no probability"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q031",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["knn", "algorithms"],
+      "question": "How does the k-Nearest Neighbors (k-NN) algorithm work?",
+      "answer": "**k-NN** is a simple, **non-parametric, instance-based** (lazy) algorithm used for classification and regression. It stores the training data and makes predictions at query time:\n\n1. Compute the **distance** (e.g., Euclidean) from the query point to all training points.\n2. Select the **k closest** neighbors.\n3. For **classification**, take a **majority vote** of neighbor labels; for **regression**, take the **average** of their values.\n\nKey considerations:\n- **k**: small k → sensitive to noise (low bias, high variance); large k → smoother, may underfit.\n- **Feature scaling is essential** because distances dominate—normalize/standardize features first.\n- Suffers from the **curse of dimensionality** and is **slow at inference** for large datasets (no training phase, but expensive prediction).\n\nIt is a good baseline and works well when the decision boundary is irregular and data is low-dimensional.",
+      "quiz": {
+        "choices": [
+          "It fits a global linear equation to the data",
+          "It predicts based on the majority label (or average) of the k nearest training points",
+          "It builds a tree by splitting on features",
+          "It requires an expensive training phase but is instant at prediction"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q032",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["gradient-descent", "optimization"],
+      "question": "What is gradient descent?",
+      "answer": "**Gradient descent** is an iterative optimization algorithm that minimizes a **loss function** by moving parameters in the direction of the **negative gradient** (steepest descent):\n\n`θ ← θ − α · ∇J(θ)`\n\nwhere `α` is the **learning rate** and `∇J(θ)` is the gradient of the loss w.r.t. parameters.\n\nVariants:\n- **Batch GD**: uses the whole dataset per step—stable but slow.\n- **Stochastic GD (SGD)**: uses one sample per step—fast, noisy.\n- **Mini-batch GD**: uses small batches—the common practical choice.\n\nThe **learning rate** is critical: too high can diverge/oscillate, too low is slow and may get stuck. Advanced optimizers (**Momentum, RMSProp, Adam**) adapt step sizes and add momentum for faster, more stable convergence. For convex losses it finds the global minimum; for non-convex (neural nets) it finds good local minima.",
+      "quiz": {
+        "choices": [
+          "An algorithm that increases the loss to explore the space",
+          "An iterative method that updates parameters against the gradient to minimize loss",
+          "A technique to split data into batches only",
+          "A method that finds the exact solution in one step for any model"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q033",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["feature-engineering", "preprocessing"],
+      "question": "What is feature engineering and why is it important?",
+      "answer": "**Feature engineering** is the process of transforming raw data into **informative features** that better represent the underlying problem to a model, improving performance.\n\nCommon techniques:\n- **Encoding categoricals**: one-hot, target, or ordinal encoding.\n- **Scaling/normalization** of numeric features.\n- **Creating interaction/polynomial features** or ratios.\n- **Binning** continuous variables.\n- **Extracting components** from dates (day, month, weekday) or text (TF-IDF).\n- **Handling missing values** and outliers.\n- **Domain-specific features** using expert knowledge.\n\nIt matters because, especially for classical ML, **good features often beat fancier algorithms**—models can only learn from what the features expose. Deep learning reduces manual engineering by learning representations automatically, but thoughtful features still help with tabular data and limited samples. Care must be taken to avoid **data leakage** (using future/target information).",
+      "quiz": {
+        "choices": [
+          "The process of selecting a GPU for training",
+          "Transforming raw data into informative features to improve model performance",
+          "A method to reduce the learning rate over time",
+          "The final evaluation of a model on the test set"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q034",
+      "topic": "Machine Learning",
+      "difficulty": "easy",
+      "tags": ["clustering", "unsupervised"],
+      "question": "How does the k-means clustering algorithm work?",
+      "answer": "**k-means** is an unsupervised algorithm that partitions data into **k clusters** by minimizing within-cluster variance. Steps:\n\n1. **Initialize** k centroids (randomly or via k-means++).\n2. **Assignment**: assign each point to its nearest centroid (usually Euclidean distance).\n3. **Update**: recompute each centroid as the mean of its assigned points.\n4. **Repeat** assignment and update until centroids stabilize (convergence).\n\nKey points:\n- You must **choose k** in advance—use the **elbow method** or **silhouette score** to guide it.\n- Sensitive to **initialization** (k-means++ helps) and to **feature scaling**.\n- Assumes roughly **spherical, similar-sized clusters** and can struggle with irregular shapes or outliers.\n- Converges to a **local optimum**, so multiple restarts are common.\n\nAlternatives for non-spherical clusters include DBSCAN and Gaussian Mixture Models.",
+      "quiz": {
+        "choices": [
+          "It requires labeled data to assign clusters",
+          "It iteratively assigns points to nearest centroids and updates centroids to the cluster mean",
+          "It automatically determines the optimal number of clusters",
+          "It builds a decision tree to separate clusters"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q035",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["bias-variance", "generalization"],
+      "question": "Explain the bias-variance trade-off.",
+      "answer": "The **bias-variance trade-off** describes two sources of error that affect a model's generalization:\n\n- **Bias**: error from overly simplistic assumptions. High bias → **underfitting** (misses relevant patterns). E.g., fitting a line to nonlinear data.\n- **Variance**: error from sensitivity to small fluctuations in the training data. High variance → **overfitting** (learns noise). E.g., a deep tree memorizing training points.\n\nExpected test error decomposes as:\n\n`Error = Bias² + Variance + Irreducible Error`\n\nThere is a trade-off: increasing model complexity typically **lowers bias but raises variance**, and vice versa. The goal is the **sweet spot** minimizing total error. Techniques like regularization, cross-validation, and ensembling help manage it (e.g., bagging reduces variance, boosting reduces bias). Note that modern over-parameterized deep nets can complicate the classic U-shaped curve (double descent).",
+      "quiz": {
+        "choices": [
+          "High bias causes overfitting; high variance causes underfitting",
+          "High bias causes underfitting; high variance causes overfitting; total error trades between them",
+          "Bias and variance are unrelated to model complexity",
+          "You can always minimize both to zero simultaneously"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q036",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["regularization", "l1-l2", "overfitting"],
+      "question": "What is the difference between L1 and L2 regularization?",
+      "answer": "Both add a penalty on model weights to the loss function to combat overfitting, but differ in the penalty form and effect:\n\n- **L1 (Lasso)**: adds `λ·Σ|wᵢ|` (sum of absolute values). It drives some weights to **exactly zero**, performing **feature selection** and yielding sparse models. Useful when you suspect many irrelevant features.\n- **L2 (Ridge)**: adds `λ·Σwᵢ²` (sum of squares). It **shrinks weights toward zero** but rarely to exactly zero, distributing penalty smoothly. It handles correlated features better and is differentiable everywhere.\n\nThe hyperparameter **λ** controls strength: larger λ → more regularization, higher bias, lower variance.\n\n**Elastic Net** combines both penalties. Geometrically, L1's diamond-shaped constraint region has corners on the axes (producing sparsity), while L2's circular region does not.",
+      "quiz": {
+        "choices": [
+          "L1 shrinks weights smoothly; L2 sets weights exactly to zero",
+          "L1 (Lasso) produces sparse weights/feature selection; L2 (Ridge) shrinks weights smoothly",
+          "Both always set weights to exactly zero",
+          "L1 and L2 have identical effects on the weights"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q037",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["cross-validation", "evaluation"],
+      "question": "What is k-fold cross-validation and why use it?",
+      "answer": "**k-fold cross-validation** is a resampling technique for robustly estimating model performance and tuning hyperparameters, especially with limited data.\n\nProcess:\n1. Split the data into **k equal folds**.\n2. Train on **k−1 folds**, validate on the remaining fold.\n3. Repeat k times so each fold serves as validation once.\n4. **Average** the k scores for a more stable performance estimate.\n\nBenefits:\n- Uses **all data** for both training and validation, reducing dependence on a single lucky/unlucky split.\n- Gives a **variance estimate** of performance.\n\nVariants:\n- **Stratified k-fold**: preserves class proportions—important for imbalanced classification.\n- **Leave-One-Out (LOOCV)**: k = n; thorough but expensive.\n- **Time-series split**: respects temporal order (no shuffling).\n\nCommon choice is k=5 or k=10, balancing bias, variance, and compute cost.",
+      "quiz": {
+        "choices": [
+          "It trains the model once on all the data",
+          "It rotates through k folds, training on k−1 and validating on the rest, then averages scores",
+          "It is only used for unsupervised learning",
+          "It replaces the need for a test set entirely and guarantees no overfitting"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q038",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["metrics", "precision-recall", "confusion-matrix"],
+      "question": "Explain precision, recall, and F1 score. When would you prioritize each?",
+      "answer": "These metrics evaluate classification beyond raw accuracy, using the confusion matrix (TP, FP, TN, FN):\n\n- **Precision** = `TP / (TP + FP)`: of predicted positives, how many are correct. High precision = few **false positives**.\n- **Recall (sensitivity)** = `TP / (TP + FN)`: of actual positives, how many were caught. High recall = few **false negatives**.\n- **F1 score** = `2·(P·R)/(P+R)`: the **harmonic mean**, balancing the two—useful for imbalanced classes.\n\nWhen to prioritize:\n- **Precision** when false positives are costly (e.g., spam filter flagging real email, or a costly intervention).\n- **Recall** when false negatives are costly (e.g., cancer screening, fraud detection—missing a case is dangerous).\n- **F1** when you need a single balanced metric and classes are imbalanced.\n\nThere is usually a **precision-recall trade-off** governed by the decision threshold.",
+      "quiz": {
+        "choices": [
+          "Recall measures false positives; precision measures false negatives",
+          "Precision = TP/(TP+FP), Recall = TP/(TP+FN), F1 is their harmonic mean",
+          "F1 is the arithmetic mean of accuracy and recall",
+          "Precision and recall are always equal for balanced datasets"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q039",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["roc-auc", "evaluation"],
+      "question": "What is the ROC curve and AUC?",
+      "answer": "The **ROC (Receiver Operating Characteristic) curve** plots the **True Positive Rate (recall)** against the **False Positive Rate** (`FP/(FP+TN)`) across all classification thresholds. It shows the trade-off between catching positives and raising false alarms as you vary the decision threshold.\n\n**AUC (Area Under the Curve)** summarizes the ROC into a single number in `[0,1]`:\n- **1.0** = perfect classifier.\n- **0.5** = random guessing (diagonal line).\n- **< 0.5** = worse than random.\n\nAUC has a nice interpretation: the probability that the model ranks a **random positive higher than a random negative**. It is **threshold-independent** and useful for comparing models.\n\nCaveat: with **heavily imbalanced** data, the **Precision-Recall AUC** is often more informative than ROC-AUC, because ROC can look optimistic when negatives dominate.",
+      "quiz": {
+        "choices": [
+          "ROC plots precision vs. recall; AUC is their product",
+          "ROC plots TPR vs. FPR across thresholds; AUC is the area under it (0.5 = random)",
+          "AUC below 0.5 indicates a perfect classifier",
+          "AUC depends on a single fixed threshold"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q040",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["decision-trees", "algorithms"],
+      "question": "How does a decision tree decide where to split?",
+      "answer": "A **decision tree** recursively partitions the feature space by choosing splits that best **separate the target**. At each node it evaluates candidate feature/threshold splits and picks the one that maximizes **purity** of the resulting child nodes.\n\nCommon split criteria:\n- **Classification**: **Gini impurity** (`1 − Σpᵢ²`) or **entropy/information gain** (reduction in entropy).\n- **Regression**: reduction in **variance / MSE**.\n\nThe process continues until a stopping condition (max depth, min samples per leaf, or pure nodes). Trees are **interpretable** and handle nonlinearities and mixed feature types, and need little preprocessing (no scaling required).\n\nWeakness: they **overfit easily** (high variance) if grown deep. Remedies include **pruning**, depth limits, and minimum-leaf constraints. Ensembles like **random forests** and **gradient boosting** address this by combining many trees.",
+      "quiz": {
+        "choices": [
+          "It splits randomly at each node",
+          "It chooses splits that maximize purity, using criteria like Gini impurity or information gain",
+          "It requires feature scaling to compute splits",
+          "It always splits on the feature with the most missing values"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q041",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["random-forest", "ensembles", "bagging"],
+      "question": "How does a random forest work and why is it better than a single decision tree?",
+      "answer": "A **random forest** is an **ensemble of decision trees** built with **bagging** plus feature randomness. It improves on a single tree by reducing variance.\n\nHow it works:\n1. **Bootstrap sampling**: each tree trains on a random sample (with replacement) of the data.\n2. **Feature randomness**: at each split, only a random subset of features is considered, **decorrelating** the trees.\n3. **Aggregation**: predictions are combined by **majority vote** (classification) or **averaging** (regression).\n\nWhy it is better:\n- Single deep trees **overfit** (high variance). Averaging many decorrelated trees **reduces variance** without much increase in bias.\n- More **robust** to noise and outliers, and provides **feature importance** estimates.\n- Includes a built-in **out-of-bag (OOB)** error estimate.\n\nTrade-offs: less interpretable than one tree and more compute/memory. It generally gives strong, low-tuning baselines on tabular data.",
+      "quiz": {
+        "choices": [
+          "It boosts trees sequentially, each correcting the last",
+          "It averages many decorrelated trees (bagging + feature randomness) to reduce variance",
+          "It is a single very deep tree with pruning",
+          "It requires the data to be perfectly balanced"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q042",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["gradient-boosting", "ensembles", "boosting"],
+      "question": "How does gradient boosting differ from bagging (random forests)?",
+      "answer": "Both are tree ensembles, but they build trees differently:\n\n- **Bagging (random forest)**: trees are trained **independently, in parallel** on bootstrap samples and averaged. It primarily **reduces variance**.\n- **Boosting (gradient boosting)**: trees are trained **sequentially**, where each new tree fits the **residual errors (negative gradient)** of the current ensemble. Predictions are added with a **learning rate**. It primarily **reduces bias**, building a strong learner from weak ones.\n\nGradient boosting (e.g., **XGBoost, LightGBM, CatBoost**) often achieves **higher accuracy** on tabular data but is:\n- More prone to **overfitting** if over-trained (needs tuning of depth, learning rate, number of trees, regularization).\n- **Sequential**, so harder to parallelize than bagging.\n\nRule of thumb: random forests are robust, low-tuning baselines; gradient boosting squeezes out top performance with careful tuning.",
+      "quiz": {
+        "choices": [
+          "Boosting trains trees in parallel; bagging trains them sequentially",
+          "Boosting trains trees sequentially on residuals (reduces bias); bagging trains them in parallel (reduces variance)",
+          "They are identical algorithms with different names",
+          "Bagging always outperforms boosting on every dataset"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q043",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["feature-scaling", "preprocessing"],
+      "question": "What is feature scaling and which algorithms need it?",
+      "answer": "**Feature scaling** transforms numeric features to a comparable range so that features with large magnitudes do not dominate. Two common methods:\n\n- **Standardization (Z-score)**: `(x − μ)/σ`, giving mean 0 and unit variance. Robust to differing units; preferred when data is roughly Gaussian.\n- **Min-Max normalization**: `(x − min)/(max − min)`, scaling to `[0,1]`. Sensitive to outliers.\n\n**Algorithms that need scaling** (distance- or gradient-based):\n- k-NN, k-means, SVM, PCA (distance/variance sensitive).\n- Neural networks and any **gradient-descent** model (faster, more stable convergence).\n- Regularized linear models (so the penalty applies fairly).\n\n**Algorithms that do NOT need it**: tree-based models (decision trees, random forests, gradient boosting) are **scale-invariant** because they split on thresholds. Always fit the scaler on training data only and apply it to validation/test to avoid leakage.",
+      "quiz": {
+        "choices": [
+          "Tree-based models require scaling but k-NN does not",
+          "Distance/gradient-based models (k-NN, SVM, neural nets) need scaling; tree-based models generally do not",
+          "Scaling should be fit on the test set to avoid bias",
+          "All algorithms are equally affected by feature magnitude"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q044",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["imbalanced-data", "classification"],
+      "question": "How do you handle an imbalanced classification dataset?",
+      "answer": "With **imbalanced classes** (e.g., 99% negative, 1% positive), a model can score 99% accuracy by ignoring the minority class—so accuracy is misleading. Strategies:\n\n**Data-level:**\n- **Oversampling** the minority (e.g., **SMOTE**, which synthesizes new examples).\n- **Undersampling** the majority.\n- Combine both.\n\n**Algorithm-level:**\n- **Class weights / cost-sensitive learning** to penalize minority errors more.\n- Use algorithms robust to imbalance or ensemble methods.\n\n**Evaluation:**\n- Use **precision, recall, F1, PR-AUC, ROC-AUC**—not accuracy.\n- Tune the **decision threshold** based on the cost of FP vs. FN.\n\n**Other:**\n- Collect more minority data; **anomaly detection** framing when extreme.\n\nApply resampling **inside cross-validation folds** (only on training data) to avoid leakage. The right choice depends on the business cost of each error type.",
+      "quiz": {
+        "choices": [
+          "Just use accuracy; it handles imbalance automatically",
+          "Use resampling (e.g., SMOTE), class weights, and metrics like F1/PR-AUC instead of accuracy",
+          "Always delete the minority class before training",
+          "Imbalance never affects model performance"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q045",
+      "topic": "Machine Learning",
+      "difficulty": "medium",
+      "tags": ["hyperparameter-tuning", "optimization"],
+      "question": "What is the difference between parameters and hyperparameters, and how do you tune hyperparameters?",
+      "answer": "**Parameters** are learned from data during training (e.g., weights in a neural net, coefficients in linear regression). **Hyperparameters** are set **before training** and control the learning process (e.g., learning rate, number of trees, tree depth, regularization strength, k in k-NN).\n\nTuning methods:\n- **Grid search**: exhaustively try combinations from a predefined grid—simple but expensive.\n- **Random search**: sample combinations randomly—often more efficient, especially when few hyperparameters matter.\n- **Bayesian optimization** (e.g., Optuna, Hyperopt): builds a probabilistic model of the objective to choose promising configs—sample-efficient.\n- **Successive halving / Hyperband**: allocate more budget to promising configs.\n\nAlways tune using a **validation set or cross-validation**, never the test set, to avoid biased estimates. Track the search and use early stopping to save compute.",
+      "quiz": {
+        "choices": [
+          "Parameters are set before training; hyperparameters are learned from data",
+          "Parameters are learned from data; hyperparameters are set before training and tuned via search/CV",
+          "There is no difference between them",
+          "Hyperparameters should be tuned on the test set"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q046",
+      "topic": "Machine Learning",
+      "difficulty": "hard",
+      "tags": ["svm", "kernel-trick", "algorithms"],
+      "question": "Explain Support Vector Machines and the kernel trick.",
+      "answer": "A **Support Vector Machine (SVM)** finds the **maximum-margin hyperplane** that separates classes—the boundary with the largest distance to the nearest points (**support vectors**). Maximizing the margin improves generalization. A **soft margin** (controlled by parameter **C**) allows some misclassifications to handle non-separable or noisy data: small C = wider margin/more tolerance, large C = fewer errors/risk of overfitting.\n\nThe **kernel trick** enables **nonlinear** decision boundaries without explicitly computing high-dimensional feature transformations. Because the SVM optimization depends only on **dot products** between points, we replace them with a **kernel function** `K(xᵢ, xⱼ)` that computes the dot product in a higher-dimensional space implicitly. Common kernels:\n- **Linear**, **Polynomial**, **RBF (Gaussian)**, **Sigmoid**.\n\nThe RBF kernel is a popular default. SVMs work well in high dimensions and with clear margins, but scale poorly to very large datasets and need feature scaling and careful kernel/C/γ tuning.",
+      "quiz": {
+        "choices": [
+          "SVMs minimize the margin between classes",
+          "SVMs maximize the margin; the kernel trick allows nonlinear boundaries via implicit dot products",
+          "The kernel trick explicitly computes all high-dimensional features",
+          "SVMs cannot handle non-separable data at all"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q047",
+      "topic": "Machine Learning",
+      "difficulty": "hard",
+      "tags": ["backpropagation", "neural-networks", "deep-learning"],
+      "question": "How does backpropagation work?",
+      "answer": "**Backpropagation** is the algorithm for efficiently computing **gradients** of the loss with respect to every weight in a neural network, enabling gradient-descent training. It has two passes:\n\n1. **Forward pass**: inputs flow through the network layer by layer to produce an output and compute the **loss**.\n2. **Backward pass**: using the **chain rule** of calculus, the gradient of the loss is propagated **backward** from the output to earlier layers. Each layer computes how its weights contributed to the error.\n\nWeights are then updated: `w ← w − α·(∂L/∂w)`.\n\nKey ideas:\n- It **reuses intermediate results** (dynamic programming), making gradient computation `O(network size)` rather than exponential.\n- Requires **differentiable** activation functions.\n- Susceptible to **vanishing/exploding gradients** in deep nets—mitigated by ReLU activations, normalization, residual connections, and careful initialization.\n\nBackprop is just the gradient computation; an optimizer (SGD, Adam) applies the update.",
+      "quiz": {
+        "choices": [
+          "It randomly perturbs weights to reduce loss",
+          "It uses the chain rule to propagate loss gradients backward through the network",
+          "It only updates the weights of the first layer",
+          "It computes gradients in exponential time"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q048",
+      "topic": "Machine Learning",
+      "difficulty": "hard",
+      "tags": ["pca", "dimensionality-reduction", "math"],
+      "question": "How does Principal Component Analysis (PCA) work?",
+      "answer": "**PCA** is an unsupervised **dimensionality-reduction** technique that projects data onto a smaller set of orthogonal axes (**principal components**) capturing the most variance.\n\nSteps:\n1. **Standardize** the features (mean-center; scale if units differ).\n2. Compute the **covariance matrix** of the features.\n3. Find its **eigenvectors and eigenvalues** (or use SVD). Eigenvectors are the principal components (directions); eigenvalues give the variance captured by each.\n4. **Rank** components by eigenvalue and keep the top **k** that explain most variance.\n5. **Project** the data onto these k components.\n\nKey points:\n- Components are **orthogonal** and ordered by explained variance.\n- Reduces dimensionality, **removes correlated/redundant** features, and aids visualization and noise reduction.\n- **Scaling matters**; PCA is a **linear** method (nonlinear alternatives: kernel PCA, t-SNE, UMAP).\n- Downside: components are **linear combinations**, so they lose direct interpretability of original features.",
+      "quiz": {
+        "choices": [
+          "It selects the original features with the most missing values",
+          "It projects data onto orthogonal directions (eigenvectors) that capture maximum variance",
+          "It is a supervised method that uses class labels",
+          "It increases the number of dimensions to improve accuracy"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q049",
+      "topic": "Machine Learning",
+      "difficulty": "hard",
+      "tags": ["naive-bayes", "probability", "algorithms"],
+      "question": "How does the Naive Bayes classifier work and what is the 'naive' assumption?",
+      "answer": "**Naive Bayes** is a probabilistic classifier based on **Bayes' theorem**:\n\n`P(y | x) ∝ P(y) · P(x | y)`\n\nIt predicts the class `y` with the highest posterior probability given features `x`.\n\nThe **'naive' assumption** is that all features are **conditionally independent** given the class. This lets it factorize the likelihood:\n\n`P(x | y) = Π P(xᵢ | y)`\n\ngreatly simplifying computation. Despite this often-unrealistic assumption, it works surprisingly well in practice, especially for **text classification** (spam filtering, sentiment).\n\nVariants:\n- **Gaussian NB** for continuous features.\n- **Multinomial NB** for counts (e.g., word frequencies).\n- **Bernoulli NB** for binary features.\n\nStrengths: fast, needs little data, handles high dimensions. Weaknesses: the independence assumption and issues with unseen feature-class combinations—handled by **Laplace (additive) smoothing** to avoid zero probabilities.",
+      "quiz": {
+        "choices": [
+          "It assumes features are perfectly correlated",
+          "It applies Bayes' theorem assuming features are conditionally independent given the class",
+          "It is a distance-based algorithm requiring scaling",
+          "It cannot be used for text classification"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q050",
+      "topic": "Machine Learning",
+      "difficulty": "hard",
+      "tags": ["data-leakage", "pitfalls", "practical"],
+      "question": "What is data leakage in machine learning and how do you prevent it?",
+      "answer": "**Data leakage** occurs when information that would **not be available at prediction time** (or the target itself) inadvertently influences training, producing **overly optimistic** validation results that collapse in production.\n\nCommon forms:\n- **Target leakage**: a feature is a proxy for or derived from the target (e.g., using 'account closed date' to predict churn).\n- **Train-test contamination**: fitting preprocessing (scaling, imputation, encoding, feature selection) on the **full dataset** before splitting, so test statistics leak into training.\n- **Temporal leakage**: using future data to predict the past in time series.\n- **Duplicate records** spanning train and test.\n\nPrevention:\n- **Split first**, then fit all preprocessing on training data only; use **pipelines** so transforms are learned per fold.\n- Respect **time order** with time-based splits.\n- Audit features for future/target information and business meaning.\n- Be suspicious of **too-good-to-be-true** metrics.\n\nLeakage is one of the most common and dangerous real-world ML mistakes.",
+      "quiz": {
+        "choices": [
+          "When the model is too small to fit the data",
+          "When information unavailable at prediction time leaks into training, inflating performance",
+          "When training takes too long due to large data",
+          "When the learning rate is set too high"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q051",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["fundamentals", "process"],
+      "question": "What are the main stages of a typical data science project lifecycle?",
+      "answer": "A data science project generally follows an iterative lifecycle (e.g., CRISP-DM):\n\n1. **Business/problem understanding**: define the objective and success metrics.\n2. **Data collection**: gather relevant data from databases, APIs, files, etc.\n3. **Data cleaning & preparation**: handle missing values, outliers, formatting, and integration—often the most time-consuming step.\n4. **Exploratory Data Analysis (EDA)**: understand distributions, relationships, and patterns via statistics and visualization.\n5. **Feature engineering**: create informative variables.\n6. **Modeling**: select and train models.\n7. **Evaluation**: assess against metrics and validate on held-out data.\n8. **Deployment**: put the model into production.\n9. **Monitoring & maintenance**: track performance, drift, and retrain as needed.\n\nThe process is **iterative**, not strictly linear—findings often send you back to earlier steps. Communicating results to stakeholders is a crucial thread throughout.",
+      "quiz": {
+        "choices": [
+          "Modeling is always the first and only important step",
+          "It iterates through problem framing, data prep, EDA, modeling, evaluation, deployment, and monitoring",
+          "Deployment happens before data cleaning",
+          "There is no need to monitor a model after deployment"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q052",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["statistics", "central-tendency"],
+      "question": "What is the difference between mean, median, and mode, and when is each useful?",
+      "answer": "These are measures of **central tendency**:\n\n- **Mean**: the arithmetic average (sum ÷ count). Uses all values but is **sensitive to outliers** and skew.\n- **Median**: the middle value when data is sorted. **Robust to outliers** and skewed distributions—preferred for income, house prices, etc.\n- **Mode**: the most frequent value. Works for **categorical** data and can reveal multi-modal distributions.\n\nWhen to use:\n- Use the **mean** for roughly symmetric, outlier-free numeric data.\n- Use the **median** for skewed data or when outliers are present.\n- Use the **mode** for categorical variables or to find the most common value.\n\nComparing mean vs. median also diagnoses **skewness**: mean > median suggests right-skew; mean < median suggests left-skew.",
+      "quiz": {
+        "choices": [
+          "The median is the most sensitive to outliers",
+          "The mean is sensitive to outliers; the median is robust; the mode is the most frequent value",
+          "The mode can only be used for continuous data",
+          "Mean, median, and mode are always equal"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q053",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["eda", "exploratory-analysis"],
+      "question": "What is Exploratory Data Analysis (EDA) and what does it involve?",
+      "answer": "**Exploratory Data Analysis (EDA)** is the process of **investigating and summarizing a dataset** to understand its main characteristics before formal modeling. It builds intuition and surfaces issues.\n\nTypical activities:\n- **Summary statistics**: mean, median, standard deviation, quartiles, counts.\n- **Univariate analysis**: distributions via histograms, box plots, value counts.\n- **Bivariate/multivariate analysis**: scatter plots, correlation matrices, cross-tabs to find relationships.\n- **Missing-value and outlier detection**.\n- **Data-quality checks**: types, ranges, duplicates, inconsistencies.\n\nGoals:\n- Understand distributions and relationships.\n- Detect anomalies and data problems.\n- Form and check **hypotheses**.\n- Guide feature engineering and model choice.\n\nEDA is largely **visual and iterative** (popularized by John Tukey). It prevents 'garbage in, garbage out' by catching problems early and informing downstream decisions.",
+      "quiz": {
+        "choices": [
+          "The final step of deploying a model",
+          "Investigating and summarizing data via statistics and visualization before modeling",
+          "A method for encrypting sensitive columns",
+          "Automatically selecting the best model with no human input"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q054",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["correlation-causation", "statistics"],
+      "question": "Why does correlation not imply causation?",
+      "answer": "**Correlation** measures how two variables move together, but it does **not** establish that one **causes** the other. A strong correlation can arise from several non-causal reasons:\n\n- **Confounding variable**: a third factor drives both (e.g., ice-cream sales and drownings both rise with hot weather).\n- **Reverse causation**: the effect might actually cause the presumed cause.\n- **Coincidence / spurious correlation**: especially with many variables or small samples.\n- **Selection bias** in how data was gathered.\n\nTo establish **causation**, you generally need:\n- **Randomized controlled experiments (A/B tests)** that isolate the effect, or\n- **Causal inference** methods (instrumental variables, difference-in-differences, propensity matching, natural experiments) when experiments are infeasible.\n\nThe practical takeaway: acting on correlations as if they were causal can lead to costly wrong decisions.",
+      "quiz": {
+        "choices": [
+          "Because correlation is always negative",
+          "A correlation can arise from confounders, reverse causation, or coincidence rather than a causal link",
+          "Correlation and causation are actually identical",
+          "Causation is easier to prove than correlation"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q055",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["missing-data", "data-cleaning"],
+      "question": "How do you handle missing data?",
+      "answer": "Handling missing data depends on **why** it is missing and how much. First understand the mechanism: **MCAR** (missing completely at random), **MAR** (missing at random, depends on observed data), or **MNAR** (missing not at random, depends on the unobserved value itself).\n\nCommon approaches:\n- **Deletion**: drop rows (listwise) or columns—fine if missingness is small and random, but risks bias/data loss.\n- **Imputation**:\n  - **Mean/median/mode** (simple but distorts variance).\n  - **Forward/backward fill** for time series.\n  - **Model-based** (k-NN, regression, MICE/iterative imputation).\n  - **Constant/indicator**: fill with a flag and add a 'was-missing' feature.\n- **Use algorithms** that handle missingness natively (e.g., some gradient-boosting libraries).\n\nBest practices: fit imputation on **training data only** (avoid leakage), and consider adding a **missing-indicator** since missingness can itself be informative. The choice should reflect the mechanism and downstream impact.",
+      "quiz": {
+        "choices": [
+          "Always delete every row with any missing value",
+          "Choose deletion or imputation based on the missingness mechanism and amount, avoiding leakage",
+          "Fill all missing values with zero regardless of context",
+          "Missing data never affects analysis"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q056",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["data-types", "structured-unstructured"],
+      "question": "What is the difference between structured, semi-structured, and unstructured data?",
+      "answer": "These categories describe how organized and machine-readable data is:\n\n- **Structured data**: highly organized in a predefined schema—rows and columns. Examples: relational database tables, spreadsheets. Easy to query with SQL.\n- **Semi-structured data**: has some organizational markers/tags but no rigid schema. Examples: **JSON, XML, YAML**, emails. Flexible; often stored in NoSQL/document stores.\n- **Unstructured data**: no predefined model or organization. Examples: free text, images, audio, video, PDFs. Makes up the majority of enterprise data and requires more processing (NLP, computer vision) to analyze.\n\nImplications: structured data is straightforward for traditional analytics; unstructured data needs specialized techniques and storage (data lakes) and often powers modern ML. Many real pipelines convert unstructured/semi-structured data into structured features for analysis.",
+      "quiz": {
+        "choices": [
+          "JSON and XML are examples of fully unstructured data",
+          "Structured fits a schema (tables), semi-structured uses tags (JSON/XML), unstructured has none (text/images)",
+          "Unstructured data is always stored in relational tables",
+          "There is no meaningful difference between the three"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q057",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["variance-std", "statistics", "dispersion"],
+      "question": "What do variance and standard deviation measure?",
+      "answer": "Both measure the **spread (dispersion)** of data around the mean.\n\n- **Variance** is the average of the squared deviations from the mean: `σ² = Σ(xᵢ − μ)² / N` (population) or divided by `n−1` for a **sample** (Bessel's correction, giving an unbiased estimate).\n- **Standard deviation** is the **square root** of the variance: `σ = √σ²`.\n\nKey points:\n- Variance is in **squared units**, which is hard to interpret; standard deviation is in the **same units** as the data, so it is more intuitive.\n- Larger values mean the data is more spread out; zero means all values are identical.\n- For a **normal distribution**, about 68% of data falls within ±1 SD, 95% within ±2 SD, and 99.7% within ±3 SD (the empirical rule).\n\nBoth are sensitive to outliers because deviations are squared.",
+      "quiz": {
+        "choices": [
+          "They measure the central value of the data",
+          "They measure how spread out data is; standard deviation is the square root of variance",
+          "Variance is always in the same units as the data",
+          "Standard deviation can be negative"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q058",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["distributions", "normal-distribution"],
+      "question": "What is the normal distribution and why is it important?",
+      "answer": "The **normal (Gaussian) distribution** is a continuous, symmetric, bell-shaped distribution defined by two parameters: the **mean (μ)** (center) and **standard deviation (σ)** (spread). It is symmetric about the mean, where mean = median = mode.\n\nThe **empirical (68-95-99.7) rule**: ~68% of values lie within ±1σ, ~95% within ±2σ, and ~99.7% within ±3σ of the mean.\n\nWhy it matters:\n- Many natural phenomena and measurement errors are approximately normal.\n- The **Central Limit Theorem** makes sampling distributions of means approximately normal, underpinning much of inferential statistics (confidence intervals, hypothesis tests).\n- Many models and methods **assume normality** (e.g., linear regression residuals, z-tests).\n- It enables **standardization** via z-scores: `z = (x − μ)/σ`.\n\nReal data is not always normal, so it is important to check (histograms, Q-Q plots) before relying on normality assumptions.",
+      "quiz": {
+        "choices": [
+          "It is a skewed distribution with no defined mean",
+          "A symmetric bell curve defined by mean and standard deviation, central to inferential statistics",
+          "It only applies to categorical data",
+          "About 50% of its data lies within one standard deviation"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q059",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["outliers", "data-cleaning"],
+      "question": "What are outliers and how can you detect them?",
+      "answer": "**Outliers** are data points that deviate markedly from the rest of the data. They may be genuine extreme values, measurement errors, or signals of rare events (e.g., fraud).\n\nDetection methods:\n- **IQR method**: values below `Q1 − 1.5·IQR` or above `Q3 + 1.5·IQR`, where `IQR = Q3 − Q1`. Visualized with **box plots**.\n- **Z-score**: flag points with `|z| > 3` (assumes roughly normal data).\n- **Visualization**: scatter plots, histograms, box plots.\n- **Model-based**: DBSCAN, Isolation Forest, Local Outlier Factor for multivariate cases.\n\nHandling depends on context:\n- **Investigate** first—do not blindly delete.\n- **Remove** if they are clearly errors.\n- **Cap/winsorize** or **transform** (e.g., log) to reduce influence.\n- **Keep** if they are legitimate and important (they may be the point of interest).\n\nOutliers can heavily distort means, variances, and models like linear regression.",
+      "quiz": {
+        "choices": [
+          "Outliers are always errors and should be deleted immediately",
+          "They are points far from the rest; detected via IQR, z-scores, or model-based methods",
+          "Outliers never affect statistical measures",
+          "The only way to detect them is manual inspection"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q060",
+      "topic": "Data Science",
+      "difficulty": "easy",
+      "tags": ["sampling", "statistics"],
+      "question": "What is the difference between a population and a sample, and why do we sample?",
+      "answer": "A **population** is the **entire group** you want to draw conclusions about (e.g., all customers). A **sample** is a **subset** of that population that you actually observe and analyze.\n\nWhy sample:\n- Studying the whole population is often **impractical, costly, or impossible**.\n- A well-chosen sample lets you **infer** population properties efficiently.\n\nSampling methods:\n- **Simple random sampling**: every member has an equal chance.\n- **Stratified sampling**: divide into strata (e.g., age groups) and sample each proportionally—reduces variance and ensures representation.\n- **Cluster sampling**: sample whole groups.\n- **Systematic sampling**: pick every k-th element.\n\nGood sampling avoids **bias** (e.g., selection or convenience bias) so the sample is **representative**. Statistics computed on samples (like the sample mean) are **estimates** of population **parameters**, with uncertainty quantified via standard error and confidence intervals.",
+      "quiz": {
+        "choices": [
+          "A sample is larger than the population",
+          "A population is the whole group; a sample is a subset used to infer population properties efficiently",
+          "Sampling always introduces bias that cannot be reduced",
+          "Populations and samples are the same thing"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q061",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["hypothesis-testing", "p-value", "statistics"],
+      "question": "What is a p-value and how do you interpret it?",
+      "answer": "A **p-value** is the probability of observing a result **at least as extreme** as the one obtained, **assuming the null hypothesis (H₀) is true**. It quantifies how surprising the data is under H₀.\n\nInterpretation:\n- A **small p-value** (e.g., < 0.05) suggests the observed data is unlikely under H₀, providing evidence to **reject H₀**.\n- A **large p-value** means the data is consistent with H₀, so we **fail to reject** it (not proof that H₀ is true).\n\nThe **significance level α** (commonly 0.05) is the threshold, set **before** the test.\n\nCommon misconceptions to avoid:\n- The p-value is **NOT** the probability that H₀ is true.\n- It does **not** measure effect size or practical importance.\n- **Statistical significance ≠ practical significance**.\n\nP-values should be paired with **effect sizes and confidence intervals**, and beware of **p-hacking** (testing many hypotheses until one is significant).",
+      "quiz": {
+        "choices": [
+          "The probability that the null hypothesis is true",
+          "The probability of data at least as extreme as observed, assuming the null hypothesis is true",
+          "The probability that your alternative hypothesis is correct",
+          "The size of the effect being measured"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q062",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["hypothesis-testing", "errors", "statistics"],
+      "question": "What are Type I and Type II errors?",
+      "answer": "In hypothesis testing, these are the two ways a decision can be wrong:\n\n- **Type I error (false positive)**: rejecting a **true** null hypothesis—concluding an effect exists when it does not. Its probability equals the significance level **α** (e.g., 0.05).\n- **Type II error (false negative)**: failing to reject a **false** null hypothesis—missing a real effect. Its probability is **β**.\n\nRelated concept: **power = 1 − β**, the probability of correctly detecting a true effect.\n\nTrade-off:\n- Lowering α (stricter significance) **reduces Type I** errors but **increases Type II** errors, and vice versa.\n- **Increasing sample size** reduces both by increasing power.\n\nAnalogy: In a medical test, a Type I error tells a healthy person they are sick; a Type II error tells a sick person they are healthy. Which error is worse depends on the context and its costs.",
+      "quiz": {
+        "choices": [
+          "Type I is a false negative; Type II is a false positive",
+          "Type I is a false positive (rejecting a true null); Type II is a false negative (missing a real effect)",
+          "Both errors are eliminated by lowering the significance level",
+          "Type I and Type II errors are unrelated to sample size"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q063",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["ab-testing", "experimentation"],
+      "question": "How would you design an A/B test?",
+      "answer": "An **A/B test** is a randomized controlled experiment comparing two versions (control A vs. variant B) to measure the causal effect of a change.\n\nDesign steps:\n1. **Define the goal & hypothesis** and choose a primary **success metric** (e.g., conversion rate).\n2. **Determine sample size** via a **power analysis** using the baseline rate, **minimum detectable effect**, significance level (α), and power (1−β).\n3. **Randomly assign** users to A or B to ensure comparable groups and avoid bias.\n4. **Run** the test long enough to reach the sample size and capture variability (e.g., weekly cycles), avoiding **peeking** and stopping early.\n5. **Analyze**: use an appropriate test (e.g., two-proportion z-test / t-test), compute the p-value and **confidence interval** for the effect.\n6. **Decide**: consider statistical AND practical significance, and check **guardrail metrics** for side effects.\n\nWatch out for: novelty effects, sample-ratio mismatch, multiple-comparison issues, and network effects.",
+      "quiz": {
+        "choices": [
+          "Assign users to groups based on who converts first",
+          "Randomize users to control/variant, size via power analysis, then test the primary metric",
+          "Always stop the test as soon as p < 0.05",
+          "Compare two versions without any randomization"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q064",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["central-limit-theorem", "statistics"],
+      "question": "What is the Central Limit Theorem and why does it matter?",
+      "answer": "The **Central Limit Theorem (CLT)** states that, for a sufficiently large sample size, the **sampling distribution of the sample mean** is approximately **normal**, regardless of the population's original distribution (as long as it has finite variance).\n\nKey properties:\n- The sampling distribution's mean equals the population mean **μ**.\n- Its standard deviation (the **standard error**) is `σ/√n`, shrinking as sample size **n** grows.\n- 'Sufficiently large' is often cited as **n ≥ 30**, though heavily skewed data may need more.\n\nWhy it matters:\n- It underpins **inferential statistics**—we can build **confidence intervals** and run **hypothesis tests** on means even when the data itself is not normal.\n- It justifies using normal-based methods (z-tests, t-tests) broadly.\n\nIn short, the CLT is why the normal distribution appears so often in statistical inference and lets us reason about uncertainty in estimates.",
+      "quiz": {
+        "choices": [
+          "It says all data is normally distributed",
+          "The sampling distribution of the mean approaches normal as sample size grows, with standard error σ/√n",
+          "It only applies when the population is already normal",
+          "It states that larger samples increase the standard error"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q065",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["confidence-interval", "statistics"],
+      "question": "What is a confidence interval and how should it be interpreted?",
+      "answer": "A **confidence interval (CI)** is a range of values, computed from sample data, that is likely to contain the true **population parameter** (e.g., mean) with a specified **confidence level** (commonly 95%).\n\nFor a mean it is roughly:\n\n`estimate ± (critical value) × (standard error)`\n\ne.g., `x̄ ± 1.96 · (s/√n)` for a 95% CI (large samples).\n\n**Correct interpretation**: if we repeated the sampling process many times and built a CI each time, about **95% of those intervals would contain the true parameter**. It reflects the reliability of the estimation procedure.\n\n**Common misinterpretation**: it is NOT correct to say 'there is a 95% probability the true value lies in *this specific* interval'—in frequentist terms the parameter is fixed; the interval is what varies.\n\nWider intervals mean more uncertainty. CIs narrow with **larger samples** and **lower variability**, and convey more information than a p-value alone.",
+      "quiz": {
+        "choices": [
+          "A range that contains 95% of the individual data points",
+          "A range likely to contain the true parameter; 95% of such intervals would capture it over repeated sampling",
+          "A guarantee that the specific interval contains the true value with 95% probability",
+          "It becomes wider as the sample size increases"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q066",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["feature-selection", "modeling"],
+      "question": "What are the main approaches to feature selection?",
+      "answer": "**Feature selection** chooses the most relevant subset of features to improve model performance, reduce overfitting, speed up training, and aid interpretability. Three main approaches:\n\n- **Filter methods**: rank features by statistical measures **independent of any model**—correlation, chi-square, mutual information, ANOVA F-test, variance threshold. Fast and scalable but ignore feature interactions.\n- **Wrapper methods**: evaluate feature subsets by **training a model** and measuring performance—e.g., **recursive feature elimination (RFE)**, forward/backward selection. More accurate but computationally expensive.\n- **Embedded methods**: selection happens **during model training**—e.g., **L1/Lasso** regularization driving weights to zero, or **tree-based feature importance**. A good balance of performance and cost.\n\nMotivations: combat the **curse of dimensionality**, remove noisy/redundant features, and improve generalization. Feature selection differs from **dimensionality reduction** (like PCA), which creates new combined features rather than selecting original ones.",
+      "quiz": {
+        "choices": [
+          "Filter, wrapper, and embedded methods",
+          "Only correlation analysis can select features",
+          "Feature selection is identical to PCA",
+          "Feature selection always requires deep learning"
+        ],
+        "correctIndex": 0
+      }
+    },
+    {
+      "id": "q067",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["skewness", "distributions", "statistics"],
+      "question": "What is skewness, and how do you deal with skewed features?",
+      "answer": "**Skewness** measures the **asymmetry** of a distribution:\n- **Right (positive) skew**: a long tail to the right; mean > median (e.g., income, prices).\n- **Left (negative) skew**: a long tail to the left; mean < median.\n- **Zero skew**: symmetric (like the normal distribution).\n\nWhy it matters: many models and statistical tests assume roughly symmetric/normal data. Strong skew can hurt linear models, distort distance-based methods, and let outliers dominate.\n\nHandling skewed features:\n- **Log transform** (`log(x)` or `log1p`) for right-skewed positive data.\n- **Square-root** or **Box-Cox / Yeo-Johnson** transforms.\n- **Winsorizing/capping** extreme values.\n- Use the **median** and robust statistics for summaries.\n- Use **tree-based models**, which are insensitive to monotonic transforms.\n\nAlways transform based on training data and check the result (histogram, skewness value) to confirm the distribution is more symmetric.",
+      "quiz": {
+        "choices": [
+          "Skewness measures how spread out data is",
+          "Skewness measures asymmetry; right-skewed data is often fixed with a log transform",
+          "Skewed data can never be transformed",
+          "A normal distribution has high positive skew"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q068",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["correlation", "statistics"],
+      "question": "What is the difference between Pearson and Spearman correlation?",
+      "answer": "Both measure the strength and direction of association between two variables, ranging from **−1 to +1**, but they differ in what relationship they capture:\n\n- **Pearson correlation**: measures the **linear** relationship using the actual values. It assumes roughly **normally distributed**, continuous data and is **sensitive to outliers**. Best when the relationship is linear.\n- **Spearman rank correlation**: measures the **monotonic** relationship using the **ranks** of the data rather than raw values. It is **non-parametric**, works on **ordinal** data, is more **robust to outliers**, and captures nonlinear-but-monotonic trends.\n\nWhen to use:\n- Use **Pearson** for linear relationships with continuous, roughly normal data.\n- Use **Spearman** when data is ordinal, has outliers, is non-normal, or the relationship is monotonic but not linear.\n\nBoth measure **association, not causation**, and a value near 0 does not rule out a nonlinear relationship.",
+      "quiz": {
+        "choices": [
+          "Pearson uses ranks; Spearman uses raw values",
+          "Pearson measures linear association on values; Spearman measures monotonic association on ranks and is robust to outliers",
+          "They always give identical results",
+          "Spearman can only be used for causal analysis"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q069",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["encoding", "categorical", "preprocessing"],
+      "question": "How do you encode categorical variables for machine learning?",
+      "answer": "Models need numeric input, so categorical variables must be **encoded**. Common techniques:\n\n- **One-hot encoding**: create a binary column per category. Great for **nominal** (unordered) variables with **low cardinality**; avoids implying false order. Downside: high dimensionality with many categories.\n- **Label/ordinal encoding**: map categories to integers. Appropriate for **ordinal** variables with a natural order (e.g., low/medium/high); risky for nominal data because it implies a false ranking.\n- **Target (mean) encoding**: replace a category with the mean of the target for that category. Powerful for **high-cardinality** features but prone to **leakage/overfitting**—use with cross-validation/smoothing.\n- **Frequency/count encoding**: use category frequency.\n- **Hashing** for very high cardinality.\n\nTree models tolerate ordinal encoding better than linear models. Always fit encoders on **training data** and handle **unseen categories** at inference time. Choose based on cardinality, ordinality, and model type.",
+      "quiz": {
+        "choices": [
+          "Always use label encoding for every categorical variable",
+          "Use one-hot for nominal low-cardinality, ordinal encoding for ordered categories, and target encoding (carefully) for high cardinality",
+          "Categorical variables cannot be used in ML models",
+          "One-hot encoding should only be used for ordinal data"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q070",
+      "topic": "Data Science",
+      "difficulty": "medium",
+      "tags": ["model-evaluation", "regression-metrics"],
+      "question": "Explain MAE, MSE, RMSE, and R-squared for regression evaluation.",
+      "answer": "These evaluate how well a regression model's predictions match actual values:\n\n- **MAE (Mean Absolute Error)**: average of `|yᵢ − ŷᵢ|`. Same units as the target, **robust to outliers**, easy to interpret.\n- **MSE (Mean Squared Error)**: average of `(yᵢ − ŷᵢ)²`. **Penalizes large errors** more heavily (squared); in squared units, so less interpretable.\n- **RMSE**: `√MSE`. Back in the target's units, still penalizes big errors—very common.\n- **R² (coefficient of determination)**: proportion of variance in the target explained by the model, `1 − SS_res/SS_tot`. Ranges up to 1 (perfect); 0 means no better than predicting the mean; can be negative for bad models.\n\nWhen to use:\n- Prefer **MAE** when outliers should not dominate; **RMSE/MSE** when large errors are especially costly.\n- Use **R²** (or **adjusted R²**, which penalizes extra features) to convey explained variance to stakeholders.",
+      "quiz": {
+        "choices": [
+          "RMSE is always smaller than MAE",
+          "MSE/RMSE penalize large errors more; MAE is robust to outliers; R² is the proportion of variance explained",
+          "R² can never be negative",
+          "MAE and MSE are measured in the same units"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q071",
+      "topic": "Data Science",
+      "difficulty": "hard",
+      "tags": ["bayesian", "probability", "statistics"],
+      "question": "Explain Bayes' theorem and give an intuitive example.",
+      "answer": "**Bayes' theorem** describes how to update the probability of a hypothesis given new evidence:\n\n`P(A | B) = [ P(B | A) · P(A) ] / P(B)`\n\n- **P(A)**: prior probability of A.\n- **P(B | A)**: likelihood of the evidence if A is true.\n- **P(A | B)**: posterior—updated probability of A after seeing B.\n- **P(B)**: total probability of the evidence.\n\n**Example (medical test)**: A disease affects 1% of people (**prior = 0.01**). A test is 99% sensitive and has a 5% false-positive rate. If you test positive, what is the chance you are sick?\n\n`P(sick | +) = (0.99·0.01) / (0.99·0.01 + 0.05·0.99) ≈ 0.167`\n\nOnly about **17%**—counterintuitive because the disease is rare (base-rate effect). This shows why **priors matter** and why false positives dominate when a condition is uncommon. Bayesian thinking underlies spam filters, A/B testing, and probabilistic ML.",
+      "quiz": {
+        "choices": [
+          "P(A|B) = P(A) · P(B)",
+          "P(A|B) = [P(B|A)·P(A)] / P(B), updating a prior with new evidence",
+          "Bayes' theorem ignores the prior probability",
+          "It only applies to independent events"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q072",
+      "topic": "Data Science",
+      "difficulty": "hard",
+      "tags": ["mle", "estimation", "statistics"],
+      "question": "What is Maximum Likelihood Estimation (MLE)?",
+      "answer": "**Maximum Likelihood Estimation** is a method for estimating a model's parameters by choosing the values that make the **observed data most probable**.\n\nProcess:\n1. Define a **likelihood function** `L(θ) = P(data | θ)`—the probability of the observed data as a function of parameters θ (assuming a distributional model).\n2. Because observations are usually independent, the likelihood is a **product**; we take the **log-likelihood** to turn it into a sum (easier to optimize and numerically stable).\n3. **Maximize** the log-likelihood, typically by setting its derivative to zero or via numerical optimization (gradient ascent).\n\nExamples:\n- MLE of a normal distribution's mean is the **sample mean**.\n- **Logistic regression** and many ML models are trained by maximizing likelihood (equivalently, minimizing negative log-likelihood / cross-entropy).\n\nProperties: MLE estimators are **consistent** and **asymptotically efficient** for large samples but can be **biased** for small samples and sensitive to model misspecification. Bayesian MAP estimation extends MLE by adding a prior.",
+      "quiz": {
+        "choices": [
+          "It selects parameters that minimize the data's probability",
+          "It selects parameters that maximize the likelihood of the observed data",
+          "It requires no assumption about the data distribution",
+          "MLE and the sample mean are never related"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q073",
+      "topic": "Data Science",
+      "difficulty": "hard",
+      "tags": ["bootstrapping", "resampling", "statistics"],
+      "question": "What is bootstrapping and when is it useful?",
+      "answer": "**Bootstrapping** is a **resampling** technique for estimating the sampling distribution of a statistic by repeatedly drawing samples **with replacement** from the observed data.\n\nProcess:\n1. From a dataset of size n, draw many (e.g., 1,000-10,000) **bootstrap samples**, each of size n, sampling **with replacement**.\n2. Compute the statistic of interest (mean, median, correlation, model metric) on each resample.\n3. Use the **distribution** of these statistics to estimate **standard errors** and build **confidence intervals** (e.g., the percentile method).\n\nWhy it is useful:\n- Works when the sampling distribution is **unknown or has no closed-form** formula (e.g., median, complex metrics).\n- Makes **few distributional assumptions**—it is non-parametric.\n- Quantifies uncertainty from a **single dataset**.\n\nLimitations: it assumes the sample represents the population, can struggle with very small samples or extreme statistics, and is computationally intensive. It also underlies **bagging** in ensemble methods.",
+      "quiz": {
+        "choices": [
+          "Sampling without replacement to shrink the dataset",
+          "Repeatedly resampling with replacement to estimate a statistic's distribution and confidence intervals",
+          "A method that requires the population distribution to be known",
+          "A technique only used for deep learning"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q074",
+      "topic": "Data Science",
+      "difficulty": "hard",
+      "tags": ["multiple-testing", "statistics", "corrections"],
+      "question": "What is the multiple comparisons problem and how do you correct for it?",
+      "answer": "The **multiple comparisons (multiple testing) problem** arises when you run many hypothesis tests simultaneously. Each test at α = 0.05 has a 5% chance of a false positive, so across many tests the probability of **at least one false positive** grows rapidly. For 20 independent tests, the chance of one or more false positives is about `1 − 0.95²⁰ ≈ 64%`. This is a form of **p-hacking** if unaddressed.\n\nCorrections:\n- **Bonferroni correction**: use a stricter threshold `α/m` for m tests. Simple but **conservative**, increasing Type II errors.\n- **Holm-Bonferroni**: a stepwise, less conservative version controlling the same family-wise error rate.\n- **Benjamini-Hochberg (FDR)**: controls the **False Discovery Rate**—the expected proportion of false positives among rejections. More powerful; standard in genomics and large-scale testing.\n\nChoice depends on goals: control **FWER** (any false positive is costly) with Bonferroni/Holm, or control **FDR** (tolerate some false positives for more discoveries) with Benjamini-Hochberg.",
+      "quiz": {
+        "choices": [
+          "Running more tests reduces the chance of any false positive",
+          "Many simultaneous tests inflate false positives; corrections include Bonferroni and Benjamini-Hochberg (FDR)",
+          "There is no way to correct for multiple comparisons",
+          "The Bonferroni correction makes the threshold less strict"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q075",
+      "topic": "Data Science",
+      "difficulty": "hard",
+      "tags": ["causal-inference", "confounding", "statistics"],
+      "question": "How can you estimate causal effects from observational data when you cannot run an experiment?",
+      "answer": "When randomized experiments are impossible, **causal inference** methods attempt to estimate effects while accounting for **confounders**. Key approaches:\n\n- **Propensity score matching**: estimate each unit's probability of treatment given covariates, then match treated and control units with similar scores to mimic randomization.\n- **Regression adjustment**: control for confounders as covariates (assumes the model is correct and confounders are measured).\n- **Instrumental variables (IV)**: use a variable that affects treatment but not the outcome directly, to isolate causal effect (handles unmeasured confounding).\n- **Difference-in-Differences (DiD)**: compare changes over time between treated and control groups, assuming **parallel trends**.\n- **Regression discontinuity**: exploit a cutoff that assigns treatment.\n\nAll rely on assumptions—crucially **no unmeasured confounding** (except IV/DiD which relax it differently). **Causal graphs (DAGs)** help identify which variables to adjust for (and warn against conditioning on colliders). The core challenge is that we never observe the **counterfactual** for the same unit.",
+      "quiz": {
+        "choices": [
+          "Causal effects can never be estimated without an experiment",
+          "Use methods like propensity matching, instrumental variables, or difference-in-differences to adjust for confounders",
+          "Simply correlate treatment and outcome to get the causal effect",
+          "Adding more features always removes all confounding automatically"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q076",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["analytics-types", "fundamentals"],
+      "question": "What are the four types of data analytics?",
+      "answer": "Analytics is often organized into four types of increasing sophistication and value:\n\n1. **Descriptive analytics** — *What happened?* Summarizes historical data with reports, dashboards, and KPIs (e.g., last month's sales).\n2. **Diagnostic analytics** — *Why did it happen?* Drills into data to find causes and relationships (e.g., root-cause analysis, drill-down, correlation).\n3. **Predictive analytics** — *What is likely to happen?* Uses statistical models and machine learning to forecast future outcomes (e.g., demand forecasting, churn prediction).\n4. **Prescriptive analytics** — *What should we do?* Recommends actions using optimization and simulation to achieve desired outcomes (e.g., dynamic pricing, route optimization).\n\nAs you move from descriptive to prescriptive, **complexity and business value increase**. Most organizations start with descriptive/diagnostic and mature toward predictive/prescriptive. They build on each other—good descriptive foundations enable reliable prediction.",
+      "quiz": {
+        "choices": [
+          "Descriptive, diagnostic, predictive, and prescriptive",
+          "Small, medium, large, and extra-large",
+          "SQL, Python, R, and Excel",
+          "Structured, semi-structured, unstructured, and raw"
+        ],
+        "correctIndex": 0
+      }
+    },
+    {
+      "id": "q077",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["kpi", "metrics", "fundamentals"],
+      "question": "What is a KPI and what makes a good one?",
+      "answer": "A **KPI (Key Performance Indicator)** is a **quantifiable metric** that measures how effectively an organization or process is achieving a key business objective. KPIs turn strategy into measurable targets (e.g., monthly recurring revenue, customer churn rate, conversion rate).\n\nA good KPI is often described as **SMART**:\n- **Specific**: clearly defined and unambiguous.\n- **Measurable**: quantifiable with available data.\n- **Achievable**: realistic given resources.\n- **Relevant**: tied directly to a business goal.\n- **Time-bound**: measured over a defined period.\n\nOther qualities: it should be **actionable** (people can influence it), have a clear **owner**, and avoid being a **vanity metric** (looks good but does not drive decisions). It is also useful to distinguish **leading indicators** (predict future outcomes, e.g., pipeline) from **lagging indicators** (reflect past results, e.g., revenue). Too many KPIs dilute focus—track the vital few.",
+      "quiz": {
+        "choices": [
+          "A random database column",
+          "A quantifiable metric tied to a business objective; good ones are SMART and actionable",
+          "A type of chart used in dashboards",
+          "A programming language for analytics"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q078",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["etl", "data-pipeline"],
+      "question": "What is ETL and how does it differ from ELT?",
+      "answer": "**ETL** stands for **Extract, Transform, Load**—the process of moving data from sources into a destination (like a data warehouse):\n\n1. **Extract**: pull data from source systems (databases, APIs, files).\n2. **Transform**: clean, standardize, join, aggregate, and reshape the data.\n3. **Load**: write the transformed data into the target store.\n\n**ELT (Extract, Load, Transform)** reverses the last two steps: raw data is **loaded first** into a powerful destination (e.g., a cloud data warehouse like Snowflake/BigQuery), and **transformations happen inside** it.\n\nDifferences:\n- **ETL** transforms before loading—good when the target has limited compute or you need to conform/cleanse data first (traditional warehouses).\n- **ELT** leverages scalable cloud warehouse compute, keeps raw data for flexibility, and suits big data and modern stacks (e.g., dbt).\n\nBoth aim to make data analysis-ready; the choice depends on tooling, data volume, and where transformation compute is cheapest.",
+      "quiz": {
+        "choices": [
+          "ETL means Encrypt, Transfer, Log",
+          "ETL is Extract-Transform-Load; ELT loads raw data first and transforms inside the warehouse",
+          "ETL and ELT are identical in every way",
+          "ELT transforms data before extracting it"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q079",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["sql", "joins"],
+      "question": "Explain the difference between INNER, LEFT, RIGHT, and FULL OUTER joins in SQL.",
+      "answer": "**Joins** combine rows from two tables based on a related column:\n\n- **INNER JOIN**: returns only rows with a **match in both** tables. Non-matching rows are excluded.\n- **LEFT (OUTER) JOIN**: returns **all rows from the left** table, plus matching rows from the right; unmatched right-side columns are **NULL**.\n- **RIGHT (OUTER) JOIN**: mirror image—**all rows from the right** table, with NULLs for unmatched left-side columns.\n- **FULL OUTER JOIN**: returns **all rows from both** tables, with NULLs where there is no match on either side.\n\nExample:\n```sql\nSELECT c.name, o.id\nFROM customers c\nLEFT JOIN orders o ON c.id = o.customer_id;\n```\nThis lists every customer, including those with no orders (order id = NULL).\n\nTip: use LEFT JOIN with a `WHERE right.key IS NULL` to find rows in the left table that have **no match** on the right (anti-join). Choosing the right join type is critical to avoid dropping or duplicating rows.",
+      "quiz": {
+        "choices": [
+          "INNER JOIN returns all rows from both tables",
+          "INNER returns only matches; LEFT keeps all left rows; RIGHT keeps all right rows; FULL keeps all rows from both",
+          "LEFT JOIN excludes all rows from the left table",
+          "FULL OUTER JOIN returns only matching rows"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q080",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["sql", "group-by", "aggregation"],
+      "question": "What does GROUP BY do in SQL, and how does HAVING differ from WHERE?",
+      "answer": "**GROUP BY** collapses rows that share the same values in specified columns into **summary groups**, so you can apply **aggregate functions** (COUNT, SUM, AVG, MIN, MAX) per group.\n\nExample:\n```sql\nSELECT department, COUNT(*) AS headcount, AVG(salary) AS avg_salary\nFROM employees\nGROUP BY department;\n```\n\n**WHERE vs. HAVING**:\n- **WHERE** filters **individual rows before** grouping/aggregation and cannot use aggregate functions.\n- **HAVING** filters **groups after** aggregation and **can** reference aggregates.\n\nExample combining both:\n```sql\nSELECT department, AVG(salary) AS avg_salary\nFROM employees\nWHERE active = 1\nGROUP BY department\nHAVING AVG(salary) > 50000;\n```\nHere WHERE removes inactive employees first, then HAVING keeps only departments whose average salary exceeds 50,000. Order of logical execution: FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY.",
+      "quiz": {
+        "choices": [
+          "WHERE filters groups after aggregation; HAVING filters individual rows",
+          "WHERE filters rows before grouping; HAVING filters groups after aggregation and can use aggregates",
+          "GROUP BY sorts the result set alphabetically",
+          "HAVING and WHERE are completely interchangeable"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q081",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["data-warehouse", "storage"],
+      "question": "What is a data warehouse and how does it differ from a database?",
+      "answer": "A **data warehouse** is a centralized repository designed for **analytics and reporting**, storing large volumes of **integrated historical data** from multiple sources. It is optimized for **reading and aggregating** across many rows (OLAP).\n\nA traditional **operational database** (OLTP) is optimized for **transactions**—fast inserts, updates, and lookups of individual records that run day-to-day applications.\n\nKey differences:\n- **Purpose**: warehouse = analysis/decision support; database = running operations.\n- **Schema**: warehouses use **denormalized** analytical schemas (star/snowflake); OLTP databases are **normalized** to reduce redundancy.\n- **Workload**: warehouses handle complex read-heavy queries over history; OLTP handles many small concurrent writes.\n- **Data**: warehouses hold cleaned, integrated, historical data; OLTP holds current operational data.\n\nRelated concepts: a **data lake** stores raw, unstructured data cheaply, while a **data mart** is a subject-specific subset of a warehouse. Examples of warehouses: Snowflake, BigQuery, Redshift.",
+      "quiz": {
+        "choices": [
+          "A data warehouse is optimized for real-time transaction processing",
+          "A warehouse is optimized for analytics on integrated historical data; an OLTP database is optimized for transactions",
+          "They are identical systems",
+          "A database can only store images"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q082",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["visualization", "charts"],
+      "question": "How do you choose the right chart type for your data?",
+      "answer": "Choosing a chart depends on the **message and data type**:\n\n- **Comparison across categories**: **bar/column charts** (horizontal bars for long labels).\n- **Trend over time**: **line charts** (or area charts).\n- **Part-to-whole**: **stacked bar** or **pie/donut** (pie only for a few categories).\n- **Relationship/correlation between two numeric variables**: **scatter plot** (add size/color for more dimensions → bubble chart).\n- **Distribution of a single variable**: **histogram** or **box plot**.\n- **Geospatial data**: **maps/choropleths**.\n- **Composition + magnitude over time**: **stacked area**.\n\nGeneral principles: keep it **simple and honest** (start bar-chart axes at zero, avoid misleading scales), **label clearly**, use color purposefully (and accessibly), and match the visual to the **question the audience is asking**. Avoid 'chartjunk' and 3D effects. The best chart makes the key insight obvious at a glance without needing explanation.",
+      "quiz": {
+        "choices": [
+          "Always use a pie chart for everything",
+          "Match the chart to the data and message: line for trends, bar for comparisons, scatter for relationships, histogram for distributions",
+          "The chart type does not affect understanding",
+          "3D charts are always the clearest option"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q083",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["primary-key", "database-design"],
+      "question": "What is the difference between a primary key and a foreign key?",
+      "answer": "These are core relational-database constraints that enforce integrity:\n\n- **Primary key (PK)**: a column (or set of columns) that **uniquely identifies** each row in a table. It must be **unique** and **not NULL**. Each table has at most one primary key (e.g., `customer_id` in a Customers table).\n- **Foreign key (FK)**: a column in one table that **references the primary key** of another table, establishing a **relationship** between them. It enforces **referential integrity**—you cannot reference a value that does not exist in the parent table (e.g., `customer_id` in an Orders table pointing to Customers).\n\nKey points:\n- A PK ensures no duplicate/identifying nulls; an FK ensures valid links between tables.\n- FK values **can** be NULL (optional relationship) and can repeat (many orders per customer).\n- Together they enable **normalized** designs and **joins** across tables. A **composite key** uses multiple columns; a **surrogate key** is an artificial ID (e.g., auto-increment).",
+      "quiz": {
+        "choices": [
+          "A primary key can be NULL and duplicated; a foreign key cannot",
+          "A primary key uniquely identifies rows in its table; a foreign key references a primary key in another table",
+          "Foreign keys uniquely identify rows within the same table",
+          "There is no difference between them"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q084",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["dashboard", "reporting"],
+      "question": "What makes an effective analytics dashboard?",
+      "answer": "An effective **dashboard** presents the most important information at a glance to support decisions. Key principles:\n\n- **Know your audience & purpose**: an executive dashboard (high-level KPIs) differs from an operational one (real-time detail).\n- **Lead with the key metrics**: put the most important KPIs top-left, following natural reading order.\n- **Provide context**: show comparisons (vs. target, prior period, benchmark) and trends—a number alone is not insight.\n- **Keep it clean**: minimize clutter and 'chartjunk'; use whitespace and a clear visual hierarchy.\n- **Use the right visualizations** for each metric and consistent, accessible colors.\n- **Enable interactivity** where useful: filters, drill-downs, date ranges.\n- **Ensure accuracy & freshness**: trustworthy, well-defined metrics and clear data timestamps.\n\nA good dashboard answers 'How are we doing and what needs attention?' quickly. Avoid overloading it—focus on actionable metrics rather than every available chart.",
+      "quiz": {
+        "choices": [
+          "Cramming as many charts as possible onto one screen",
+          "Clear KPIs with context, minimal clutter, appropriate visuals, and audience-focused design",
+          "Using only raw data tables with no visuals",
+          "Making every chart 3D and brightly colored"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q085",
+      "topic": "Data Analytics",
+      "difficulty": "easy",
+      "tags": ["data-quality", "governance"],
+      "question": "What are the key dimensions of data quality?",
+      "answer": "**Data quality** determines how fit data is for its intended use. Common dimensions:\n\n- **Accuracy**: does the data correctly reflect the real-world value?\n- **Completeness**: are all required values present (no critical gaps)?\n- **Consistency**: is the data uniform across systems and free of contradictions?\n- **Timeliness**: is the data up to date and available when needed?\n- **Validity**: does it conform to defined formats, types, and business rules (e.g., valid email format)?\n- **Uniqueness**: are there no unintended duplicate records?\n- **Integrity**: are relationships and references maintained correctly?\n\nWhy it matters: 'garbage in, garbage out'—poor data quality leads to wrong analysis and bad decisions. It is maintained through **validation rules, profiling, deduplication, monitoring, and data governance**. Measuring these dimensions with clear rules turns a vague notion of 'good data' into something you can audit and improve.",
+      "quiz": {
+        "choices": [
+          "Only the size of the dataset matters for quality",
+          "Accuracy, completeness, consistency, timeliness, validity, and uniqueness",
+          "Data quality is only about how fast queries run",
+          "Data quality cannot be measured"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q086",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["sql", "window-functions"],
+      "question": "What are SQL window functions and how do they differ from GROUP BY?",
+      "answer": "**Window functions** perform calculations across a set of rows **related to the current row** (a 'window') **without collapsing** them into a single output row—unlike GROUP BY, which reduces each group to one row.\n\nSyntax uses `OVER()`:\n```sql\nSELECT name, department, salary,\n       AVG(salary) OVER (PARTITION BY department) AS dept_avg,\n       RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rnk\nFROM employees;\n```\n\nKey clauses:\n- **PARTITION BY**: divides rows into groups (like GROUP BY but keeps detail).\n- **ORDER BY**: orders rows within the partition (needed for ranking/running totals).\n- **Frame** (`ROWS BETWEEN ...`): defines the subset for running/moving calculations.\n\nCommon functions: `ROW_NUMBER`, `RANK`, `DENSE_RANK`, `LAG`, `LEAD`, `NTILE`, and aggregates like running `SUM`/`AVG`.\n\nDifference: **GROUP BY aggregates and reduces rows; window functions add computed columns while preserving every row**—ideal for rankings, running totals, moving averages, and period-over-period comparisons.",
+      "quiz": {
+        "choices": [
+          "Window functions collapse rows into a single summary like GROUP BY",
+          "Window functions compute across related rows using OVER() while keeping every row; GROUP BY collapses rows",
+          "Window functions cannot rank or compute running totals",
+          "GROUP BY and window functions are the same feature"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q087",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["data-modeling", "star-schema"],
+      "question": "What is the difference between a star schema and a snowflake schema?",
+      "answer": "Both are **dimensional modeling** designs used in data warehouses, organizing data into **fact tables** (measurable events, e.g., sales) and **dimension tables** (context, e.g., product, customer, date).\n\n- **Star schema**: a central fact table connected directly to **denormalized** dimension tables. Each dimension is a single flat table. Result: fewer joins, **simpler and faster queries**, easier for business users—at the cost of some data redundancy.\n- **Snowflake schema**: dimension tables are **normalized** into multiple related sub-tables (e.g., product → category → department). This **reduces redundancy and storage** but requires **more joins**, making queries more complex and sometimes slower.\n\nWhen to use:\n- **Star** is the common default for analytics/BI due to performance and simplicity.\n- **Snowflake** suits cases with large, hierarchical dimensions where storage savings and strict normalization matter.\n\nThe fact table typically holds **foreign keys** to dimensions plus numeric **measures**. Most modern cloud warehouses favor star schemas for query speed.",
+      "quiz": {
+        "choices": [
+          "Star schemas normalize dimensions; snowflake schemas denormalize them",
+          "Star has denormalized dimensions (fewer joins); snowflake normalizes dimensions into sub-tables (more joins)",
+          "Both schemas eliminate the need for fact tables",
+          "Snowflake schemas are always faster to query"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q088",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["cohort-analysis", "retention"],
+      "question": "What is cohort analysis and why is it useful?",
+      "answer": "**Cohort analysis** groups users into **cohorts**—sets of users who share a common characteristic within a time span (most often their **signup/acquisition period**)—and tracks their behavior **over time**.\n\nHow it works: you build a matrix where rows are cohorts (e.g., 'users who joined in January') and columns are time periods since joining (month 0, 1, 2...). Cells show a metric like **retention rate** or revenue.\n\nWhy it is useful:\n- **Isolates behavior by group** rather than lumping all users together, revealing whether newer cohorts behave better/worse (a sign of product or acquisition changes).\n- Powers **retention/churn** analysis and reveals the 'leaky bucket' where users drop off.\n- Separates **growth from stagnation**: total users can rise while retention falls—cohorts expose this.\n- Measures the impact of product changes on **comparable groups**.\n\nCommon in SaaS, mobile apps, and e-commerce to understand user lifecycle, LTV, and the true health of the user base beyond top-line vanity metrics.",
+      "quiz": {
+        "choices": [
+          "It measures total revenue in a single day",
+          "It groups users by a shared trait (e.g., signup period) and tracks their behavior over time to analyze retention",
+          "It is a method for encrypting user data",
+          "It only works for one-time transactions with no time component"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q089",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["funnel-analysis", "conversion"],
+      "question": "What is funnel analysis and how do you use it?",
+      "answer": "**Funnel analysis** tracks how users progress through a **sequence of steps** toward a goal (e.g., visit → add to cart → checkout → purchase) and measures **conversion and drop-off** at each stage.\n\nHow to use it:\n1. **Define the funnel steps** in order, aligned to the desired outcome.\n2. Count users entering each step and compute **conversion rate** = users at step N ÷ users at step N−1 (and overall = final ÷ first).\n3. **Identify the biggest drop-off** stages—these are the highest-leverage places to improve.\n4. **Segment** the funnel (by device, channel, cohort) to find where and for whom it breaks.\n5. **Hypothesize and test** improvements (often via A/B tests) at leaky steps.\n\nWhy it is valuable: it pinpoints exactly **where** users abandon a process, quantifies the opportunity, and guides prioritization. Considerations: define steps and time windows carefully, decide whether steps must be strictly sequential, and account for users who re-enter or skip steps.",
+      "quiz": {
+        "choices": [
+          "It measures server uptime",
+          "It tracks user progression through sequential steps and measures conversion/drop-off at each stage",
+          "It randomly assigns users to test groups",
+          "It is only used to visualize revenue totals"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q090",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["olap-oltp", "systems"],
+      "question": "What is the difference between OLTP and OLAP systems?",
+      "answer": "These describe two different data-processing workloads:\n\n- **OLTP (Online Transaction Processing)**: handles day-to-day **transactional** operations—many small, fast **read/write** queries (INSERT, UPDATE, DELETE). Optimized for **speed, concurrency, and data integrity**. Uses **normalized** schemas. Examples: banking, e-commerce order systems, CRMs.\n- **OLAP (Online Analytical Processing)**: supports **analytical** queries—complex, **read-heavy** aggregations across large volumes of historical data. Optimized for **query performance on big scans**. Uses **denormalized** dimensional schemas (star/snowflake) and often columnar storage. Examples: data warehouses, BI dashboards, reporting.\n\nKey contrasts:\n- OLTP = current data, row-oriented, many short transactions; OLAP = historical data, column-oriented, few long analytical queries.\n- OLTP prioritizes write efficiency and consistency; OLAP prioritizes read/aggregation efficiency.\n\nData typically flows from OLTP systems into OLAP warehouses via **ETL/ELT** so analytics does not burden production databases.",
+      "quiz": {
+        "choices": [
+          "OLTP is for complex analytics; OLAP is for fast transactions",
+          "OLTP handles fast transactional read/writes; OLAP handles complex analytical queries on historical data",
+          "They are two names for the same system",
+          "OLAP uses normalized schemas for single-row lookups"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q091",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["normalization", "database-design"],
+      "question": "What is database normalization and what problem does it solve?",
+      "answer": "**Normalization** is the process of organizing a relational database to **reduce data redundancy** and improve **data integrity** by dividing data into related tables and defining relationships.\n\nProblems it solves—**anomalies** caused by redundancy:\n- **Update anomaly**: the same fact stored in many places must be changed everywhere, risking inconsistency.\n- **Insertion anomaly**: you cannot add certain data without unrelated data present.\n- **Deletion anomaly**: deleting a row unintentionally loses other needed data.\n\nNormal forms (progressive rules):\n- **1NF**: atomic values, no repeating groups.\n- **2NF**: 1NF + no partial dependency on part of a composite key.\n- **3NF**: 2NF + no transitive dependencies (non-key attributes depend only on the key).\n\nTrade-off: highly normalized designs (great for **OLTP** write integrity) require **more joins**, which can slow analytical queries. Hence warehouses often **denormalize** (star schemas) for read performance. Normalization optimizes for integrity; denormalization optimizes for query speed.",
+      "quiz": {
+        "choices": [
+          "Normalization increases data redundancy on purpose",
+          "It organizes tables to reduce redundancy and prevent update, insertion, and deletion anomalies",
+          "It is only used to make queries slower",
+          "Normalization and denormalization are the same thing"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q092",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["time-series", "trends"],
+      "question": "What are the key components of a time series, and what is seasonality vs. trend?",
+      "answer": "A **time series** is data indexed in time order. Classical decomposition breaks it into components:\n\n- **Trend**: the long-term direction (upward, downward, or flat) over time—e.g., steadily growing sales year over year.\n- **Seasonality**: **regular, repeating patterns** at fixed periods (daily, weekly, yearly)—e.g., retail spikes every December.\n- **Cyclical**: longer, **irregular** fluctuations not tied to a fixed calendar period (e.g., economic cycles).\n- **Residual/noise**: the random, unexplained variation.\n\nDecomposition can be **additive** (`Y = Trend + Seasonal + Residual`, when seasonal swings are constant) or **multiplicative** (`Y = Trend × Seasonal × Residual`, when swings scale with the level).\n\nWhy it matters: separating trend from seasonality lets you understand the underlying growth (deseasonalized), forecast accurately, and avoid confusing a seasonal spike with real growth. Analysts often compare **year-over-year** to control for seasonality. Forecasting models include moving averages, exponential smoothing, ARIMA, and Prophet.",
+      "quiz": {
+        "choices": [
+          "Trend is a repeating short-term pattern; seasonality is the long-term direction",
+          "Trend is the long-term direction; seasonality is a regular repeating pattern at fixed periods",
+          "Time series data has no components and is purely random",
+          "Seasonality only occurs in yearly data"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q093",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["metrics", "averages", "pitfalls"],
+      "question": "Why can averages be misleading, and what should you report alongside them?",
+      "answer": "The **average (mean)** compresses a distribution into one number and can hide critical detail:\n\n- **Outliers skew it**: a few extreme values (e.g., one billionaire) pull the mean away from the typical value—Simpson's classic 'average income' trap.\n- **Skewed distributions**: for right-skewed data (income, response times), the mean overstates the typical case; the **median** is more representative.\n- **Simpson's paradox**: an aggregate average can reverse the trend seen in every subgroup, so overall means can mislead without segmentation.\n- **Loss of spread**: two datasets with the same mean can have very different variability.\n\nWhat to report alongside:\n- **Median** and **percentiles** (p50, p90, p95) for skewed data—critical for latency/SLA metrics.\n- **Spread**: standard deviation, IQR, min/max.\n- **Distribution shape** via a histogram.\n- **Sample size (n)** and **segments/breakdowns**.\n\nBest practice: pair central tendency with a measure of spread and, when relevant, show the full distribution rather than a single number.",
+      "quiz": {
+        "choices": [
+          "Averages are always the best single number to report",
+          "Averages hide outliers, skew, and spread; report median/percentiles, spread, and distribution alongside",
+          "The mean is never affected by outliers",
+          "Percentiles are irrelevant for latency metrics"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q094",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["slowly-changing-dimensions", "data-modeling"],
+      "question": "What are Slowly Changing Dimensions (SCDs) and what are the common types?",
+      "answer": "**Slowly Changing Dimensions (SCDs)** describe how a data warehouse handles **changes to dimension attributes over time** (e.g., a customer moves to a new city). The choice affects whether you keep history.\n\nCommon types:\n- **Type 0**: attribute never changes (fixed/original value retained).\n- **Type 1**: **overwrite** the old value with the new one. Simple, but **no history**—you only ever see the current value.\n- **Type 2**: **add a new row** for the changed record, keeping the old one, with metadata like `effective_date`, `end_date`, and a `current_flag` (or version number). Preserves **full history**—the most common for historical accuracy.\n- **Type 3**: **add a new column** (e.g., `previous_value`) to store limited prior history—tracks only one or a few changes.\n- **Types 4/6**: hybrid approaches (e.g., history tables, or combining 1+2+3).\n\nWhy it matters: Type 2 lets you analyze data 'as it was' at the time of a transaction, which is essential for accurate historical reporting; Type 1 sacrifices history for simplicity.",
+      "quiz": {
+        "choices": [
+          "SCDs describe how quickly a database server scales",
+          "SCDs handle changes to dimension attributes over time; Type 1 overwrites, Type 2 adds a new row to keep history",
+          "SCD Type 2 overwrites data and keeps no history",
+          "SCDs only apply to fact tables"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q095",
+      "topic": "Data Analytics",
+      "difficulty": "medium",
+      "tags": ["sql", "aggregation", "coding"],
+      "question": "How would you find the second-highest salary in an employees table using SQL?",
+      "answer": "There are several correct approaches. A robust, portable one uses a subquery:\n```sql\nSELECT MAX(salary) AS second_highest\nFROM employees\nWHERE salary < (SELECT MAX(salary) FROM employees);\n```\nThis finds the maximum salary that is strictly less than the overall maximum, correctly handling duplicate top salaries and returning `NULL` if there is no second value.\n\nA modern approach uses a **window function** with `DENSE_RANK` (so ties share a rank):\n```sql\nSELECT DISTINCT salary\nFROM (\n  SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) AS rnk\n  FROM employees\n) t\nWHERE rnk = 2;\n```\n\nAn `OFFSET`-based option (`ORDER BY salary DESC LIMIT 1 OFFSET 1`) is simple but **fails with duplicate top salaries** (it returns a duplicate of the top rather than the true second-highest distinct value). Prefer the subquery or `DENSE_RANK` when duplicates are possible. This tests understanding of aggregation, subqueries, and edge cases.",
+      "quiz": {
+        "choices": [
+          "SELECT salary FROM employees ORDER BY salary ASC LIMIT 1",
+          "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees)",
+          "SELECT MIN(salary) FROM employees",
+          "SELECT AVG(salary) FROM employees"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q096",
+      "topic": "Data Analytics",
+      "difficulty": "hard",
+      "tags": ["sql", "optimization", "indexing"],
+      "question": "How would you optimize a slow SQL query?",
+      "answer": "Systematically diagnose and fix. First, **read the query execution plan** (`EXPLAIN` / `EXPLAIN ANALYZE`) to find bottlenecks like full table scans, expensive sorts, or nested-loop joins on large tables.\n\nKey optimizations:\n- **Indexing**: add indexes on columns used in `WHERE`, `JOIN`, `ORDER BY`, and `GROUP BY`. Consider **composite indexes** matching query predicates (order matters) and **covering indexes**. Avoid over-indexing (slows writes).\n- **Avoid `SELECT *`**: fetch only needed columns to reduce I/O.\n- **Filter early and make predicates sargable**: avoid wrapping indexed columns in functions (e.g., `WHERE YEAR(date)=2024` prevents index use).\n- **Optimize joins**: join on indexed keys, reduce row counts before joining, choose appropriate join order.\n- **Limit result sets** with pagination; avoid unnecessary `DISTINCT`/`ORDER BY`.\n- **Rewrite subqueries** as joins or CTEs where beneficial; watch out for correlated subqueries.\n- **Update statistics** so the optimizer picks good plans; consider **partitioning** or **materialized views** for large/aggregated data.\n\nAlways **measure before and after** and let the execution plan guide changes rather than guessing.",
+      "quiz": {
+        "choices": [
+          "Add SELECT * to every query to fetch more data",
+          "Use EXPLAIN to find bottlenecks, add appropriate indexes, keep predicates sargable, and select only needed columns",
+          "Remove all indexes to speed up reads",
+          "Wrap indexed columns in functions inside WHERE clauses"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q097",
+      "topic": "Data Analytics",
+      "difficulty": "hard",
+      "tags": ["sql", "retention", "cohort"],
+      "question": "Conceptually, how would you compute monthly user retention with SQL?",
+      "answer": "**Retention** measures the share of a cohort still active in later periods. The general approach:\n\n1. **Define each user's cohort** — typically the month of their first activity:\n```sql\nWITH first_activity AS (\n  SELECT user_id, DATE_TRUNC('month', MIN(event_date)) AS cohort_month\n  FROM events GROUP BY user_id\n)\n```\n2. **Get each user's active months**:\n```sql\n, activity AS (\n  SELECT DISTINCT user_id, DATE_TRUNC('month', event_date) AS active_month\n  FROM events\n)\n```\n3. **Join** cohort to activity and compute the **period offset** (months since the cohort month), then count distinct users per (cohort, offset):\n```sql\nSELECT f.cohort_month,\n       (EXTRACT(YEAR FROM a.active_month)-EXTRACT(YEAR FROM f.cohort_month))*12\n         + (EXTRACT(MONTH FROM a.active_month)-EXTRACT(MONTH FROM f.cohort_month)) AS period,\n       COUNT(DISTINCT a.user_id) AS active_users\nFROM first_activity f\nJOIN activity a ON f.user_id = a.user_id\nGROUP BY 1, 2 ORDER BY 1, 2;\n```\n4. **Retention rate** = active_users at period N ÷ cohort size at period 0.\n\nExact date functions vary by dialect, but the pattern—cohort assignment, period offset, distinct active counts, then normalize by cohort size—is universal.",
+      "quiz": {
+        "choices": [
+          "Count total users once and call it retention",
+          "Assign each user a cohort (first-activity month), compute period offsets, count distinct active users, then divide by cohort size",
+          "Retention cannot be computed in SQL",
+          "Sum revenue per month and label it retention"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q098",
+      "topic": "Data Analytics",
+      "difficulty": "hard",
+      "tags": ["attribution", "marketing-analytics"],
+      "question": "What is marketing attribution and what are the main attribution models?",
+      "answer": "**Attribution** assigns credit for a conversion to the marketing **touchpoints** a user interacted with along their journey. It answers 'which channels/campaigns actually drove results?' so budget can be allocated wisely.\n\nMain models:\n- **First-touch**: 100% credit to the **first** interaction. Rewards awareness/top-of-funnel; ignores everything after.\n- **Last-touch**: 100% to the **final** touch before conversion. Simple but ignores earlier influence.\n- **Linear**: **equal credit** across all touchpoints.\n- **Time-decay**: more credit to touchpoints **closer in time** to conversion.\n- **Position-based (U-shaped)**: heavy credit to **first and last** (e.g., 40/40) and the rest split among the middle.\n- **Data-driven / algorithmic**: uses statistical/ML methods (e.g., Markov chains, Shapley values) to estimate each touchpoint's **incremental** contribution.\n\nSingle-touch models are easy but biased; multi-touch and data-driven models are more accurate but need clean cross-channel tracking. The gold standard for true causal impact is **incrementality testing** (holdout experiments), since correlation-based attribution can misattribute credit.",
+      "quiz": {
+        "choices": [
+          "Attribution randomly assigns conversions to channels",
+          "It credits touchpoints for conversions; models include first-touch, last-touch, linear, time-decay, position-based, and data-driven",
+          "There is only one attribution model (last-touch)",
+          "Attribution only applies to offline advertising"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q099",
+      "topic": "Data Analytics",
+      "difficulty": "hard",
+      "tags": ["statistical-significance", "experimentation"],
+      "question": "In an analytics context, how do you know if a change in a metric is statistically significant or just noise?",
+      "answer": "A metric moving between periods could be **real signal or random variation**. To distinguish them:\n\n1. **Establish a baseline and its variability**: metrics fluctuate naturally day to day; quantify normal variance before reacting.\n2. **Run a controlled experiment (A/B test)** when possible, so the difference isn't confounded by seasonality, marketing, or external events.\n3. **Apply a hypothesis test** appropriate to the metric: a **two-proportion z-test** or **chi-square** for rates/conversions, a **t-test** for means. Compute the **p-value** and compare to a pre-set **α** (e.g., 0.05).\n4. **Report a confidence interval** for the effect size—it shows both significance and magnitude, and whether the interval excludes zero/no-change.\n5. **Ensure adequate sample size** via a power analysis; small samples produce unstable, non-significant results.\n6. **Beware pitfalls**: peeking/early stopping, multiple comparisons, novelty/seasonality effects, and confusing **statistical** with **practical** significance.\n\nBottom line: don't act on a single point change—quantify uncertainty, and prefer a controlled test with sufficient power and a confidence interval over eyeballing a dashboard.",
+      "quiz": {
+        "choices": [
+          "Any change on a dashboard is automatically significant",
+          "Use a hypothesis test/confidence interval with adequate sample size, ideally via a controlled experiment, to separate signal from noise",
+          "Statistical significance is the same as practical significance",
+          "Larger samples make results less reliable"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "q100",
+      "topic": "Data Analytics",
+      "difficulty": "hard",
+      "tags": ["storytelling", "communication", "behavioral"],
+      "question": "How do you communicate analytical findings to non-technical stakeholders and drive action?",
+      "answer": "Turning analysis into decisions is a core analyst skill—technical correctness alone isn't enough.\n\nPrinciples:\n- **Lead with the insight and recommendation** (BLUF—bottom line up front), not the methodology. Answer 'so what?' and 'what should we do?' first.\n- **Know your audience**: frame findings in terms of **business impact** (revenue, cost, risk, customers), not p-values or model internals.\n- **Tell a story**: provide context → tension/problem → evidence → recommendation. A clear narrative is more persuasive than a data dump.\n- **Visualize effectively**: use simple, well-labeled charts that make the key point obvious; avoid clutter and jargon.\n- **Quantify uncertainty honestly**: state confidence and caveats without drowning the message.\n- **Make it actionable**: tie insights to specific, feasible next steps and owners.\n- **Anticipate questions** and be ready to drill into detail if asked.\n\nA good analyst translates data into a **decision**. The best insight is worthless if stakeholders don't understand or trust it enough to act—so tailor depth to the audience and always connect numbers to outcomes.",
+      "quiz": {
+        "choices": [
+          "Present every technical detail and statistical test first",
+          "Lead with the insight and business impact, tell a clear story with simple visuals, and give actionable recommendations",
+          "Avoid making any recommendations to stay neutral",
+          "Use as much jargon as possible to sound credible"
+        ],
+        "correctIndex": 1
+      }
+    }
+  ]
+}

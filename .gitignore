@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────
+# SECRETS & PERSONAL DATA — never commit. Keep this section first.
+# ─────────────────────────────────────────────────────────────
+# Env / secrets (all variants)
+.env
+.env.*
+!.env.example
+*.env
+secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+*token*
+*secret*
+!*.example
+
+# Your private learning material (books, notes) — stays local until you say otherwise
+backend/content/library/
+backend/content/generated.json
+
+# Scraper output cache (may contain fetched third-party content)
+backend/data/resources.json
+
+# User-exported progress / notes dumps
+*.progress.json
+notes/
+*.notes.md
+
+# ─────────────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ─────────────────────────────────────────────────────────────
+# Node / frontend
+# ─────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# ─────────────────────────────────────────────────────────────
+# Logs, OS, editor
+# ─────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
