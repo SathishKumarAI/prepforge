@@ -52,6 +52,12 @@ framer-motion, Recharts) · Python FastAPI · flat JSON/Markdown storage · loca
 - **Local PDF/Markdown upload** → `pypdf` extraction → library + feed.
 - Due-count badge on the Learn nav.
 
+### v4 — vault corpus + audit (2026-07-12)
+- **Obsidian vault ingest** — scans the user's real vault (`config/vault.yaml`) of interview PDFs → **1651 unique questions** (from 21 docs, 1545 with answers). **Never duplicates a question**; the same question found in another doc attaches an extra **source** + a supplementary **alt_answer** (not a dupe); curated-bank dups skipped.
+- Each vault question shows a **⛁ vault badge + "From your vault" source pills** → click opens the source PDF as readable markdown (`SourceDoc` modal). `POST /vault/read` is path-traversal-safe.
+- **Session-end audit** → `docs/AUDIT-BACKLOG.md`: **155 Kanban tickets** across 20 areas, incl. real bugs (docs port mismatch, dead persona cache key, deterministic quiz "shuffle", unused difficulty/interest settings).
+- Total bank now ~**1751 questions** (100 curated + 1651 vault).
+
 ---
 
 ## Content pipeline (a core principle)
@@ -95,6 +101,8 @@ Learn · Browse · Flashcards · Quiz · Resources · Reader · Dashboard · Boo
 - Live answer generation needs a key or `ant auth login` (Claude Code consumer subscription can't call the Messages API).
 - Backend runs on **8787** (8000/8010 were taken by the user's other apps).
 - Graph is static-layout (no live drag/zoom yet); sticky notes are a card grid (not draggable yet).
+- **Vault question quality varies** — PDF text extraction is heuristic (heading/`?`-line parsing); some extracted "questions" are noisy fragments. Better parsing / optional LLM cleanup is a backlog item. Dedup + source-tagging are solid.
+- After a vault ingest, reload the app (the question cache is in-memory) to see the new questions.
 
 ## Docs produced
 
