@@ -18,6 +18,7 @@ except Exception:
 import capture as capture_mod
 import generate as generate_mod
 import ingest as ingest_mod
+import vault as vault_mod
 from scrapers import html as html_scraper
 from scrapers import rss as rss_scraper
 from scrapers import youtube as yt_scraper
@@ -48,10 +49,11 @@ def _read_bank(path: Path) -> list[dict]:
 
 
 def _load_questions() -> list[dict]:
-    # curated bank + anything ingested from the user's own markdown/book
+    # curated bank + ingested markdown + source-tagged vault questions
     curated = _read_bank(CONTENT / "questions.json")
     generated = _read_bank(CONTENT / "generated.json")
-    return curated + generated
+    vault_q = _read_bank(CONTENT / "vault_questions.json")
+    return curated + generated + vault_q
 
 
 def _load_resources() -> list[dict]:
@@ -181,6 +183,22 @@ def library():
 def run_ingest():
     """Parse backend/content/library/*.md into pipeline cards (optionally via Claude)."""
     return ingest_mod.ingest()
+
+
+@app.post("/vault/ingest")
+def vault_ingest():
+    """Scan the Obsidian vault (config/vault.yaml) → deduped, source-tagged questions."""
+    return vault_mod.ingest()
+
+
+class VaultReadReq(BaseModel):
+    path: str
+
+
+@app.post("/vault/read")
+def vault_read(req: VaultReadReq):
+    """Read one vault source document (by vault-relative path) as markdown."""
+    return vault_mod.read_source(req.path)
 
 
 @app.post("/scrape/refresh")

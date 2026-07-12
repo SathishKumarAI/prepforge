@@ -5,6 +5,16 @@ export interface Quiz {
   correctIndex: number;
 }
 
+export interface VaultSource {
+  title: string;
+  path: string; // vault-relative path to the source document
+}
+
+export interface AltAnswer {
+  answer: string;
+  source: VaultSource;
+}
+
 export interface Question {
   id: string;
   topic: string;
@@ -13,6 +23,10 @@ export interface Question {
   question: string;
   answer: string;
   quiz?: Quiz;
+  // present on questions ingested from the Obsidian vault
+  sources?: VaultSource[];
+  alt_answers?: AltAnswer[];
+  from_vault?: boolean;
 }
 
 export interface Source {

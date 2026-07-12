@@ -20,6 +20,7 @@ service-account*.json
 # Your private learning material (books, notes) — stays local until you say otherwise
 backend/content/library/
 backend/content/generated.json
+backend/content/vault_questions.json
 
 # Scraper output cache (may contain fetched third-party content)
 backend/data/resources.json

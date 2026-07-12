@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
-import { addFeed, addResource, fetchResources, refreshResources } from "../lib/api";
+import { addFeed, addResource, fetchResources, ingestVault, refreshResources } from "../lib/api";
 import type { Resource } from "../lib/types";
 
 export function Resources() {
@@ -17,6 +17,7 @@ export function Resources() {
   const [reading, setReading] = useState<Resource | null>(null);
   const [showFeed, setShowFeed] = useState(false);
   const [feedUrl, setFeedUrl] = useState("");
+  const [vaultBusy, setVaultBusy] = useState(false);
 
   useEffect(() => {
     fetchResources()
@@ -75,6 +76,23 @@ export function Resources() {
       }
     } catch {
       setMsg("Add feed failed — is the backend running?");
+    }
+  }
+
+  async function runVault() {
+    setVaultBusy(true);
+    setMsg("Scanning your Obsidian vault (PDF extraction can take ~1 min)…");
+    try {
+      const r = await ingestVault();
+      setMsg(
+        r.error
+          ? r.message ?? "Vault ingest failed."
+          : `Ingested ${r.questions} unique questions (${r.with_answers} with answers) from ${r.files_scanned} docs. Reload the app to study them.`
+      );
+    } catch {
+      setMsg("Vault ingest failed — is the backend running?");
+    } finally {
+      setVaultBusy(false);
     }
   }
 
@@ -158,6 +176,21 @@ export function Resources() {
             Substack: paste the publication URL — free posts &amp; previews pull in on Refresh; paywalled full text needs your own login.
           </div>
         )}
+      </div>
+
+      {/* ingest the Obsidian vault into deduped, source-tagged questions */}
+      <div className="mb-5">
+        <button
+          onClick={runVault}
+          disabled={vaultBusy}
+          className="flex items-center gap-2 rounded-xl border border-peach/40 bg-peach/10 px-4 py-2.5 text-sm font-medium text-peach hover:bg-peach/20 disabled:opacity-40"
+        >
+          <span className={vaultBusy ? "animate-spin" : ""}>⛁</span>
+          {vaultBusy ? "Ingesting vault…" : "Ingest Obsidian vault → questions"}
+        </button>
+        <div className="mt-1.5 font-mono text-[11px] text-overlay0">
+          Scans interview PDFs/notes in <code className="text-subtext0">config/vault.yaml</code> → deduped questions with source links.
+        </div>
       </div>
 
       <div className="mb-6 flex gap-2">

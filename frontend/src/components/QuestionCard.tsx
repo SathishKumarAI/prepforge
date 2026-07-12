@@ -1,15 +1,18 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useProgress } from "../hooks/useProgress";
-import type { Question } from "../lib/types";
+import type { Question, VaultSource } from "../lib/types";
 import { ACCENT_BORDER, topicColor } from "../lib/topics";
 import { DifficultyBadge, TopicBadge } from "./Badge";
 import { DeepAnswer } from "./DeepAnswer";
 import { Markdown } from "./Markdown";
+import { SourceDoc } from "./SourceDoc";
 
 export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) {
   const [open, setOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [altOpen, setAltOpen] = useState(false);
+  const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
   const bookmarked = progress.bookmarks.includes(q.id);
   const note = progress.notes[q.id] ?? "";
@@ -30,6 +33,11 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <TopicBadge topic={q.topic} />
             <DifficultyBadge difficulty={q.difficulty} />
+            {q.from_vault && (
+              <span className="pill border-peach/40 text-peach">
+                ⛁ vault{(q.sources?.length ?? 0) > 1 ? ` · ${q.sources!.length} sources` : ""}
+              </span>
+            )}
           </div>
           <h3 className="font-display text-lg font-medium leading-snug text-text">
             {q.question}
@@ -56,7 +64,52 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
             className="overflow-hidden"
           >
             <div className="border-t border-white/[0.05] px-5 py-4">
-              <Markdown>{q.answer}</Markdown>
+              {q.answer ? (
+                <Markdown>{q.answer}</Markdown>
+              ) : q.from_vault ? (
+                <p className="text-sm text-overlay0">
+                  No inline answer was extracted — open the source document below, or generate one.
+                </p>
+              ) : null}
+
+              {/* supplementary answers from other vault documents (not duplicates) */}
+              {q.alt_answers && q.alt_answers.length > 0 && (
+                <div className="mt-3">
+                  <button onClick={() => setAltOpen((o) => !o)} className="pill border-teal/40 text-teal">
+                    + {q.alt_answers.length} supplementary answer{q.alt_answers.length > 1 ? "s" : ""}
+                  </button>
+                  <AnimatePresence>
+                    {altOpen && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                        <div className="mt-3 space-y-3">
+                          {q.alt_answers.map((a, i) => (
+                            <div key={i} className="rounded-xl border border-white/[0.05] bg-crust/40 p-3">
+                              <Markdown>{a.answer}</Markdown>
+                              <button onClick={() => setOpenSource(a.source)} className="mt-2 font-mono text-[11px] text-peach hover:underline">
+                                ⛁ {a.source.title}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* source documents this question came from — click to read */}
+              {q.sources && q.sources.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">From your vault</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {q.sources.map((s) => (
+                      <button key={s.path} onClick={() => setOpenSource(s)} className="pill border-peach/30 text-peach hover:bg-peach/10">
+                        ⛁ {s.title.length > 36 ? s.title.slice(0, 34) + "…" : s.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <DeepAnswer question={q.question} topic={q.topic} qid={q.id} />
 
@@ -106,6 +159,8 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
           </motion.div>
         )}
       </AnimatePresence>
+
+      <SourceDoc source={openSource} onClose={() => setOpenSource(null)} />
     </motion.article>
   );
 }

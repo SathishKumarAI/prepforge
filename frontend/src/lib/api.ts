@@ -57,6 +57,29 @@ export async function readResource(url: string, topic = "AI", title = ""): Promi
   return res.json();
 }
 
+export async function ingestVault(): Promise<{
+  ok?: boolean;
+  error?: string;
+  message?: string;
+  questions?: number;
+  files_scanned?: number;
+  with_answers?: number;
+}> {
+  const res = await fetch(`${BASE}/vault/ingest`, { method: "POST" });
+  if (!res.ok) throw new Error(`vault/ingest → ${res.status}`);
+  return res.json();
+}
+
+export async function vaultReadSource(path: string): Promise<ReadResult> {
+  const res = await fetch(`${BASE}/vault/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) throw new Error(`vault/read → ${res.status}`);
+  return res.json();
+}
+
 export async function uploadResource(file: File, topic = "AI"): Promise<ReadResult> {
   const fd = new FormData();
   fd.append("file", file);
