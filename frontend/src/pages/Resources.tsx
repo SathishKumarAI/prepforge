@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
-import { addResource, fetchResources, refreshResources } from "../lib/api";
+import { addFeed, addResource, fetchResources, refreshResources } from "../lib/api";
 import type { Resource } from "../lib/types";
 
 export function Resources() {
@@ -15,6 +15,8 @@ export function Resources() {
   const [addUrl, setAddUrl] = useState("");
   const [adding, setAdding] = useState(false);
   const [reading, setReading] = useState<Resource | null>(null);
+  const [showFeed, setShowFeed] = useState(false);
+  const [feedUrl, setFeedUrl] = useState("");
 
   useEffect(() => {
     fetchResources()
@@ -57,6 +59,22 @@ export function Resources() {
       setMsg("Add failed — is the backend running?");
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function saveFeed() {
+    const url = feedUrl.trim();
+    if (!url) return;
+    setMsg(null);
+    try {
+      const r = await addFeed(url);
+      setMsg(r.error ? r.message ?? "Bad feed URL." : (r.message ?? "Feed added."));
+      if (!r.error) {
+        setFeedUrl("");
+        setShowFeed(false);
+      }
+    } catch {
+      setMsg("Add feed failed — is the backend running?");
     }
   }
 
@@ -112,6 +130,34 @@ export function Resources() {
         >
           {adding ? "Adding…" : "+ Add"}
         </button>
+      </div>
+
+      {/* subscribe to an RSS / Substack feed */}
+      <div className="mb-5">
+        {!showFeed ? (
+          <button onClick={() => setShowFeed(true)} className="font-mono text-xs text-sapphire hover:underline">
+            + Subscribe to an RSS / Substack feed
+          </button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              value={feedUrl}
+              onChange={(e) => setFeedUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveFeed()}
+              placeholder="yourpub.substack.com  or  any /feed URL…"
+              className="input flex-1 font-mono"
+            />
+            <button onClick={saveFeed} disabled={!feedUrl.trim()} className="rounded-xl border border-sapphire/40 bg-sapphire/10 px-4 py-2.5 text-sm font-medium text-sapphire hover:bg-sapphire/20 disabled:opacity-40">
+              Subscribe
+            </button>
+            <button onClick={() => setShowFeed(false)} className="px-2 text-overlay1 hover:text-text">✕</button>
+          </div>
+        )}
+        {showFeed && (
+          <div className="mt-1.5 font-mono text-[11px] text-overlay0">
+            Substack: paste the publication URL — free posts &amp; previews pull in on Refresh; paywalled full text needs your own login.
+          </div>
+        )}
       </div>
 
       <div className="mb-6 flex gap-2">

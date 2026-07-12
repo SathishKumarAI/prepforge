@@ -129,6 +129,37 @@ def read_resource(req: ReadReq):
     return capture_mod.read(req.url, req.topic, req.title)
 
 
+class FeedReq(BaseModel):
+    url: str
+    name: str = ""
+    topic: str = "AI"
+
+
+@app.post("/sources/feed")
+def add_feed(req: FeedReq):
+    """Append an RSS/Atom feed (e.g. a Substack: yourpub.substack.com/feed) to sources.yaml.
+
+    Paywalled Substack posts only expose free/preview text in the feed; full paid content
+    needs your logged-in session and isn't fetched here.
+    """
+    url = (req.url or "").strip()
+    if not url.startswith(("http://", "https://")):
+        return {"error": "bad_url", "message": "Provide a full http(s) feed URL."}
+    # helpfully complete a bare Substack URL to its feed
+    if "substack.com" in url and "/feed" not in url:
+        url = url.rstrip("/") + "/feed"
+
+    cfg = yaml.safe_load(CONFIG.read_text(encoding="utf-8")) if CONFIG.exists() else {}
+    cfg = cfg or {}
+    feeds = cfg.get("rss") or []
+    if any((f or {}).get("url") == url for f in feeds):
+        return {"ok": True, "message": "Feed already added.", "url": url}
+    feeds.append({"name": req.name.strip() or url, "url": url, "topic": req.topic})
+    cfg["rss"] = feeds
+    CONFIG.write_text(yaml.safe_dump(cfg, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return {"ok": True, "message": "Feed added — hit Refresh to pull posts.", "url": url, "count": len(feeds)}
+
+
 @app.get("/library")
 def library():
     """List the user's ingestable markdown files."""

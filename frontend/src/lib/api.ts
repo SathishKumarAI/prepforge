@@ -57,6 +57,20 @@ export async function readResource(url: string, topic = "AI", title = ""): Promi
   return res.json();
 }
 
+export async function addFeed(
+  url: string,
+  name = "",
+  topic = "AI"
+): Promise<{ ok?: boolean; error?: string; message?: string; url?: string }> {
+  const res = await fetch(`${BASE}/sources/feed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, name, topic }),
+  });
+  if (!res.ok) throw new Error(`feed → ${res.status}`);
+  return res.json();
+}
+
 export async function addResource(
   url: string,
   topic = "AI",
