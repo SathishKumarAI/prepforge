@@ -6,13 +6,29 @@ import { personaHint } from "../lib/settings";
 import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
 
-type Mode = "deep" | "star";
+type Mode = "deep" | "star" | "eli5" | "first_principles";
 type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
 
 const TABS: { mode: Mode; label: string }[] = [
   { mode: "deep", label: "Grounded" },
   { mode: "star", label: "Interview · STAR" },
+  { mode: "eli5", label: "ELI5" },
+  { mode: "first_principles", label: "First-principles" },
 ];
+
+const MODE_TITLE: Record<Mode, string> = {
+  deep: "✦ Grounded answer",
+  star: "★ Interview answer (STAR)",
+  eli5: "◕ Explain like I'm 5",
+  first_principles: "△ From first principles",
+};
+
+const MODE_LOADING: Record<Mode, string> = {
+  deep: "Searching the web & reasoning…",
+  star: "Composing a STAR interview answer…",
+  eli5: "Finding a simple, vivid explanation…",
+  first_principles: "Deriving it from fundamentals…",
+};
 
 // The "how to approach it" legend — teaches the structure so you can reuse it.
 const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
@@ -27,6 +43,17 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
     { tag: "T · Task", desc: "your goal" },
     { tag: "A · Action", desc: "what you did" },
     { tag: "R · Result", desc: "measurable outcome" },
+  ],
+  eli5: [
+    { tag: "Plain words", desc: "no jargon" },
+    { tag: "Analogy", desc: "one that maps to the mechanism" },
+    { tag: "Accurate", desc: "simplified, not wrong" },
+  ],
+  first_principles: [
+    { tag: "Problem", desc: "what it fundamentally solves" },
+    { tag: "Why", desc: "derive, don't recite" },
+    { tag: "Deeper principle", desc: "the underlying law" },
+    { tag: "Insight", desc: "what most people miss" },
   ],
 };
 
@@ -72,7 +99,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8" />
         </svg>
-        Deep answer — grounded &amp; STAR
+        Deep answer — 4 lenses
       </button>
     );
   }
@@ -82,7 +109,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-2xl border border-lavender/20 bg-crust/50 p-4">
       {/* tabs */}
-      <div className="mb-3 flex gap-1.5">
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {TABS.map((t) => (
           <button
             key={t.mode}
@@ -97,7 +124,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
       {slot?.status === "loading" && (
         <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-lavender" />
-          {mode === "deep" ? "Searching the web & reasoning…" : "Composing a STAR interview answer…"}
+          {MODE_LOADING[mode]}
         </div>
       )}
 
@@ -116,7 +143,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
         <AnimatePresence mode="wait">
           <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-lavender">
-              {mode === "deep" ? "✦ Grounded answer" : "★ Interview answer (STAR)"}
+              {MODE_TITLE[mode]}
             </div>
 
             {/* approach legend — small italic tags to internalise the structure */}

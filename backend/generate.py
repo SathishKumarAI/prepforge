@@ -51,6 +51,29 @@ SYSTEM = (
     "- 120-220 words. Markdown allowed. Ground factual/current claims in the web results."
 )
 
+ELI5_SYSTEM = (
+    "Explain this to a smart beginner in plain language. One vivid, concrete analogy that "
+    "actually maps to the mechanism. Define any unavoidable term once, simply. Stay accurate — "
+    "simplified, not wrong. No jargon walls, no equations unless truly needed. 90-160 words, warm "
+    "and clear, like a great teacher who respects the reader."
+)
+
+FP_SYSTEM = (
+    "Answer from first principles like a brilliant researcher. Don't recite the definition — "
+    "derive it: start from the fundamental problem it solves, show WHY it must work the way it "
+    "does, connect it to a deeper principle (optimization, information, geometry, probability), and "
+    "surface one non-obvious insight most people miss. Rigorous and precise, but readable. "
+    "140-220 words. Markdown allowed."
+)
+
+# mode → (system prompt, cache-file suffix, use web search)
+MODES = {
+    "deep": (SYSTEM, "", True),
+    "star": (STAR_SYSTEM, "__star", False),
+    "eli5": (ELI5_SYSTEM, "__eli5", False),
+    "first_principles": (FP_SYSTEM, "__fp", False),
+}
+
 
 def _extract(resp) -> dict:
     """Pull answer text + sources out of a Messages response."""
@@ -132,8 +155,10 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
     ANTHROPIC_AUTH_TOKEN → an `ant auth login` developer profile. A Claude Code
     consumer subscription can't call the Messages API from here.
     """
-    mode = "star" if mode == "star" else "deep"
-    cache_qid = qid if (not qid or mode == "deep") else f"{qid}__star"
+    if mode not in MODES:
+        mode = "deep"
+    system, suffix, use_search = MODES[mode]
+    cache_qid = (qid + suffix) if qid else ""
     if cache_qid:
         cached = _read_answer(cache_qid)
         if cached:
@@ -155,9 +180,8 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
     if persona.strip():
         prompt += f"\n\n(Tailor to the candidate: {persona.strip()})"
     messages = [{"role": "user", "content": prompt}]
-    system = STAR_SYSTEM if mode == "star" else SYSTEM
-    # STAR answers are about delivery, not facts — skip web search (cheaper, faster)
-    tools = [] if mode == "star" else [{"type": "web_search_20260209", "name": "web_search", "max_uses": 4}]
+    # only the grounded "deep" mode searches the web; the rest are cheaper/faster
+    tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 4}] if use_search else []
 
     in_tok = out_tok = 0
     result = {"answer": "", "sources": [], "searches": 0}

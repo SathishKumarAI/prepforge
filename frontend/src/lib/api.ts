@@ -27,7 +27,7 @@ export async function generateAnswer(
   topic: string,
   persona = "",
   qid = "",
-  mode: "deep" | "star" = "deep"
+  mode = "deep"
 ): Promise<GeneratedAnswer> {
   const res = await fetch(`${BASE}/generate/answer`, {
     method: "POST",
