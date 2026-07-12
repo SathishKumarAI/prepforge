@@ -180,9 +180,9 @@ def library():
 
 
 @app.post("/ingest")
-def run_ingest():
-    """Parse backend/content/library/*.md into pipeline cards (optionally via Claude)."""
-    return ingest_mod.ingest()
+def run_ingest(mode: str = "deterministic"):
+    """Parse library markdown into Q&A cards. mode: deterministic | ollama | claude."""
+    return ingest_mod.ingest(mode)
 
 
 @app.post("/vault/ingest")

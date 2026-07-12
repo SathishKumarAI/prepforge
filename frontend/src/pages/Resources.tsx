@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
-import { addFeed, addResource, fetchResources, ingestVault, refreshResources } from "../lib/api";
+import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, refreshResources } from "../lib/api";
 import { toast } from "../components/ui/sonner";
 import type { Resource } from "../lib/types";
 
@@ -19,6 +19,8 @@ export function Resources() {
   const [showFeed, setShowFeed] = useState(false);
   const [feedUrl, setFeedUrl] = useState("");
   const [vaultBusy, setVaultBusy] = useState(false);
+  const [genMode, setGenMode] = useState<"deterministic" | "ollama" | "claude">("deterministic");
+  const [genBusy, setGenBusy] = useState(false);
 
   useEffect(() => {
     fetchResources()
@@ -95,6 +97,23 @@ export function Resources() {
       toast.error("Vault ingest failed — is the backend running?");
     } finally {
       setVaultBusy(false);
+    }
+  }
+
+  async function generateQA() {
+    setGenBusy(true);
+    try {
+      const r = await ingestLibrary(genMode);
+      if (r.error) toast.error(r.error);
+      else
+        toast.success(
+          `Generated ${r.cards} cards from ${r.files} saved docs (${r.mode}${r.model_cards ? `, ${r.model_cards} by model` : ""}). Reload to study.`,
+          { duration: 6000 }
+        );
+    } catch {
+      toast.error("Generation failed — is the backend running?");
+    } finally {
+      setGenBusy(false);
     }
   }
 
@@ -193,6 +212,30 @@ export function Resources() {
         <div className="mt-1.5 font-mono text-[11px] text-overlay0">
           Scans interview PDFs/notes in <code className="text-subtext0">config/vault.yaml</code> → deduped questions with source links.
         </div>
+      </div>
+
+      {/* generate Q&A from saved/uploaded resources, with a generator selector */}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <select
+          value={genMode}
+          onChange={(e) => setGenMode(e.target.value as typeof genMode)}
+          className="input w-auto"
+        >
+          <option value="deterministic">Deterministic (offline)</option>
+          <option value="ollama">Local model (Ollama)</option>
+          <option value="claude">Claude (needs API key)</option>
+        </select>
+        <button
+          onClick={generateQA}
+          disabled={genBusy}
+          className="flex items-center gap-2 rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-mauve hover:bg-mauve/20 disabled:opacity-40"
+        >
+          <span className={genBusy ? "animate-spin" : ""}>✦</span>
+          {genBusy ? "Generating…" : "Generate Q&A from saved resources"}
+        </button>
+        <span className="font-mono text-[11px] text-overlay0">
+          turns captured/uploaded docs (content/library) into study cards
+        </span>
       </div>
 
       <div className="mb-6 flex gap-2">

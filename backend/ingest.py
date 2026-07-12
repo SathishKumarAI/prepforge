@@ -125,13 +125,55 @@ def _llm_card(client: httpx.Client, key: str, source: str, topic: str, heading: 
         return None
 
 
-def ingest() -> dict:
+def _ollama_card(client: httpx.Client, model: str, source: str, topic: str, heading: str, body: str) -> dict | None:
+    """Convert a section into a Q&A card via a local Ollama model. None on failure."""
+    prompt = (
+        "You convert study notes into a single interview flashcard. "
+        "Return ONLY minified JSON with keys: question (string), answer (string, markdown, 60-160 words), "
+        'quiz (object with "choices": 4 strings and "correctIndex": int 0-3). '
+        f"Topic: {topic}. Section heading: {heading}.\n\nNotes:\n{body[:2000]}"
+    )
+    try:
+        resp = client.post(
+            "http://localhost:11434/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False, "format": "json"},
+            timeout=120.0,
+        )
+        resp.raise_for_status()
+        data = json.loads(resp.json().get("response", "").strip())
+        return {
+            "id": _card_id(source, heading),
+            "topic": topic,
+            "difficulty": "medium",
+            "tags": _tags(heading),
+            "question": data["question"],
+            "answer": data["answer"],
+            "quiz": data.get("quiz"),
+            "source_file": source,
+        }
+    except Exception as exc:
+        log.warning("ollama card failed (%s): %s", heading, exc)
+        return None
+
+
+def ingest(mode: str = "deterministic") -> dict:
+    """Turn library markdown into Q&A cards.
+
+    mode: "deterministic" (offline heading-split, no model), "ollama" (local model
+    at localhost:11434), or "claude" (Anthropic API, needs ANTHROPIC_API_KEY).
+    Any model failure falls back to the deterministic card so nothing is lost.
+    """
     LIBRARY.mkdir(parents=True, exist_ok=True)
     files = sorted(LIBRARY.rglob("*.md"))
     key = os.getenv("ANTHROPIC_API_KEY", "").strip()
-    cards: list[dict] = []
+    ollama_model = os.getenv("OLLAMA_MODEL", "llama3.1").strip()
 
-    client = httpx.Client() if key else None
+    use_claude = mode == "claude" and bool(key)
+    use_ollama = mode == "ollama"
+    client = httpx.Client() if (use_claude or use_ollama) else None
+
+    cards: list[dict] = []
+    model_cards = 0
     try:
         for f in files:
             source = str(f.relative_to(LIBRARY))
@@ -139,16 +181,19 @@ def ingest() -> dict:
             md = f.read_text(encoding="utf-8", errors="ignore")
             for heading, body in _split_sections(md):
                 card = None
-                if client and key:
+                if use_claude:
                     card = _llm_card(client, key, source, topic, heading, body)
+                elif use_ollama:
+                    card = _ollama_card(client, ollama_model, source, topic, heading, body)
                 if card is None:
                     card = _deterministic_card(source, topic, heading, body)
+                else:
+                    model_cards += 1
                 cards.append(card)
     finally:
         if client:
             client.close()
 
-    # dedupe by id
     seen, deduped = set(), []
     for c in cards:
         if c["id"] not in seen:
@@ -156,5 +201,6 @@ def ingest() -> dict:
             deduped.append(c)
 
     OUT.write_text(json.dumps({"questions": deduped}, indent=2, ensure_ascii=False), encoding="utf-8")
-    log.info("ingest: %d files → %d cards (llm=%s)", len(files), len(deduped), bool(key))
-    return {"files": len(files), "cards": len(deduped), "llm": bool(key)}
+    effective = "claude" if use_claude else ("ollama" if use_ollama else "deterministic")
+    log.info("ingest: %d files → %d cards (mode=%s, model_cards=%d)", len(files), len(deduped), effective, model_cards)
+    return {"files": len(files), "cards": len(deduped), "mode": effective, "model_cards": model_cards}

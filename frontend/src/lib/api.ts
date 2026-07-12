@@ -57,6 +57,14 @@ export async function readResource(url: string, topic = "AI", title = ""): Promi
   return res.json();
 }
 
+export async function ingestLibrary(
+  mode: "deterministic" | "ollama" | "claude" = "deterministic"
+): Promise<{ files?: number; cards?: number; mode?: string; model_cards?: number; error?: string }> {
+  const res = await fetch(`${BASE}/ingest?mode=${mode}`, { method: "POST" });
+  if (!res.ok) throw new Error(`ingest → ${res.status}`);
+  return res.json();
+}
+
 export async function ingestVault(): Promise<{
   ok?: boolean;
   error?: string;
