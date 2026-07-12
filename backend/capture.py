@@ -7,9 +7,11 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 
 import httpx
+from bs4 import BeautifulSoup
 
 from scrapers import html as html_scraper
 
@@ -18,8 +20,10 @@ log = logging.getLogger("capture")
 BASE = Path(__file__).parent
 DATA = BASE / "data"
 RES = DATA / "resources.json"
+LIBRARY = BASE / "content" / "library"
 
 _YT = ("youtube.com/watch", "youtu.be/", "youtube.com/shorts")
+_UA = "Mozilla/5.0 (compatible; PrepForgeBot/1.0; +local)"
 
 
 def _load() -> list[dict]:
@@ -48,6 +52,74 @@ def _youtube(url: str, topic: str) -> dict:
         "id": url, "kind": "video", "source": "YouTube", "topic": topic,
         "title": title, "url": url, "summary": summary, "published": None, "thumbnail": thumb,
     }
+
+
+def _slug(text: str) -> str:
+    s = re.sub(r"[^a-zA-Z0-9]+", "-", (text or "article").lower()).strip("-")
+    return (s[:60] or "article")
+
+
+def _html_to_markdown(soup: BeautifulSoup) -> str:
+    """Best-effort readable-content extraction → markdown."""
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside", "form", "noscript"]):
+        tag.decompose()
+    root = soup.find("article") or soup.find("main") or soup.body or soup
+    lines: list[str] = []
+    for el in root.find_all(["h1", "h2", "h3", "h4", "p", "li", "pre", "blockquote"]):
+        text = el.get_text(" ", strip=True)
+        if not text or len(text) < 2:
+            continue
+        name = el.name
+        if name in ("h1", "h2"):
+            lines.append(f"\n## {text}\n")
+        elif name in ("h3", "h4"):
+            lines.append(f"\n### {text}\n")
+        elif name == "li":
+            lines.append(f"- {text}")
+        elif name == "pre":
+            lines.append(f"\n```\n{text}\n```\n")
+        elif name == "blockquote":
+            lines.append(f"> {text}")
+        else:
+            lines.append(text)
+    md = "\n".join(lines).strip()
+    md = re.sub(r"\n{3,}", "\n\n", md)
+    return md[:20000]  # cap: keep files sane
+
+
+def read(url: str, topic: str = "AI", title: str = "") -> dict:
+    """Fetch a resource, extract readable markdown, save to library, return content."""
+    url = (url or "").strip()
+    if not url.startswith(("http://", "https://")):
+        return {"error": "bad_url", "message": "Provide a full http(s) URL."}
+
+    if any(k in url for k in _YT):
+        yt = _youtube(url, topic)
+        md = f"# {yt['title']}\n\n{yt['summary']}\n\n[Watch on YouTube]({url})\n"
+        title = title or yt["title"]
+    else:
+        try:
+            with httpx.Client(timeout=15.0, headers={"User-Agent": _UA}, follow_redirects=True) as c:
+                resp = c.get(url)
+                resp.raise_for_status()
+            soup = BeautifulSoup(resp.text, "html.parser")
+            page_title = (soup.title.string if soup.title else None) or title or url
+            title = title or page_title.strip()
+            body = _html_to_markdown(soup)
+            if not body:
+                return {"error": "empty", "message": "Couldn't extract readable content (JS-only or blocked page)."}
+            md = f"# {title}\n\n{body}\n"
+        except Exception as exc:
+            log.warning("read failed: %s", exc)
+            return {"error": "fetch_failed", "message": str(exc)}
+
+    # persist to library as markdown (for ingestion + graph + future use)
+    LIBRARY.mkdir(parents=True, exist_ok=True)
+    fname = f"{_slug(title)}.md"
+    doc = f"---\ntitle: {json.dumps(title)}\nurl: {url}\ntopic: {topic}\nsource: web-capture\n---\n\n{md}"
+    (LIBRARY / fname).write_text(doc, encoding="utf-8")
+    log.info("read+saved: %s", fname)
+    return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
 
 
 def capture(url: str, topic: str = "AI", title: str = "", selection: str = "") -> dict:

@@ -37,6 +37,25 @@ export async function generateAnswer(
   return res.json();
 }
 
+export interface ReadResult {
+  ok?: boolean;
+  title?: string;
+  markdown?: string;
+  saved?: string;
+  error?: string;
+  message?: string;
+}
+
+export async function readResource(url: string, topic = "AI", title = ""): Promise<ReadResult> {
+  const res = await fetch(`${BASE}/resources/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, topic, title }),
+  });
+  if (!res.ok) throw new Error(`read → ${res.status}`);
+  return res.json();
+}
+
 export async function addResource(
   url: string,
   topic = "AI",

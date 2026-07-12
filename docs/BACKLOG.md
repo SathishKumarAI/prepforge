@@ -36,6 +36,9 @@ personal prep tool, not a bloated product.
 
 ## Phase 4 — Remaining (next up)
 
+- [ ] `P1` **STAR interview-answer variant** — per question, a second answer using the STAR method
+  (Situation · Task · Action · Result), shown in the same card as a tab beside the grounded answer.
+  First-person interview delivery. Cache as `content/answers/<qid>__star.md`.
 - [ ] `P1` **URL → clean article to library** — capture currently adds to the *feed*; also write
   a clean Markdown+HTML file into `content/library/` so captures flow through ingestion + the graph.
   Edge cases: paywalled/JS-only (best-effort, flag partial); YouTube transcript when available;

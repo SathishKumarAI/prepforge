@@ -116,6 +116,18 @@ def add_resource(req: CaptureReq):
     return capture_mod.capture(req.url, req.topic, req.title, req.selection)
 
 
+class ReadReq(BaseModel):
+    url: str
+    topic: str = "AI"
+    title: str = ""
+
+
+@app.post("/resources/read")
+def read_resource(req: ReadReq):
+    """Fetch a resource's readable content as markdown + save it to content/library."""
+    return capture_mod.read(req.url, req.topic, req.title)
+
+
 @app.get("/library")
 def library():
     """List the user's ingestable markdown files."""

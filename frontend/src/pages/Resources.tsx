@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
 import { addResource, fetchResources, refreshResources } from "../lib/api";
@@ -13,6 +14,7 @@ export function Resources() {
   const [msg, setMsg] = useState<string | null>(null);
   const [addUrl, setAddUrl] = useState("");
   const [adding, setAdding] = useState(false);
+  const [reading, setReading] = useState<Resource | null>(null);
 
   useEffect(() => {
     fetchResources()
@@ -65,6 +67,7 @@ export function Resources() {
 
   return (
     <div>
+      <ArticleReader resource={reading} onClose={() => setReading(null)} />
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Resource feed</h1>
@@ -124,7 +127,7 @@ export function Resources() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {filtered.map((r, i) => (
-            <ResourceCard key={r.id} r={r} index={i} />
+            <ResourceCard key={r.id} r={r} index={i} onOpen={() => setReading(r)} />
           ))}
         </div>
       )}
@@ -132,17 +135,26 @@ export function Resources() {
   );
 }
 
-function ResourceCard({ r, index }: { r: Resource; index: number }) {
+function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen: () => void }) {
   return (
-    <motion.a
-      href={r.url}
-      target="_blank"
-      rel="noreferrer"
+    <motion.div
+      onClick={onOpen}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className="glass group flex flex-col overflow-hidden rounded-2xl shadow-card transition-transform hover:-translate-y-0.5"
+      className="glass group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl shadow-card transition-transform hover:-translate-y-0.5"
     >
+      {/* open-in-new-tab, top-right; stops the card's in-app open */}
+      <a
+        href={r.url}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        title="Open in a new tab"
+        className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-lg bg-crust/80 text-subtext0 opacity-0 backdrop-blur transition-opacity hover:text-text group-hover:opacity-100"
+      >
+        ↗
+      </a>
       {r.thumbnail ? (
         <div className="relative aspect-video overflow-hidden bg-crust">
           <img src={r.thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -168,9 +180,10 @@ function ResourceCard({ r, index }: { r: Resource; index: number }) {
         <div className="mt-3 flex items-center gap-2 font-mono text-[11px] text-overlay0">
           <span className="text-subtext0">{r.source}</span>
           {r.published && <span>· {r.published.slice(0, 10)}</span>}
+          <span className="ml-auto text-mauve opacity-0 transition-opacity group-hover:opacity-100">open ↵</span>
         </div>
       </div>
-    </motion.a>
+    </motion.div>
   );
 }
 
