@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 
 import yaml
-from fastapi import FastAPI
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 try:
@@ -127,6 +127,13 @@ class ReadReq(BaseModel):
 def read_resource(req: ReadReq):
     """Fetch a resource's readable content as markdown + save it to content/library."""
     return capture_mod.read(req.url, req.topic, req.title)
+
+
+@app.post("/resources/upload")
+async def upload_resource(file: UploadFile = File(...), topic: str = Form("AI")):
+    """Upload a local PDF / .md / .txt → extract markdown → save to library + feed."""
+    data = await file.read()
+    return capture_mod.upload(file.filename or "file", data, topic)
 
 
 class FeedReq(BaseModel):

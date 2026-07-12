@@ -57,6 +57,15 @@ export async function readResource(url: string, topic = "AI", title = ""): Promi
   return res.json();
 }
 
+export async function uploadResource(file: File, topic = "AI"): Promise<ReadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("topic", topic);
+  const res = await fetch(`${BASE}/resources/upload`, { method: "POST", body: fd });
+  if (!res.ok) throw new Error(`upload → ${res.status}`);
+  return res.json();
+}
+
 export async function addFeed(
   url: string,
   name = "",

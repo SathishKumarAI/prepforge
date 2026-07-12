@@ -9,6 +9,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Bookmarks } from "./pages/Bookmarks";
 import { Notes } from "./pages/Notes";
 import { Graph } from "./pages/Graph";
+import { Reader } from "./pages/Reader";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/flashcards" element={<Flashcards />} />
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/resources" element={<Resources />} />
+        <Route path="/reader" element={<Reader />} />
         <Route path="/notes" element={<Notes />} />
         <Route path="/graph" element={<Graph />} />
         <Route path="/dashboard" element={<Dashboard />} />

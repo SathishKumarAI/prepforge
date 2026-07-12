@@ -122,6 +122,66 @@ def read(url: str, topic: str = "AI", title: str = "") -> dict:
     return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
 
 
+def _pdf_to_markdown(data: bytes) -> str:
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    reader = PdfReader(BytesIO(data))
+    parts: list[str] = []
+    for i, page in enumerate(reader.pages, 1):
+        try:
+            text = (page.extract_text() or "").strip()
+        except Exception:
+            text = ""
+        if text:
+            parts.append(f"\n## Page {i}\n\n{text}")
+    md = "\n".join(parts).strip()
+    return re.sub(r"\n{3,}", "\n\n", md)[:60000]
+
+
+def upload(filename: str, data: bytes, topic: str = "AI") -> dict:
+    """Ingest a local file (PDF / .md / .txt) → markdown → save to library + feed."""
+    name = (filename or "file").strip()
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    title = name.rsplit(".", 1)[0] if "." in name else name
+
+    if ext == "pdf":
+        try:
+            body = _pdf_to_markdown(data)
+        except Exception as exc:
+            log.warning("pdf parse failed: %s", exc)
+            return {"error": "pdf_failed", "message": f"Couldn't read PDF: {exc}"}
+        if not body:
+            return {"error": "empty", "message": "No extractable text (scanned/image PDF?)."}
+        kind = "article"
+    elif ext in ("md", "markdown", "txt"):
+        body = data.decode("utf-8", errors="ignore").strip()
+        if not body:
+            return {"error": "empty", "message": "File is empty."}
+        kind = "article"
+    else:
+        return {"error": "bad_type", "message": "Only PDF, .md, or .txt files are supported."}
+
+    md = body if ext in ("md", "markdown") else f"# {title}\n\n{body}\n"
+
+    LIBRARY.mkdir(parents=True, exist_ok=True)
+    fname = f"{_slug(title)}.md"
+    doc = f"---\ntitle: {json.dumps(title)}\nsource: upload:{ext or 'file'}\ntopic: {topic}\n---\n\n{md}"
+    (LIBRARY / fname).write_text(doc, encoding="utf-8")
+
+    # register in the resource feed so it shows alongside web resources
+    item = {
+        "id": f"upload:{fname}", "kind": kind, "source": "Upload", "topic": topic,
+        "title": title, "url": "", "summary": body[:300], "published": None, "thumbnail": None,
+    }
+    resources = [r for r in _load() if r.get("id") != item["id"]]
+    resources.insert(0, item)
+    _save(resources)
+    log.info("uploaded: %s (%s)", fname, ext)
+    return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
+
+
 def capture(url: str, topic: str = "AI", title: str = "", selection: str = "") -> dict:
     url = (url or "").strip()
     if not url.startswith(("http://", "https://")):
