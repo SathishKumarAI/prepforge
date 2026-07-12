@@ -4,6 +4,7 @@ import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
 import { addFeed, addResource, fetchResources, ingestVault, refreshResources } from "../lib/api";
+import { toast } from "../components/ui/sonner";
 import type { Resource } from "../lib/types";
 
 export function Resources() {
@@ -33,9 +34,9 @@ export function Resources() {
       const r = await refreshResources();
       const d = await fetchResources();
       setItems(d.resources);
-      setMsg(`Pulled ${r.count} resources`);
+      toast.success(`Pulled ${r.count} resources`);
     } catch {
-      setMsg("Refresh failed — is the backend running?");
+      toast.error("Refresh failed — is the backend running?");
     } finally {
       setRefreshing(false);
     }
@@ -84,13 +85,14 @@ export function Resources() {
     setMsg("Scanning your Obsidian vault (PDF extraction can take ~1 min)…");
     try {
       const r = await ingestVault();
-      setMsg(
-        r.error
-          ? r.message ?? "Vault ingest failed."
-          : `Ingested ${r.questions} unique questions (${r.with_answers} with answers) from ${r.files_scanned} docs. Reload the app to study them.`
-      );
+      if (r.error) {
+        toast.error(r.message ?? "Vault ingest failed.");
+      } else {
+        toast.success(`Ingested ${r.questions} questions from ${r.files_scanned} docs — reload to study them.`, { duration: 6000 });
+      }
+      setMsg(null);
     } catch {
-      setMsg("Vault ingest failed — is the backend running?");
+      toast.error("Vault ingest failed — is the backend running?");
     } finally {
       setVaultBusy(false);
     }

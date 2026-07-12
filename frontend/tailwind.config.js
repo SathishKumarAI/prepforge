@@ -1,3 +1,5 @@
+import tailwindcssAnimate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -31,6 +33,31 @@ export default {
         sapphire: "rgb(var(--ctp-sapphire) / <alpha-value>)",
         blue: "rgb(var(--ctp-blue) / <alpha-value>)",
         lavender: "rgb(var(--ctp-lavender) / <alpha-value>)",
+        // shadcn/ui semantic tokens → mapped onto the Catppuccin palette
+        background: "rgb(var(--ctp-base) / <alpha-value>)",
+        foreground: "rgb(var(--ctp-text) / <alpha-value>)",
+        card: "rgb(var(--ctp-mantle) / <alpha-value>)",
+        "card-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
+        popover: "rgb(var(--ctp-mantle) / <alpha-value>)",
+        "popover-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
+        primary: "rgb(var(--ctp-mauve) / <alpha-value>)",
+        "primary-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
+        secondary: "rgb(var(--ctp-surface0) / <alpha-value>)",
+        "secondary-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
+        muted: "rgb(var(--ctp-surface0) / <alpha-value>)",
+        "muted-foreground": "rgb(var(--ctp-overlay1) / <alpha-value>)",
+        accent: "rgb(var(--ctp-surface1) / <alpha-value>)",
+        "accent-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
+        destructive: "rgb(var(--ctp-red) / <alpha-value>)",
+        "destructive-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
+        border: "rgb(var(--ctp-surface1) / <alpha-value>)",
+        input: "rgb(var(--ctp-surface1) / <alpha-value>)",
+        ring: "rgb(var(--ctp-mauve) / <alpha-value>)",
+      },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
         display: ['"Fraunces"', "Georgia", "serif"],
@@ -56,5 +83,5 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [tailwindcssAnimate],
 };

@@ -5,6 +5,7 @@ import { generateAnswer } from "../lib/api";
 import { personaHint } from "../lib/settings";
 import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
+import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
 type Mode = "deep" | "star" | "eli5" | "first_principles";
 type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
@@ -108,18 +109,16 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-2xl border border-lavender/20 bg-crust/50 p-4">
-      {/* tabs */}
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button
-            key={t.mode}
-            onClick={() => switchTo(t.mode)}
-            className={`pill transition-all ${mode === t.mode ? "border-lavender/50 bg-lavender/10 text-text" : "text-subtext0 hover:text-subtext1"}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* tabs (shadcn/Radix) */}
+      <Tabs value={mode} onValueChange={(v) => switchTo(v as Mode)} className="mb-3">
+        <TabsList>
+          {TABS.map((t) => (
+            <TabsTrigger key={t.mode} value={t.mode}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {slot?.status === "loading" && (
         <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">

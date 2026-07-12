@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from "react-router-dom";
 import { useApplyTheme } from "./hooks/useApplyTheme";
 import { Layout } from "./components/Layout";
+import { Toaster } from "./components/ui/sonner";
 import { Learn } from "./pages/Learn";
 import { Browse } from "./pages/Browse";
 import { Flashcards } from "./pages/Flashcards";
@@ -28,6 +29,15 @@ function NotFound() {
 
 export default function App() {
   useApplyTheme();
+  return (
+    <>
+      <Toaster />
+      <LayoutRoutes />
+    </>
+  );
+}
+
+function LayoutRoutes() {
   return (
     <Layout>
       <Routes>

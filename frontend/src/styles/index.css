@@ -5,6 +5,7 @@
 /* Catppuccin Mocha (default / dark). RGB channels for rgb(var / alpha) in Tailwind. */
 :root {
   color-scheme: dark;
+  --radius: 0.75rem;
   --ctp-base: 30 30 46;
   --ctp-mantle: 24 24 37;
   --ctp-crust: 17 17 27;
