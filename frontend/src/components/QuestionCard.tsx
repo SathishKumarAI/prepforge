@@ -4,6 +4,7 @@ import { useProgress } from "../hooks/useProgress";
 import type { Question } from "../lib/types";
 import { ACCENT_BORDER, topicColor } from "../lib/topics";
 import { DifficultyBadge, TopicBadge } from "./Badge";
+import { DeepAnswer } from "./DeepAnswer";
 import { Markdown } from "./Markdown";
 
 export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) {
@@ -56,6 +57,8 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
           >
             <div className="border-t border-white/[0.05] px-5 py-4">
               <Markdown>{q.answer}</Markdown>
+
+              <DeepAnswer question={q.question} topic={q.topic} />
 
               {q.tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-1.5">

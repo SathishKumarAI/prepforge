@@ -15,6 +15,28 @@ export interface Question {
   quiz?: Quiz;
 }
 
+export interface Source {
+  title: string;
+  url: string;
+}
+
+export interface AnswerMeta {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  web_searches: number;
+  cost_usd: number;
+}
+
+export interface GeneratedAnswer {
+  answer?: string;
+  sources?: Source[];
+  meta?: AnswerMeta;
+  error?: string;
+  message?: string;
+}
+
 export interface Resource {
   id: string;
   kind: "video" | "article";

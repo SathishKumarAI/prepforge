@@ -15,6 +15,7 @@ try:
 except Exception:
     pass
 
+import generate as generate_mod
 import ingest as ingest_mod
 from scrapers import html as html_scraper
 from scrapers import rss as rss_scraper
@@ -83,6 +84,20 @@ def question(qid: str):
 def resources():
     res = _load_resources()
     return {"resources": res, "count": len(res)}
+
+
+from pydantic import BaseModel
+
+
+class GenerateReq(BaseModel):
+    question: str
+    topic: str = "AI"
+
+
+@app.post("/generate/answer")
+def generate_answer(req: GenerateReq):
+    """Grounded, anti-slop answer + Perplexity-style token/cost/source metadata."""
+    return generate_mod.generate(req.question, req.topic)
 
 
 @app.get("/library")
