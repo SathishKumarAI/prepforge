@@ -26,12 +26,13 @@ export async function generateAnswer(
   question: string,
   topic: string,
   persona = "",
-  qid = ""
+  qid = "",
+  mode: "deep" | "star" = "deep"
 ): Promise<GeneratedAnswer> {
   const res = await fetch(`${BASE}/generate/answer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, topic, persona, qid }),
+    body: JSON.stringify({ question, topic, persona, qid, mode }),
   });
   if (!res.ok) throw new Error(`generate → ${res.status}`);
   return res.json();

@@ -95,12 +95,13 @@ class GenerateReq(BaseModel):
     topic: str = "AI"
     persona: str = ""
     qid: str = ""
+    mode: str = "deep"  # "deep" (grounded) or "star" (STAR interview answer)
 
 
 @app.post("/generate/answer")
 def generate_answer(req: GenerateReq):
-    """Grounded answer + metadata. Cache-first (reads content/answers/*.md), no API call on a hit."""
-    return generate_mod.generate(req.question, req.topic, req.persona, req.qid)
+    """Answer + metadata. Cache-first (reads content/answers/*.md), no API call on a hit."""
+    return generate_mod.generate(req.question, req.topic, req.persona, req.qid, req.mode)
 
 
 class CaptureReq(BaseModel):
