@@ -1,5 +1,5 @@
 import Fuse from "fuse.js";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QuestionCard } from "../components/QuestionCard";
 import { Empty, Loader } from "../components/States";
 import { useQuestions } from "../hooks/useQuestions";
@@ -12,6 +12,21 @@ export function Browse() {
   const [topic, setTopic] = useState<string | null>(null);
   const [diff, setDiff] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // press "/" anywhere (outside a text field) to jump to search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      const typing = el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (typing) return;
+      e.preventDefault();
+      searchRef.current?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const fuse = useMemo(
     () =>
@@ -51,11 +66,15 @@ export function Browse() {
           </svg>
         </span>
         <input
+          ref={searchRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search questions, answers, tags…"
-          className="glass w-full rounded-xl py-3.5 pl-11 pr-4 font-mono text-sm text-text outline-none placeholder:text-overlay0 focus:border-mauve/40"
+          className="glass w-full rounded-xl py-3.5 pl-11 pr-12 font-mono text-sm text-text outline-none placeholder:text-overlay0 focus:border-mauve/40"
         />
+        <kbd className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rounded border border-white/10 bg-crust px-1.5 py-0.5 font-mono text-[11px] text-overlay0">
+          /
+        </kbd>
       </div>
 
       {/* filters */}
