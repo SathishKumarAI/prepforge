@@ -22,85 +22,41 @@ personal prep tool, not a bloated product.
 - [x] **Per-answer metadata (Perplexity-style)** — model, tokens in/out, USD cost, real sources
 - [x] Secrets-first `.gitignore`, public GitHub repo, docs (architecture/pipeline/prompts)
 
----
+## ✅ Shipped — v2 (2026-07-11)
 
-## Phase 2 — Personalization & capture (next)
-
-### 2.1 Settings + Profile `P1`
-User clicks a gear → panel with **profile** (name, target role, seniority) + **interests /
-question preferences** (topics, difficulty, companies) stored in localStorage. Feeds the
-generator persona and the Learn session mix.
-- **Edge cases:** empty profile (use neutral defaults); interests that match zero questions
-  (fall back to all); migrating old localStorage (merge with defaults, never overwrite silently);
-  very long free-text (cap length).
-
-### 2.2 Sticky notes `P1`
-A draggable, always-available note layer. Create colored sticky, pin to a topic or free-float,
-persist in localStorage.
-- **Edge cases:** off-screen position after window resize (clamp into viewport); empty note on
-  blur (auto-delete); localStorage quota (cap count, warn); z-order on overlap.
-
-### 2.3 Voice notes `P2`
-Record a spoken note (Web Speech API for live transcript, or store audio blob in IndexedDB).
-Attach to a question or the sticky layer; show transcript + playback.
-- **Edge cases:** mic permission denied (graceful message + text fallback); browser without
-  SpeechRecognition (record audio only); long recordings (size cap + warn); tab backgrounded
-  mid-record; blob cleanup on delete.
+- [x] **Settings + profile** — role, seniority, interests, difficulty → feeds generator persona + study mix
+- [x] **Sticky notes + voice notes** — Web Speech transcript + IndexedDB audio, editable colored cards
+- [x] **Knowledge graph** (notes: tags + `[[wikilinks]]`) **+ learning graph** (question prerequisites), self-contained force layout
+- [x] **Manual "Add by URL"** capture (YouTube oEmbed + article scrape) → `POST /resources/add`
+- [x] **Browser extension** — local unpacked MV3 clipper (localhost-only, click-scoped, offline queue)
+- [x] **Deep-answer cache as Markdown** — `content/answers/*.md`, portable/Obsidian-friendly; served with **no API call**; live gen falls back on miss and persists
+- [x] Credential-flexible generation: `ANTHROPIC_API_KEY` **or** `ant auth login`
 
 ---
 
-## Phase 3 — Knowledge graph (the backbone)
+## Phase 4 — Remaining (next up)
 
-### 3.1 Note model + graph store `P1`
-Every note (typed, voice-transcribed, from a question, or ingested) becomes a **node**. Nodes link
-by shared tags/topics, `[[wikilinks]]`, and question references → a knowledge graph. Store as JSON
-(nodes + edges), progress-style.
-- **Edge cases:** orphan nodes (still show, unlinked); circular links (fine — it's a graph, not a
-  tree); dangling `[[link]]` to a non-existent note (render as "create" stub); dedupe by id;
-  deleting a node re-points/removes its edges cleanly.
+- [ ] `P1` **URL → clean article to library** — capture currently adds to the *feed*; also write
+  a clean Markdown+HTML file into `content/library/` so captures flow through ingestion + the graph.
+  Edge cases: paywalled/JS-only (best-effort, flag partial); YouTube transcript when available;
+  giant pages (truncate); duplicate URL (update); non-article URLs (clear reject).
+- [ ] `P1` **Author remaining deep answers** — 40 shipped as `.md`; fill the other 60 (batches),
+  sources only where canonical.
+- [ ] `P2` **Obsidian-compatible export** — notes + answers export as a vault folder (YAML frontmatter,
+  `[[wikilinks]]`). Edge cases: filename sanitization/collisions; frontmatter escaping; stable slugs.
+- [ ] `P2` **Highlight-to-flashcard** from ingested books/PDFs (idea from RemNote) — tighten read→recall.
+- [ ] `P2` **FSRS scheduler** option (20–30% fewer reviews than SM-2; competitors moved to it).
+- [ ] `P2` Draggable sticky board (positions persisted, clamp on resize) + graph pan/zoom + mobile list fallback.
+- [ ] `P2` Export/import all progress + notes as one JSON (backup/restore).
+- [ ] `P3` Mock-interview chat (adaptive, graded) over a topic.
+- [ ] `P3` Runnable SQL/Python cells inside DS/analytics answers (idea from StrataScratch).
+- [ ] `P3` PWA / offline install · cost-budget guard (running total, monthly cap).
 
-### 3.2 Graph view `P1`
-Interactive force-directed graph (canvas/SVG) — nodes = notes/topics, edges = links. Click a node
-to open it; filter by topic; highlight the neighborhood. Obsidian-style.
-- **Edge cases:** large graphs (cap rendered nodes / cluster); performance (throttle simulation,
-  freeze on idle); a single isolated node (center it); mobile (pan/zoom + fallback list view).
-
----
-
-## Phase 4 — Capture from the web
-
-### 4.1 URL → clean article `P1`
-Paste a YouTube link or blog URL → backend scrapes → produces **clean Markdown + HTML**
-(readable, whitespace-normalized, per length/space requirement). Saved into `content/library/`
-so it flows through ingestion + the graph.
-- **Edge cases:** paywalled / JS-only pages (best-effort, flag partial); YouTube (pull
-  title/description/transcript when available, not the player); giant pages (truncate + note);
-  duplicate URL (update, don't duplicate); non-article URLs (reject with a clear message).
-
-### 4.2 Obsidian-compatible export `P2`
-Notes + ingested articles export as Obsidian-flavored Markdown (YAML frontmatter, `[[wikilinks]]`,
-tags) into a vault folder. So the graph doubles as an Obsidian vault.
-- **Edge cases:** filename sanitization (illegal chars, collisions); frontmatter escaping; links
-  that resolve differently in Obsidian vs app (keep slugs stable); round-trip safety (re-import
-  doesn't corrupt).
-
-### 4.3 Browser extension (Chrome/Brave) `P2`
-One-click "Send to PrepForge" from any page → POSTs the URL/selection to the backend's capture
-endpoint. On next app open, sources auto-refresh and enter the pipeline.
-- **Edge cases:** backend offline when clicked (queue locally in the extension, retry); CORS/auth
-  (local token); duplicate captures; huge selections; MV3 service-worker lifecycle; only send
-  URL+selection, never full-page dumps by default.
-
----
-
-## Phase 5 — Polish
-
-- [ ] `P2` Richer UI/UX pass — micro-interactions, empty states, keyboard shortcuts everywhere
-- [ ] `P2` FSRS scheduler option (20–30% fewer reviews than SM-2)
-- [ ] `P2` Export/import all progress + notes as one JSON (backup/restore)
-- [ ] `P3` Mock-interview chat (adaptive, graded) over a topic
-- [ ] `P3` PWA / offline install
-- [ ] `P3` Cost budget guard — cap monthly generation spend, show running total
+> **Competitive note (2026-07-11 scan):** no shipping product unites ML/DS interview Q&A + SM-2 +
+> Obsidian-style graph + Perplexity-style *cited, cost-metered* AI answers, local-first. Closest partials:
+> RemNote (SR+graph), Recall (graph+AI+quizzes, cloud), Firecode (interview+SM-2, coding-only).
+> Our moat = the integration + the **cited/cost-metered deep-answer engine**; SR/flashcards/note-graphs
+> alone are commoditized (Anki, Obsidian, Logseq). Full report in the chat log.
 
 ---
 
