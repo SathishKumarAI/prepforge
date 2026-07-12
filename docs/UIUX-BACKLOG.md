@@ -89,7 +89,7 @@ checkbox tickets, no priority labels. Checked items are done this session.
 - [ ] Group the 11 nav items into sections (Study / Content / Insights).
 - [ ] Show current section title in a top bar on mobile.
 - [ ] Breadcrumb or back affordance inside modals/readers.
-- [ ] Badge counts on nav (due on Learn ✓; add saved count on Bookmarks, notes on Notes).
+- [x] Badge counts on nav — due on Learn, saved on Bookmarks, notes on Notes.
 - [ ] Persist last-visited tab per page (answer lens, graph mode, reader source).
 - [ ] Active-route highlight in the mobile top-nav.
 - [ ] Collapsible sidebar for more reading room.

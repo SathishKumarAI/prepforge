@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { SettingsPanel } from "./SettingsPanel";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
+import { useNotes } from "../hooks/useNotes";
 import { isDue } from "../lib/srs";
 
 interface NavItem {
@@ -30,12 +31,20 @@ export function Layout({ children }: { children: ReactNode }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { questions } = useQuestions();
   const { progress } = useProgress();
+  const { notes } = useNotes();
 
   // cards due today for spaced repetition — surfaced as a nav badge
   const dueCount = useMemo(
     () => questions.filter((q) => { const c = progress.srs[q.id]; return c && c.seen && isDue(c); }).length,
     [questions, progress.srs]
   );
+
+  function navBadge(to: string): number | null {
+    if (to === "/learn") return dueCount || null;
+    if (to === "/bookmarks") return progress.bookmarks.length || null;
+    if (to === "/notes") return notes.length || null;
+    return null;
+  }
   return (
     <div className="relative z-10 flex min-h-screen">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -82,9 +91,9 @@ export function Layout({ children }: { children: ReactNode }) {
                     >
                       {item.label}
                     </span>
-                    {item.to === "/learn" && dueCount > 0 && (
+                    {navBadge(item.to) !== null && (
                       <span className="relative z-10 ml-auto rounded-full bg-mauve/20 px-2 py-0.5 font-mono text-[10px] font-semibold text-mauve">
-                        {dueCount}
+                        {navBadge(item.to)}
                       </span>
                     )}
                   </div>
