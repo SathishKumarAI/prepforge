@@ -1,5 +1,6 @@
-// User profile + interests. Local-only. Feeds the generator persona and Learn mix.
+// User profile + interests + appearance. Local-only. Feeds the generator persona and Learn mix.
 import { load, save } from "./storage";
+import type { TextSize, ThemeMode } from "./theme";
 
 export interface Settings {
   name: string;
@@ -8,6 +9,8 @@ export interface Settings {
   interests: string[]; // topic names the user cares about
   difficulty: ("easy" | "medium" | "hard")[]; // preferred difficulties (empty = all)
   companies: string; // free text, capped
+  theme: ThemeMode; // appearance
+  textSize: TextSize; // global text scale
 }
 
 export const EMPTY_SETTINGS: Settings = {
@@ -17,6 +20,8 @@ export const EMPTY_SETTINGS: Settings = {
   interests: [],
   difficulty: [],
   companies: "",
+  theme: "mocha",
+  textSize: "base",
 };
 
 const MAX_TEXT = 200;
@@ -29,6 +34,8 @@ export function loadSettings(): Settings {
   s.companies = (s.companies ?? "").slice(0, MAX_TEXT);
   s.interests = Array.isArray(s.interests) ? s.interests : [];
   s.difficulty = Array.isArray(s.difficulty) ? s.difficulty : [];
+  s.theme = s.theme ?? "mocha";
+  s.textSize = s.textSize ?? "base";
   return s;
 }
 

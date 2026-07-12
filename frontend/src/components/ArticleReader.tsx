@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { readResource, type ReadResult } from "../lib/api";
 import type { Resource } from "../lib/types";
 import { TopicBadge } from "./Badge";
@@ -10,6 +11,7 @@ import { Markdown } from "./Markdown";
 export function ArticleReader({ resource, onClose }: { resource: Resource | null; onClose: () => void }) {
   const [data, setData] = useState<ReadResult | null>(null);
   const [loading, setLoading] = useState(false);
+  useEscapeKey(!!resource, onClose);
 
   useEffect(() => {
     if (!resource) return;
@@ -57,7 +59,7 @@ export function ArticleReader({ resource, onClose }: { resource: Resource | null
                 >
                   ↗ New tab
                 </a>
-                <button onClick={onClose} className="text-overlay1 hover:text-text" title="Close">✕</button>
+                <button onClick={onClose} aria-label="Close reader" className="text-overlay1 hover:text-text" title="Close">✕</button>
               </div>
             </div>
 

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { vaultReadSource, type ReadResult } from "../lib/api";
 import { Markdown } from "./Markdown";
 
@@ -8,6 +9,7 @@ import { Markdown } from "./Markdown";
 export function SourceDoc({ source, onClose }: { source: { title: string; path: string } | null; onClose: () => void }) {
   const [data, setData] = useState<ReadResult | null>(null);
   const [loading, setLoading] = useState(false);
+  useEscapeKey(!!source, onClose);
 
   useEffect(() => {
     if (!source) return;
@@ -43,7 +45,7 @@ export function SourceDoc({ source, onClose }: { source: { title: string; path: 
                 <h2 className="font-display text-xl font-semibold leading-tight text-text">{data?.title ?? source.title}</h2>
                 <div className="mt-1 truncate font-mono text-[11px] text-overlay0">{source.path}</div>
               </div>
-              <button onClick={onClose} className="shrink-0 text-overlay1 hover:text-text">✕</button>
+              <button onClick={onClose} aria-label="Close document" className="shrink-0 text-overlay1 hover:text-text">✕</button>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto rounded-2xl border border-white/[0.05] bg-crust/40 p-5">

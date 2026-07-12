@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 import { useQuestions } from "../hooks/useQuestions";
 import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
+import { TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
 
 const SENIORITY: Settings["seniority"][] = ["junior", "mid", "senior", "staff"];
 const DIFFS: ("easy" | "medium" | "hard")[] = ["easy", "medium", "hard"];
@@ -9,6 +11,7 @@ const DIFFS: ("easy" | "medium" | "hard")[] = ["easy", "medium", "hard"];
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { settings, update, reset } = useSettings();
   const { topics } = useQuestions();
+  useEscapeKey(open, onClose);
 
   function toggleInterest(t: string) {
     const has = settings.interests.includes(t);
@@ -39,10 +42,26 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-2xl font-semibold text-text">Settings</h2>
-              <button onClick={onClose} className="text-overlay1 hover:text-text">✕</button>
+              <button onClick={onClose} aria-label="Close settings" className="text-overlay1 hover:text-text">✕</button>
             </div>
 
             <div className="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
+              <Field label="Theme">
+                <div className="flex flex-wrap gap-2">
+                  {THEME_OPTIONS.map((t) => (
+                    <Chip key={t.value} active={settings.theme === t.value} onClick={() => update({ theme: t.value })} label={t.label} />
+                  ))}
+                </div>
+              </Field>
+
+              <Field label="Text size">
+                <div className="flex flex-wrap gap-2">
+                  {TEXT_SIZES.map((t) => (
+                    <Chip key={t.value} active={settings.textSize === t.value} onClick={() => update({ textSize: t.value })} label={t.label} />
+                  ))}
+                </div>
+              </Field>
+
               <Field label="Name">
                 <input
                   value={settings.name}

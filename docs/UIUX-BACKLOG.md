@@ -9,7 +9,7 @@ checkbox tickets, no priority labels. Checked items are done this session.
 - [x] Respect `prefers-reduced-motion` — disable framer-motion/CSS animation for users who ask.
 - [ ] `aria-label` on every icon-only button (new-tab ↗, close ✕, color dots, gear, delete).
 - [ ] Trap focus inside modals (SettingsPanel, ArticleReader, SourceDoc); restore on close.
-- [ ] `Esc` closes every modal (currently only backdrop-click).
+- [x] `Esc` closes every modal (SettingsPanel, ArticleReader, SourceDoc via `useEscapeKey`).
 - [ ] Make card expanders real `<button aria-expanded>` with proper roles.
 - [ ] Ensure all text meets WCAG AA contrast (audit overlay0 on mantle).
 - [ ] Add skip-to-content link for keyboard users.
@@ -65,8 +65,9 @@ checkbox tickets, no priority labels. Checked items are done this session.
 - [ ] Number formatting (tokens, counts) with `tabular-nums`.
 
 ## Color, theme & contrast
-- [ ] Add a light theme (currently dark-locked) + system/`data-theme` toggle.
-- [ ] Persist theme choice in settings.
+- [x] Add a light theme (Catppuccin Latte) + Dark/Light/System toggle via CSS-var palette.
+- [x] Persist theme choice in settings (localStorage, applied on load).
+- [x] Global text-size control (S/M/L/XL) in Settings — scales all card/body text.
 - [ ] Reduce accent-color sprawl — define a semantic palette (primary/success/warn/danger/info).
 - [ ] Use one accent per topic consistently everywhere (badges, graph, charts match).
 - [ ] Improve disabled-state contrast (currently opacity-40 is too faint).
@@ -145,4 +146,12 @@ checkbox tickets, no priority labels. Checked items are done this session.
 - [ ] Empty-bank prompt to ingest the vault or take a quiz.
 - [ ] Subtle confetti/checkmark on finishing a Learn session or quiz.
 - [ ] Contextual tips ("press / to search") that dismiss permanently.
-- [ ] A polished 404 / unknown-route page.
+- [x] A polished 404 / unknown-route page.
+
+## Advanced component system (shadcn/ui)
+- [ ] Adopt **shadcn/ui** (Radix + Tailwind) themed to Catppuccin for richer, accessible primitives.
+- [ ] Migrate Dialog/Modal, Tabs, Tooltip, Dropdown, Popover, Command palette to shadcn.
+- [ ] shadcn Sonner toasts for the global notification system.
+- [ ] shadcn Card/Button/Badge/Input variants → replace bespoke inline styles.
+- [ ] shadcn Scroll-area, Collapsible, Accordion for readers and long content.
+- [ ] shadcn Sheet for mobile modals; Resizable panels for the graph/reader split.
