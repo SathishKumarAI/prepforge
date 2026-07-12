@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
 import { NavLink, useLocation } from "react-router-dom";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { SettingsPanel } from "./SettingsPanel";
+import { useProgress } from "../hooks/useProgress";
+import { useQuestions } from "../hooks/useQuestions";
+import { isDue } from "../lib/srs";
 
 interface NavItem {
   to: string;
@@ -25,6 +28,14 @@ const NAV: NavItem[] = [
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { questions } = useQuestions();
+  const { progress } = useProgress();
+
+  // cards due today for spaced repetition — surfaced as a nav badge
+  const dueCount = useMemo(
+    () => questions.filter((q) => { const c = progress.srs[q.id]; return c && c.seen && isDue(c); }).length,
+    [questions, progress.srs]
+  );
   return (
     <div className="relative z-10 flex min-h-screen">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
@@ -71,6 +82,11 @@ export function Layout({ children }: { children: ReactNode }) {
                     >
                       {item.label}
                     </span>
+                    {item.to === "/learn" && dueCount > 0 && (
+                      <span className="relative z-10 ml-auto rounded-full bg-mauve/20 px-2 py-0.5 font-mono text-[10px] font-semibold text-mauve">
+                        {dueCount}
+                      </span>
+                    )}
                   </div>
                 )}
               </NavLink>
