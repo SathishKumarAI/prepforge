@@ -21,12 +21,13 @@ export interface Source {
 }
 
 export interface AnswerMeta {
-  model: string;
-  input_tokens: number;
-  output_tokens: number;
-  total_tokens: number;
-  web_searches: number;
-  cost_usd: number;
+  model?: string;
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+  web_searches?: number;
+  cost_usd?: number;
+  cached?: boolean; // served from a pre-written .md, no API call
 }
 
 export interface GeneratedAnswer {

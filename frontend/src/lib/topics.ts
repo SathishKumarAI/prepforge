@@ -30,6 +30,8 @@ export const ACCENT_TEXT: Record<string, string> = {
   yellow: "text-yellow",
   red: "text-red",
   lavender: "text-lavender",
+  sky: "text-sky",
+  pink: "text-pink",
   subtext0: "text-subtext0",
 };
 
@@ -42,6 +44,8 @@ export const ACCENT_BORDER: Record<string, string> = {
   yellow: "border-yellow/40",
   red: "border-red/40",
   lavender: "border-lavender/40",
+  sky: "border-sky/40",
+  pink: "border-pink/40",
   subtext0: "border-subtext0/40",
 };
 
@@ -54,5 +58,21 @@ export const ACCENT_DOT: Record<string, string> = {
   yellow: "bg-yellow",
   red: "bg-red",
   lavender: "bg-lavender",
+  sky: "bg-sky",
+  pink: "bg-pink",
   subtext0: "bg-subtext0",
+};
+
+export const ACCENT_HEX: Record<string, string> = {
+  mauve: "#cba6f7",
+  blue: "#89b4fa",
+  teal: "#94e2d5",
+  peach: "#fab387",
+  green: "#a6e3a1",
+  yellow: "#f9e2af",
+  red: "#f38ba8",
+  lavender: "#b4befe",
+  sky: "#89dceb",
+  pink: "#f5c2e7",
+  subtext0: "#a6adc8",
 };

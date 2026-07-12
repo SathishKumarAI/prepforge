@@ -61,6 +61,9 @@ body::before {
   .pill {
     @apply inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] px-2.5 py-1 text-xs font-mono tracking-tight;
   }
+  .input {
+    @apply w-full rounded-xl border border-white/[0.07] bg-crust/60 px-3 py-2.5 text-sm text-text outline-none placeholder:text-overlay0 focus:border-mauve/40;
+  }
   .prose-answer {
     @apply text-subtext1 leading-relaxed;
   }

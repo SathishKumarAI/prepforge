@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { NavLink, useLocation } from "react-router-dom";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { SettingsPanel } from "./SettingsPanel";
 
 interface NavItem {
   to: string;
@@ -14,14 +15,18 @@ const NAV: NavItem[] = [
   { to: "/flashcards", label: "Flashcards", icon: <IconCards /> },
   { to: "/quiz", label: "Quiz", icon: <IconTarget /> },
   { to: "/resources", label: "Resources", icon: <IconFeed /> },
+  { to: "/notes", label: "Notes", icon: <IconNote /> },
+  { to: "/graph", label: "Graph", icon: <IconGraph /> },
   { to: "/dashboard", label: "Dashboard", icon: <IconChart /> },
   { to: "/bookmarks", label: "Bookmarks", icon: <IconBookmark /> },
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
   return (
     <div className="relative z-10 flex min-h-screen">
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {/* sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-white/[0.05] px-5 py-7 md:flex">
         <div>
@@ -72,11 +77,20 @@ export function Layout({ children }: { children: ReactNode }) {
           </nav>
         </div>
 
-        <div className="px-2 font-mono text-[10px] leading-relaxed text-overlay0">
-          <div className="mb-1 h-px w-full bg-white/[0.05]" />
-          local-first · no login
-          <br />
-          progress saved in browser
+        <div>
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="mb-3 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-subtext0 transition-colors hover:bg-surface0/60 hover:text-text"
+          >
+            <IconGear />
+            <span className="font-medium">Settings</span>
+          </button>
+          <div className="px-2 font-mono text-[10px] leading-relaxed text-overlay0">
+            <div className="mb-1 h-px w-full bg-white/[0.05]" />
+            local-first · no login
+            <br />
+            progress saved in browser
+          </div>
         </div>
       </aside>
 
@@ -129,3 +143,6 @@ function IconFeed() { return base({ children: (<><path d="M4 11a9 9 0 0 1 9 9" /
 function IconChart() { return base({ children: (<><path d="M3 3v18h18" /><path d="M7 15l3-4 3 2 4-6" /></>) }); }
 function IconBookmark() { return base({ children: (<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />) }); }
 function IconSpark() { return base({ children: (<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />) }); }
+function IconNote() { return base({ children: (<><path d="M4 4h16v12l-4 4H4z" /><path d="M16 20v-4h4" /></>) }); }
+function IconGraph() { return base({ children: (<><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="8" r="2.5" /><circle cx="9" cy="18" r="2.5" /><path d="M8 7l8 1M8 8l1 8" /></>) }); }
+function IconGear() { return base({ children: (<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" /></>) }); }

@@ -1,18 +1,21 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { useSettings } from "../hooks/useSettings";
 import { generateAnswer } from "../lib/api";
+import { personaHint } from "../lib/settings";
 import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
 
 // Grounded, anti-slop answer with Perplexity-style token/cost/source metadata.
-export function DeepAnswer({ question, topic }: { question: string; topic: string }) {
+export function DeepAnswer({ question, topic, qid }: { question: string; topic: string; qid: string }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
   const [data, setData] = useState<GeneratedAnswer | null>(null);
+  const { settings } = useSettings();
 
   async function run() {
     setState("loading");
     try {
-      const res = await generateAnswer(question, topic);
+      const res = await generateAnswer(question, topic, personaHint(settings), qid);
       setData(res);
     } catch (e) {
       setData({ error: "network", message: String(e) });
@@ -48,9 +51,9 @@ export function DeepAnswer({ question, topic }: { question: string; topic: strin
     return (
       <div className="mt-4 rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
         {data.message ?? "Generation failed."}
-        {data.error === "no_api_key" && (
+        {data.error === "no_credentials" && (
           <div className="mt-1 font-mono text-xs text-maroon">
-            Add ANTHROPIC_API_KEY to backend/.env, then restart the backend.
+            Add ANTHROPIC_API_KEY to backend/.env, or run `ant auth login`, then restart the backend.
           </div>
         )}
       </div>
@@ -67,10 +70,13 @@ export function DeepAnswer({ question, topic }: { question: string; topic: strin
       {/* metadata bar — like Perplexity's cost/model footer */}
       {data?.meta && (
         <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/[0.05] pt-3">
-          <Meta label={data.meta.model} />
-          <Meta label={`${data.meta.total_tokens.toLocaleString()} tok`} tip={`${data.meta.input_tokens} in · ${data.meta.output_tokens} out`} />
-          <Meta label={`$${data.meta.cost_usd.toFixed(4)}`} accent />
-          {data.meta.web_searches > 0 && <Meta label={`${data.meta.web_searches} search${data.meta.web_searches > 1 ? "es" : ""}`} />}
+          {data.meta.model && <Meta label={data.meta.model} />}
+          {typeof data.meta.total_tokens === "number" && (
+            <Meta label={`${data.meta.total_tokens.toLocaleString()} tok`} tip={`${data.meta.input_tokens ?? 0} in · ${data.meta.output_tokens ?? 0} out`} />
+          )}
+          {typeof data.meta.cost_usd === "number" && <Meta label={`$${data.meta.cost_usd.toFixed(4)}`} accent />}
+          {(data.meta.web_searches ?? 0) > 0 && <Meta label={`${data.meta.web_searches} search${data.meta.web_searches! > 1 ? "es" : ""}`} />}
+          {data.meta.cached && <Meta label="✓ cached · no API call" accent />}
         </div>
       )}
 

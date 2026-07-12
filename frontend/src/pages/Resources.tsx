@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
-import { fetchResources, refreshResources } from "../lib/api";
+import { addResource, fetchResources, refreshResources } from "../lib/api";
 import type { Resource } from "../lib/types";
 
 export function Resources() {
@@ -11,6 +11,8 @@ export function Resources() {
   const [refreshing, setRefreshing] = useState(false);
   const [kind, setKind] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [addUrl, setAddUrl] = useState("");
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     fetchResources()
@@ -31,6 +33,28 @@ export function Resources() {
       setMsg("Refresh failed — is the backend running?");
     } finally {
       setRefreshing(false);
+    }
+  }
+
+  async function add() {
+    const url = addUrl.trim();
+    if (!url) return;
+    setAdding(true);
+    setMsg(null);
+    try {
+      const r = await addResource(url);
+      if (r.error) {
+        setMsg(r.message ?? "Could not add that URL.");
+      } else {
+        const d = await fetchResources();
+        setItems(d.resources);
+        setAddUrl("");
+        setMsg("Added.");
+      }
+    } catch {
+      setMsg("Add failed — is the backend running?");
+    } finally {
+      setAdding(false);
     }
   }
 
@@ -68,6 +92,24 @@ export function Resources() {
       </header>
 
       {msg && <div className="mb-4 font-mono text-xs text-teal">{msg}</div>}
+
+      {/* manual add by URL — paste a YouTube link or article */}
+      <div className="mb-5 flex gap-2">
+        <input
+          value={addUrl}
+          onChange={(e) => setAddUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+          placeholder="Paste a YouTube or article URL to save…"
+          className="input flex-1 font-mono"
+        />
+        <button
+          onClick={add}
+          disabled={adding || !addUrl.trim()}
+          className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/20 disabled:opacity-40"
+        >
+          {adding ? "Adding…" : "+ Add"}
+        </button>
+      </div>
 
       <div className="mb-6 flex gap-2">
         <Pill active={!kind} onClick={() => setKind(null)} label="All" />

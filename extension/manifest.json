@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "PrepForge Clipper",
+  "version": "1.0.0",
+  "description": "Send the current page (and any selection) to your local PrepForge resource feed.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8787/*"],
+  "action": {
+    "default_title": "Save to PrepForge",
+    "default_popup": "popup.html"
+  }
+}

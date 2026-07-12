@@ -15,6 +15,7 @@ try:
 except Exception:
     pass
 
+import capture as capture_mod
 import generate as generate_mod
 import ingest as ingest_mod
 from scrapers import html as html_scraper
@@ -92,12 +93,27 @@ from pydantic import BaseModel
 class GenerateReq(BaseModel):
     question: str
     topic: str = "AI"
+    persona: str = ""
+    qid: str = ""
 
 
 @app.post("/generate/answer")
 def generate_answer(req: GenerateReq):
-    """Grounded, anti-slop answer + Perplexity-style token/cost/source metadata."""
-    return generate_mod.generate(req.question, req.topic)
+    """Grounded answer + metadata. Cache-first (reads content/answers/*.md), no API call on a hit."""
+    return generate_mod.generate(req.question, req.topic, req.persona, req.qid)
+
+
+class CaptureReq(BaseModel):
+    url: str
+    topic: str = "AI"
+    title: str = ""
+    selection: str = ""
+
+
+@app.post("/resources/add")
+def add_resource(req: CaptureReq):
+    """Add one resource by URL (manual paste or browser extension). Scrapes title/summary."""
+    return capture_mod.capture(req.url, req.topic, req.title, req.selection)
 
 
 @app.get("/library")

@@ -58,7 +58,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
             <div className="border-t border-white/[0.05] px-5 py-4">
               <Markdown>{q.answer}</Markdown>
 
-              <DeepAnswer question={q.question} topic={q.topic} />
+              <DeepAnswer question={q.question} topic={q.topic} qid={q.id} />
 
               {q.tags.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-1.5">
