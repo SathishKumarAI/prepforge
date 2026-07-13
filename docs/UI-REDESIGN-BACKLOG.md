@@ -38,7 +38,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Table-of-contents / section jumps for long source docs in the Reader.
 - [ ] Collapse long answers with "show more"; expand-in-place.
 - [ ] Persist scroll position when reopening a source/answer.
-- [x] Syntax-highlighted code blocks with a copy button.
+- [~] Code blocks styled + copy button (syntax highlighting still TODO).
 - [x] Related-questions rail (from the new memory index) beside each question.
 - [ ] Progress indicator / reading time on long content.
 
