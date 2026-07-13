@@ -36,7 +36,7 @@ export function Notes() {
     <div>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Notes</h1>
+          <h1 className="font-display text-h1 font-semibold text-text">Notes</h1>
           <p className="mt-1 text-sm text-subtext0">
             Sticky notes &amp; voice memos. Use <code className="rounded bg-crust px-1 font-mono text-xs text-peach">[[Title]]</code> to link notes and <code className="rounded bg-crust px-1 font-mono text-xs text-peach">#tags</code> — they wire up the Graph.
           </p>

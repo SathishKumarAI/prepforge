@@ -3,7 +3,9 @@ import { useMemo, useState } from "react";
 import { Markdown } from "../components/Markdown";
 import { DifficultyBadge, TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
+import { Kbd } from "../components/Kbd";
 import { NavButton } from "../components/NavButton";
+import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import type { FlashState } from "../lib/storage";
@@ -20,20 +22,34 @@ export function Flashcards() {
     [questions, topic]
   );
 
-  if (loading) return <Loader label="Shuffling deck" />;
-  if (deck.length === 0) return <Empty title="No cards" />;
+  const card = deck.length ? deck[Math.min(i, deck.length - 1)] : null;
 
-  const card = deck[Math.min(i, deck.length - 1)];
-  const state = progress.flash[card.id] ?? "new";
+  // Space flips, 1/2 grade the card, arrows walk the deck — hands stay home.
+  useHotkeys(
+    {
+      " ": () => setFlipped((f) => !f),
+      ArrowLeft: () => go(-1),
+      ArrowRight: () => go(1),
+      "1": () => grade("learning"),
+      "2": () => grade("known"),
+    },
+    !loading && card !== null
+  );
+
+  if (loading) return <Loader label="Shuffling deck" />;
+  if (!card) return <Empty title="No cards" />;
 
   function go(next: number) {
     setFlipped(false);
     setI((v) => (v + next + deck.length) % deck.length);
   }
   function grade(s: FlashState) {
+    if (!card) return;
     setFlash(card.id, s);
     setTimeout(() => go(1), 180);
   }
+
+  const state = progress.flash[card.id] ?? "new";
 
   const known = deck.filter((q) => progress.flash[q.id] === "known").length;
 
@@ -41,11 +57,14 @@ export function Flashcards() {
     <div>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Flashcards</h1>
-          <p className="mt-1 text-sm text-subtext0">Tap the card to flip. Grade yourself to build recall.</p>
+          <h1 className="font-display text-h1 font-semibold text-text">Flashcards</h1>
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-subtext0">
+            <Kbd>Space</Kbd> flip · <Kbd>1</Kbd>/<Kbd>2</Kbd> grade · <Kbd>←</Kbd>
+            <Kbd>→</Kbd> move
+          </p>
         </div>
         <div className="text-right font-mono text-xs text-overlay1">
-          <div className="text-2xl font-bold text-green">{known}</div>
+          <div className="text-h2 font-bold tabular-nums text-green">{known}</div>
           <div>known / {deck.length}</div>
         </div>
       </header>
@@ -88,8 +107,10 @@ export function Flashcards() {
             {!flipped ? (
               <motion.div key="q" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-mauve">Question</div>
-                <div className="font-display text-2xl font-medium leading-snug text-text">{card.question}</div>
-                <div className="mt-6 font-mono text-xs text-overlay0">click to reveal answer</div>
+                <div className="font-display text-h2 font-medium leading-snug text-text">{card.question}</div>
+                <div className="mt-6 flex items-center gap-1.5 font-mono text-xs text-overlay0">
+                  click or <Kbd>Space</Kbd> to reveal answer
+                </div>
               </motion.div>
             ) : (
               <motion.div key="a" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -112,10 +133,10 @@ export function Flashcards() {
         <NavButton dir="prev" label="Prev" onClick={() => go(-1)} />
         <div className="flex gap-2">
           <button onClick={() => grade("learning")} className="pill border-red/40 px-4 py-2 text-red hover:bg-red/10">
-            Again
+            Again <Kbd className="ml-1">1</Kbd>
           </button>
           <button onClick={() => grade("known")} className="pill border-green/40 px-4 py-2 text-green hover:bg-green/10">
-            Got it
+            Got it <Kbd className="ml-1">2</Kbd>
           </button>
         </div>
         <NavButton dir="next" label="Next" onClick={() => go(1)} />

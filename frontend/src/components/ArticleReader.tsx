@@ -44,7 +44,7 @@ export function ArticleReader({ resource, onClose }: { resource: Resource | null
             <div className="mb-4 flex items-start gap-3">
               <div className="min-w-0 flex-1">
                 <div className="mb-2"><TopicBadge topic={resource.topic} /></div>
-                <h2 className="font-display text-2xl font-semibold leading-tight text-text">
+                <h2 className="font-display text-h2 font-semibold leading-tight text-text">
                   {data?.title ?? resource.title}
                 </h2>
                 <div className="mt-1 font-mono text-[11px] text-overlay0">{resource.source}</div>

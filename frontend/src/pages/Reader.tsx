@@ -14,7 +14,7 @@ export function Reader() {
   return (
     <div>
       <header className="mb-6">
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Reader</h1>
+        <h1 className="font-display text-h1 font-semibold text-text">Reader</h1>
         <p className="mt-1 text-sm text-subtext0">
           Read PDFs &amp; Markdown from your machine or the web — right here, read-only.
         </p>
@@ -170,7 +170,7 @@ function WebReader() {
           ) : (
             <>
               <div className="mb-3 flex items-start justify-between gap-3">
-                <h2 className="font-display text-2xl font-semibold text-text">{data.title}</h2>
+                <h2 className="font-display text-h2 font-semibold text-text">{data.title}</h2>
                 <a href={url} target="_blank" rel="noreferrer" className="pill shrink-0 text-subtext0 hover:text-text">↗ New tab</a>
               </div>
               <div className="max-h-[68vh] overflow-y-auto">

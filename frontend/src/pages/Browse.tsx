@@ -184,7 +184,7 @@ function Header({ count }: { count: number }) {
       <div className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-overlay0">
         {count} curated questions
       </div>
-      <h1 className="font-display text-3xl font-semibold leading-[1.05] tracking-tight text-text sm:text-4xl">
+      <h1 className="font-display text-display font-semibold text-text">
         Forge your <span className="italic text-mauve">interview</span> answers.
       </h1>
       <p className="mt-2 max-w-xl text-sm text-subtext0">

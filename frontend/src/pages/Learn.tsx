@@ -96,7 +96,7 @@ export function Learn() {
           <div className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-overlay0">
             spaced-repetition pipeline
           </div>
-          <h1 className="font-display text-4xl font-semibold tracking-tight text-text">
+          <h1 className="font-display text-display font-semibold text-text">
             Today’s <span className="italic text-mauve">study</span> session
           </h1>
           <p className="mt-2 max-w-lg text-subtext0">
@@ -210,7 +210,7 @@ export function Learn() {
             </span>
           </div>
 
-          <h2 className="font-display text-2xl font-medium leading-snug text-text">{q.question}</h2>
+          <h2 className="font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
 
           {/* READ mode: answer visible, encourage encoding */}
           {mode === "read" && (
@@ -281,7 +281,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
   return (
     <div className="glass rounded-2xl p-4 shadow-card">
       <div className="font-mono text-[10px] uppercase tracking-widest text-overlay0">{label}</div>
-      <div className={`mt-1 font-display text-3xl font-bold ${tone}`}>{value}</div>
+      <div className={`mt-1 font-display text-h1 font-bold tabular-nums ${tone}`}>{value}</div>
     </div>
   );
 }

@@ -2,7 +2,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
+import { Kbd } from "../components/Kbd";
 import { ChevronRight } from "../components/NavButton";
+import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import type { Difficulty, Question } from "../lib/types";
@@ -62,6 +64,23 @@ export function Quiz() {
     [quizzable, topic, diffs, tags, source]
   );
 
+  // Enter starts / advances; 1–4 answer the current question. Handlers are
+  // gated by phase because pick()/next() only make sense mid-run.
+  useHotkeys(
+    {
+      Enter: () => {
+        if (phase === "setup") start();
+        else if (phase === "done") start();
+        else if (picked !== null) next();
+      },
+      "1": () => phase === "run" && pick(0),
+      "2": () => phase === "run" && pick(1),
+      "3": () => phase === "run" && pick(2),
+      "4": () => phase === "run" && pick(3),
+    },
+    !loading
+  );
+
   if (loading) return <Loader label="Loading quiz" />;
 
   function toggle<T>(list: T[], set: (v: T[]) => void, v: T) {
@@ -86,7 +105,7 @@ export function Quiz() {
   if (phase === "setup") {
     return (
       <div className="mx-auto max-w-2xl">
-        <h1 className="mb-2 font-display text-3xl font-semibold tracking-tight text-text">Build your quiz</h1>
+        <h1 className="mb-2 font-display text-h1 font-semibold text-text">Build your quiz</h1>
         <p className="mb-6 text-sm text-subtext0">
           Pick how many questions, which topic &amp; tags, and how hard. Self-graded, scored at the end.
         </p>
@@ -191,7 +210,7 @@ export function Quiz() {
   const answered = picked !== null;
 
   function pick(idx: number) {
-    if (answered) return;
+    if (answered || idx >= quiz.choices.length) return;
     setPicked(idx);
     if (idx === quiz.correctIndex) setCorrect((c) => c + 1);
   }
@@ -225,7 +244,7 @@ export function Quiz() {
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          <h2 className="mb-6 font-display text-2xl font-medium leading-snug text-text">{q.question}</h2>
+          <h2 className="mb-6 font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
           <div className="flex flex-col gap-3">
             {quiz.choices.map((c, idx) => {
               const isCorrect = idx === quiz.correctIndex;
@@ -242,7 +261,7 @@ export function Quiz() {
                   className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-all ${cls}`}
                 >
                   <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md border border-white/10 font-mono text-xs">
-                    {String.fromCharCode(65 + idx)}
+                    {answered ? String.fromCharCode(65 + idx) : idx + 1}
                   </span>
                   <span className="flex-1">{c}</span>
                   {answered && isCorrect && <span className="text-green">✓</span>}
@@ -260,6 +279,7 @@ export function Quiz() {
               className="group mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-surface0 py-3 font-display text-lg font-medium text-text hover:bg-surface1"
             >
               {i + 1 >= deck.length ? "See results" : "Next question"}
+              <Kbd>Enter</Kbd>
               <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
             </motion.button>
           )}

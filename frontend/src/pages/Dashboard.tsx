@@ -12,9 +12,11 @@ import {
   YAxis,
 } from "recharts";
 import { Loader } from "../components/States";
+import { SectionDivider } from "../components/SectionDivider";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { topicColor } from "../lib/topics";
 
 function computeStreak(days: string[]): number {
   const set = new Set(days);
@@ -36,12 +38,10 @@ export function Dashboard() {
   const { questions, topics, loading } = useQuestions();
   const { progress } = useProgress();
   const CAT = useThemeColors();
-  const TOPIC_HEX: Record<string, string> = {
-    AI: CAT.mauve,
-    "Machine Learning": CAT.blue,
-    "Data Science": CAT.teal,
-    "Data Analytics": CAT.peach,
-  };
+  // single source of truth: topic → accent token (lib/topics), resolved to the
+  // live theme hex. No per-page color map to drift out of sync.
+  const topicHex = (t: string): string =>
+    (CAT as Record<string, string>)[topicColor(t)] ?? CAT.mauve;
   const tipStyle = {
     background: CAT.mantle,
     border: `1px solid ${CAT.surface1}`,
@@ -85,8 +85,9 @@ export function Dashboard() {
 
   return (
     <div>
-      <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-text">Dashboard</h1>
+      <h1 className="mb-6 font-display text-h1 font-semibold text-text">Dashboard</h1>
 
+      <SectionDivider label="Overview" hint="your study at a glance" className="mb-3" />
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Day streak" value={stats.streak} unit="🔥" tone="peach" />
         <Stat label="Cards known" value={stats.known} tone="green" />
@@ -96,6 +97,7 @@ export function Dashboard() {
         <Stat label="Question bank" value={questions.length} tone="blue" />
       </div>
 
+      <SectionDivider label="Trends" hint="mastery & quiz history" className="mb-3" />
       <div className="grid gap-4 lg:grid-cols-2">
         {/* mastery */}
         <Panel title="Mastery by topic" subtitle="Flashcards marked “known”">
@@ -107,7 +109,7 @@ export function Dashboard() {
               <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} contentStyle={tipStyle} />
               <Bar dataKey="done" radius={[6, 6, 0, 0]}>
                 {stats.mastery.map((m) => (
-                  <Cell key={m.topic} fill={TOPIC_HEX[m.topic] ?? CAT.mauve} />
+                  <Cell key={m.topic} fill={topicHex(m.topic)} />
                 ))}
               </Bar>
             </BarChart>
@@ -141,7 +143,8 @@ export function Dashboard() {
       </div>
 
       {/* mastery detail bars */}
-      <Panel title="Progress detail" subtitle="Per-topic completion" className="mt-4">
+      <SectionDivider label="Detail" hint="per-topic completion" className="mb-3 mt-6" />
+      <Panel title="Progress detail" subtitle="Per-topic completion">
         <div className="grid gap-x-8 gap-y-4 py-2 sm:grid-cols-2">
           {stats.mastery.map((m) => (
             <div key={m.topic}>
@@ -154,7 +157,7 @@ export function Dashboard() {
               <div className="h-2 w-full overflow-hidden rounded-full bg-surface0">
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${m.pct}%`, background: TOPIC_HEX[m.topic] ?? CAT.mauve }}
+                  style={{ width: `${m.pct}%`, background: topicHex(m.topic) }}
                 />
               </div>
             </div>
@@ -174,7 +177,7 @@ function Stat({ label, value, unit, tone }: { label: string; value: number; unit
   return (
     <div className="glass rounded-2xl p-4 shadow-card">
       <div className="font-mono text-[10px] uppercase tracking-widest text-overlay0">{label}</div>
-      <div className={`mt-1 font-display text-3xl font-bold ${toneText[tone]}`}>
+      <div className={`mt-1 font-display text-h1 font-bold tabular-nums ${toneText[tone]}`}>
         {value}
         {unit && <span className="ml-0.5 text-lg">{unit}</span>}
       </div>
@@ -196,7 +199,7 @@ function Panel({
   return (
     <section className={`glass rounded-2xl p-5 shadow-card ${className}`}>
       <div className="mb-4">
-        <h2 className="font-display text-lg font-medium text-text">{title}</h2>
+        <h2 className="font-display text-h3 font-medium text-text">{title}</h2>
         {subtitle && <div className="font-mono text-[11px] text-overlay0">{subtitle}</div>}
       </div>
       {children}

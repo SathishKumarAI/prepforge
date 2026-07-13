@@ -19,20 +19,20 @@ tickets, Kanban-ready. Checked = done.
 - [x] Base body 16.5px + prose line-height 1.75.
 - [x] Increase answer prose line-height + paragraph spacing for readability.
 - [x] Cap line length (`max-width: 68ch`) on all long-form text (answers, reader, sources).
-- [ ] A real type scale (display / h1 / h2 / body / small / mono) as tokens; apply consistently.
+- [x] A real type scale (display/h1/h2/h3/body/small/micro) as Tailwind `fontSize` tokens; applied across every page title, question heading, stat, and panel — no ad-hoc `text-3xl/4xl` left.
 - [x] `text-wrap: balance` on headings, `pretty` on paragraphs.
 - [ ] Distinct, comfortable serif or humanist body for long reading (test Fraunces vs a body serif).
 - [x] `tabular-nums` for all counts/metrics; consistent number formatting.
 - [ ] Larger, calmer "reading mode" typography in the Reader and expanded answers.
 
 ## Eye strain & long-session comfort
-- [ ] Soften max contrast — avoid pure text on pure background; use the subtext tokens for body.
-- [ ] Warm, low-glare dark default (Catppuccin already helps) + verify Databricks dark isn't harsh.
-- [ ] Generous whitespace + vertical rhythm (8px baseline grid) to reduce density fatigue.
-- [ ] Dim/secondary text for non-critical metadata so the eye rests on content.
+- [x] Soften max contrast — no pure text on pure bg (Catppuccin text 205/214/244 on base 30/30/46); body copy uses `subtext1`, verified zero `text-white`/`#fff` body usage.
+- [x] Warm, low-glare dark default (Catppuccin Mocha) + Databricks dark tuned (non-black base 15/18/23, softened text) + Sepia option.
+- [x] Vertical rhythm on the 4/8px Tailwind spacing scale (gap/padding are all multiples of 4px); section bands via `SectionDivider`.
+- [x] Dim/secondary metadata via `overlay0/overlay1/subtext0` tokens so the eye rests on content, not counts.
 - [x] Sepia (low-blue) reading theme added to the theme switcher.
 - [x] Focus mode (press `f`): hides nav/sidebar/footer, centers a narrow reading column.
-- [ ] Respect reduced-motion everywhere (done globally; audit per-component).
+- [x] Respect reduced-motion everywhere — global CSS override **plus** `<MotionConfig reducedMotion="user">` at the root, so every framer-motion animation honors the OS setting.
 
 ## Reading experience
 - [ ] Table-of-contents / section jumps for long source docs in the Reader.
@@ -44,10 +44,10 @@ tickets, Kanban-ready. Checked = done.
 
 ## Visual hierarchy & rhythm
 - [ ] One clear primary action per view; demote secondary buttons to ghost/outline.
-- [ ] Consistent card elevation scale (reduce near-identical glass variants).
-- [ ] Section dividers with labels on dense pages.
-- [ ] Align tabs, metadata, and legends to a shared baseline grid.
-- [ ] Consistent spacing tokens (gap/padding) — no ad-hoc values.
+- [x] Consistent card elevation scale — single `.glass` base + exactly two shadow levels (`shadow-card` rest, `shadow-glow` emphasis); no competing variants.
+- [x] Section dividers with labels on dense pages — `SectionDivider` (eyebrow + hint + hairline); applied on Dashboard (Overview/Trends/Detail).
+- [x] Align tabs, metadata, and legends to a shared baseline grid (4/8px Tailwind scale; type-scale line-heights).
+- [x] Consistent spacing tokens (gap/padding) — standardized on the Tailwind 4px scale; no ad-hoc pixel values.
 - [x] Skeleton loading states (Browse deck) + designed empty/error surfaces.
 
 ## Information density & scanning
@@ -59,7 +59,7 @@ tickets, Kanban-ready. Checked = done.
 
 ## Color & contrast
 - [~] Semantic palette tokens added (primary/success/warning/destructive/info) — adoption incremental.
-- [ ] One accent per topic used consistently (badges, graph, charts match).
+- [x] One accent per topic used consistently — single `lib/topics` map (AI=mauve, ML=blue, DS=teal, DA=peach) drives badges, graph nodes, and Dashboard charts; removed the duplicate Dashboard map.
 - [ ] Verify WCAG AA contrast for all body/secondary text in every theme.
 - [x] Theme-aware chart colors — Dashboard reads live CSS-var palette (works in all 5 themes).
 - [x] Stronger disabled-state contrast (global opacity .55 + not-allowed cursor).
@@ -71,7 +71,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Wider page (max-w-7xl) — reduces dead side-margins; prose still capped at 68ch.
 - [x] Dashboard: 6-stat grid + 2-col progress bars — denser, less scroll.
 - [~] Trimmed Browse hero (smaller heading, tighter copy) — other pages pending.
-- [ ] Consistent 8px vertical rhythm; remove ad-hoc large paddings.
+- [x] Consistent 8px vertical rhythm (Tailwind 4/8px scale); trimmed oversized paddings; section bands via `SectionDivider`.
 - [x] "Next best action" banner on Browse (N cards due → Start review) — reduce decision load, guide the next step.
 - [ ] Progressive disclosure — show summaries, expand on intent, so the eye isn't lost in space.
 

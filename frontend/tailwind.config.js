@@ -71,6 +71,17 @@ export default {
         sans: ['"Public Sans"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
       },
+      // one type scale, used everywhere — no ad-hoc text-3xl/4xl per page.
+      // display/h1 fluidly scale with the viewport; the rest are fixed steps.
+      fontSize: {
+        display: ["clamp(2rem, 1.2rem + 3.2vw, 3rem)", { lineHeight: "1.05", letterSpacing: "-0.022em" }],
+        h1: ["clamp(1.55rem, 1.1rem + 1.8vw, 2.1rem)", { lineHeight: "1.15", letterSpacing: "-0.018em" }],
+        h2: ["1.35rem", { lineHeight: "1.25", letterSpacing: "-0.012em" }],
+        h3: ["1.1rem", { lineHeight: "1.35", letterSpacing: "-0.006em" }],
+        body: ["1rem", { lineHeight: "1.7" }],
+        small: ["0.85rem", { lineHeight: "1.5" }],
+        micro: ["0.72rem", { lineHeight: "1.4", letterSpacing: "0.02em" }],
+      },
       boxShadow: {
         glow: "0 0 0 1px rgba(203,166,247,0.15), 0 8px 40px -12px rgba(203,166,247,0.35)",
         card: "0 1px 0 0 rgba(205,214,244,0.04) inset, 0 20px 40px -24px rgba(0,0,0,0.8)",

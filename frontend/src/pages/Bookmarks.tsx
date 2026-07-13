@@ -21,7 +21,7 @@ export function Bookmarks() {
 
   return (
     <div>
-      <h1 className="mb-1 font-display text-3xl font-semibold tracking-tight text-text">Saved</h1>
+      <h1 className="mb-1 font-display text-h1 font-semibold text-text">Saved</h1>
       <p className="mb-8 text-sm text-subtext0">Your bookmarked questions and personal notes.</p>
 
       <div className="mb-3 font-mono text-xs uppercase tracking-widest text-yellow">

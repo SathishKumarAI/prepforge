@@ -127,7 +127,7 @@ export function Resources() {
       <ArticleReader resource={reading} onClose={() => setReading(null)} />
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Resource feed</h1>
+          <h1 className="font-display text-h1 font-semibold text-text">Resource feed</h1>
           <p className="mt-1 max-w-lg text-sm text-subtext0">
             Live-aggregated from YouTube, blog RSS, and scraped articles. Configure sources in{" "}
             <code className="rounded bg-crust px-1.5 py-0.5 font-mono text-xs text-peach">

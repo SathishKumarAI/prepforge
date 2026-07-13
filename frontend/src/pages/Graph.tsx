@@ -66,7 +66,7 @@ export function Graph() {
     <div>
       <header className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-text">Graph</h1>
+          <h1 className="font-display text-h1 font-semibold text-text">Graph</h1>
           <p className="mt-1 text-sm text-subtext0">
             {mode === "notes"
               ? "Your notes linked by tags & [[wikilinks]]."
