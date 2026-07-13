@@ -16,12 +16,16 @@ Goal: quizzes the user can **shape** (how many, which topics/tags, how hard) and
       picks up at the same question; completing or discarding clears it.
 
 ## Next (roadmap)
-- [ ] **Quiz from a YouTube video, end-to-end**: capture transcript (yt-dlp/`youtube-transcript-api`)
-      → save as library markdown → ingest → synthesized/LLM MCQs → source-scoped quiz on just that video.
-- [ ] `source_file` (library/generated cards) should appear in the Quiz **source picker**, not only
-      vault `sources[]`. Map `source_file` → a source entry in `_load_questions`.
-- [ ] **Generate MCQs on demand** for a chosen resource (button in Resources): endpoint
-      `POST /quiz/generate?resource_id=` using deterministic → Ollama → Claude tiers (reuse ingest modes).
+- [x] **Quiz from a YouTube video, end-to-end**: `transcript.py` pulls captions via
+      `youtube-transcript-api` → chunks into `##` sections → `capture.read` saves as library
+      markdown → `POST /quiz/from_video` ingests (zero-token MCQ synthesis) + builds the related
+      index → returns `source_path`. Quiz setup has a "Quiz from a YouTube video" input that
+      reloads questions and scopes the quiz to that video. No API key.
+- [x] `source_file` (library/generated cards) now appears in the Quiz **source picker** — ingest
+      attaches `sources:[{title,path,kind:"library"}]` (frontmatter title); the card source chip
+      opens it via `POST /library/read` (SourceDoc routes vault vs library by `kind`).
+- [~] **Generate MCQs on demand** — done for videos via `/quiz/from_video`; a generic
+      "generate for this resource" button in Resources + Ollama/Claude tiers still TODO.
 - [ ] Better distractors: use the TF-IDF related index to pick *near-miss* concepts as wrong answers
       (harder, more educational than random same-topic glosses).
 - [ ] Question kinds: definition-match (current), true/false, "spot the wrong statement", cloze/fill-blank.

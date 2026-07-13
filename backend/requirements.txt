@@ -8,3 +8,4 @@ python-dotenv==1.0.1
 anthropic==0.69.0
 pypdf==5.1.0
 python-multipart==0.0.20
+youtube-transcript-api>=1.2

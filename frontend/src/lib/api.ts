@@ -88,6 +88,37 @@ export async function vaultReadSource(path: string): Promise<ReadResult> {
   return res.json();
 }
 
+export async function libraryReadSource(path: string): Promise<ReadResult> {
+  const res = await fetch(`${BASE}/library/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!res.ok) throw new Error(`library/read → ${res.status}`);
+  return res.json();
+}
+
+export interface VideoQuizResult {
+  ok?: boolean;
+  title?: string;
+  source_path?: string;
+  cards?: number;
+  synth_quizzes?: number;
+  error?: string;
+  message?: string;
+}
+
+// Paste a YouTube URL → transcript → ingest → quizzable questions from that video.
+export async function quizFromVideo(url: string, topic = "AI"): Promise<VideoQuizResult> {
+  const res = await fetch(`${BASE}/quiz/from_video`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, topic }),
+  });
+  if (!res.ok) throw new Error(`quiz/from_video → ${res.status}`);
+  return res.json();
+}
+
 export async function uploadResource(file: File, topic = "AI"): Promise<ReadResult> {
   const fd = new FormData();
   fd.append("file", file);

@@ -7,7 +7,8 @@ export interface Quiz {
 
 export interface VaultSource {
   title: string;
-  path: string; // vault-relative path to the source document
+  path: string; // vault-relative (or library-relative) path to the source document
+  kind?: "vault" | "library"; // "library" = an ingested doc/video (read via /library/read)
 }
 
 export interface AltAnswer {

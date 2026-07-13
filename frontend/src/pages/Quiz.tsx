@@ -1,13 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Chip } from "@/components/ui/chip";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { TopicBadge } from "../components/Badge";
 import { Loader } from "../components/States";
 import { Kbd } from "../components/Kbd";
 import { BackButton, ChevronRight } from "../components/NavButton";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
+import { reloadQuestions, useQuestions } from "../hooks/useQuestions";
+import { quizFromVideo } from "../lib/api";
 import type { Difficulty, Question } from "../lib/types";
 
 type Phase = "setup" | "run" | "done";
@@ -40,6 +42,8 @@ export function Quiz() {
   const [count, setCount] = useState(10);
   const [source, setSource] = useState<string | null>(null); // vault source path
   const [seed, setSeed] = useState(0);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [videoBusy, setVideoBusy] = useState(false);
   const [deck, setDeck] = useState<Question[]>([]);
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -150,6 +154,30 @@ export function Quiz() {
     setPhase("setup");
   }
 
+  // paste a YouTube URL → transcript → ingest → quizzable, then scope to it
+  async function makeVideoQuiz() {
+    const url = videoUrl.trim();
+    if (!url || videoBusy) return;
+    setVideoBusy(true);
+    try {
+      const r = await quizFromVideo(url, topic ?? "AI");
+      if (r.error) {
+        toast.error(r.message ?? "Couldn't build a quiz from that video.");
+        return;
+      }
+      await reloadQuestions();
+      if (r.source_path) setSource(r.source_path);
+      setVideoUrl("");
+      toast.success(`Quiz ready from “${r.title ?? "video"}”`, {
+        description: `${r.synth_quizzes ?? 0} questions generated · source selected below.`,
+      });
+    } catch {
+      toast.error("Video quiz failed — is the backend running?");
+    } finally {
+      setVideoBusy(false);
+    }
+  }
+
   if (phase === "setup") {
     return (
       <div className="mx-auto max-w-2xl">
@@ -232,6 +260,30 @@ export function Quiz() {
             </Section>
           )}
 
+          <Section label="Quiz from a YouTube video" hint="pulls the transcript — no API key">
+            <div className="flex gap-2">
+              <input
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && makeVideoQuiz()}
+                placeholder="Paste a YouTube URL…"
+                className="input flex-1 font-mono text-xs"
+                disabled={videoBusy}
+              />
+              <button
+                onClick={makeVideoQuiz}
+                disabled={videoBusy || !videoUrl.trim()}
+                className="shrink-0 rounded-xl border border-red/40 bg-red/10 px-4 py-2.5 text-sm font-medium text-red hover:bg-red/20 disabled:opacity-40"
+              >
+                {videoBusy ? "Building…" : "Build"}
+              </button>
+            </div>
+            <div className="mt-2 font-mono text-[10px] text-overlay0">
+              Fetches captions, turns them into cards + questions, and scopes this quiz to that video.
+              Needs captions enabled on the video.
+            </div>
+          </Section>
+
           <div className="border-t border-white/[0.06] pt-5">
             <button
               onClick={start}
@@ -250,9 +302,9 @@ export function Quiz() {
         </div>
 
         <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-overlay0">
-          Want to quiz on a YouTube video or article? Ingest it under{" "}
-          <span className="text-subtext0">Resources → auto-Q&amp;A</span>, then generate quiz
-          questions for it. MCQ generation from a single resource is on the roadmap.
+          Prefer articles or PDFs? Read them under{" "}
+          <span className="text-subtext0">Reader</span> (they’re ingested + auto-quizzed the same way),
+          then pick them under “Quiz from a specific source”.
         </p>
       </div>
     );

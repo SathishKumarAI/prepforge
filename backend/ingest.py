@@ -29,6 +29,18 @@ TOPICS = ["AI", "Machine Learning", "Data Science", "Data Analytics"]
 _HEADING = re.compile(r"^(#{1,3})\s+(.*)$", re.MULTILINE)
 
 
+def _frontmatter_title(md: str, fallback: str) -> str:
+    """Pull `title:` from YAML frontmatter (as written by capture/upload), else
+    derive a readable name from the filename."""
+    m = re.match(r"^---\s*\n(.*?)\n---\s*\n", md, re.DOTALL)
+    if m:
+        t = re.search(r'^title:\s*"?(.+?)"?\s*$', m.group(1), re.MULTILINE)
+        if t:
+            return t.group(1).strip().strip('"')
+    stem = Path(fallback).stem.replace("-", " ").replace("_", " ").strip()
+    return stem.title() or fallback
+
+
 def _infer_topic(path: Path, default: str = "Machine Learning") -> str:
     parts = [p.replace("-", " ").replace("_", " ").lower() for p in path.parts]
     hay = " ".join(parts)
@@ -231,11 +243,13 @@ def ingest(mode: str = "deterministic") -> dict:
 
     cards: list[dict] = []
     model_cards = 0
+    titles: dict[str, str] = {}  # source_file → readable title (for the source picker)
     try:
         for f in files:
             source = str(f.relative_to(LIBRARY))
             topic = _infer_topic(f.relative_to(LIBRARY))
             md = f.read_text(encoding="utf-8", errors="ignore")
+            titles[source] = _frontmatter_title(md, source)
             for heading, body in _split_sections(md):
                 card = None
                 if use_claude:
@@ -256,6 +270,14 @@ def ingest(mode: str = "deterministic") -> dict:
         if c["id"] not in seen:
             seen.add(c["id"])
             deduped.append(c)
+
+    # attach a source entry (title + path) so ingested docs — a pasted YouTube
+    # video, an uploaded PDF — show up in the Quiz source picker and card rail,
+    # not just as an opaque source_file string.
+    for c in deduped:
+        sf = c.get("source_file")
+        if sf and not c.get("sources"):
+            c["sources"] = [{"title": titles.get(sf, sf), "path": sf, "kind": "library"}]
 
     # make quiz-less cards (deterministic split, or any model miss) quizzable offline
     synth = _add_synthetic_quizzes(deduped)

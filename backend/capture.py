@@ -13,6 +13,7 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
+import transcript as transcript_mod
 from scrapers import html as html_scraper
 
 log = logging.getLogger("capture")
@@ -95,8 +96,16 @@ def read(url: str, topic: str = "AI", title: str = "") -> dict:
 
     if any(k in url for k in _YT):
         yt = _youtube(url, topic)
-        md = f"# {yt['title']}\n\n{yt['summary']}\n\n[Watch on YouTube]({url})\n"
         title = title or yt["title"]
+        # try to pull the actual transcript so the video becomes real, quizzable
+        # content — not just a title + link. Falls back to the oembed stub.
+        tr = transcript_mod.fetch(url)
+        if "error" not in tr:
+            md = transcript_mod.to_markdown(title, url, tr["chunks"])
+            log.info("youtube transcript: %d chunks for %s", len(tr["chunks"]), url)
+        else:
+            md = f"# {title}\n\n{yt['summary']}\n\n_{tr['message']}_\n\n[Watch on YouTube]({url})\n"
+            log.info("youtube transcript unavailable (%s): %s", tr.get("error"), url)
     else:
         try:
             with httpx.Client(timeout=15.0, headers={"User-Agent": _UA}, follow_redirects=True) as c:
@@ -180,6 +189,23 @@ def upload(filename: str, data: bytes, topic: str = "AI") -> dict:
     _save(resources)
     log.info("uploaded: %s (%s)", fname, ext)
     return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
+
+
+def library_read(rel_path: str) -> dict:
+    """Read one ingested library markdown file (by library-relative path), confined
+    to content/library. Used by the source viewer for ingested docs/videos."""
+    try:
+        target = (LIBRARY / rel_path).resolve()
+    except Exception:
+        return {"error": "bad_path"}
+    root = LIBRARY.resolve()
+    if not str(target).startswith(str(root)) or not target.is_file():
+        return {"error": "forbidden", "message": "Path outside the library."}
+    md = target.read_text(encoding="utf-8", errors="ignore")
+    # strip YAML frontmatter for display
+    md = re.sub(r"^---\s*\n.*?\n---\s*\n", "", md, count=1, flags=re.DOTALL).strip()
+    title_m = re.search(r"^#\s+(.+)$", md, re.MULTILINE)
+    return {"ok": True, "title": (title_m.group(1).strip() if title_m else target.stem), "markdown": md[:60000], "path": rel_path}
 
 
 def capture(url: str, topic: str = "AI", title: str = "", selection: str = "") -> dict:

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { vaultReadSource, type ReadResult } from "../lib/api";
+import { libraryReadSource, vaultReadSource, type ReadResult } from "../lib/api";
+import type { VaultSource } from "../lib/types";
 import { ReadingPane } from "./ReadingPane";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
-// Opens a vault source document (the PDF/note a question came from) as readable
-// markdown in a Radix Dialog, so you can jump from a question to where it's explained.
-export function SourceDoc({ source, onClose }: { source: { title: string; path: string } | null; onClose: () => void }) {
+// Opens a source document (the PDF/note/video a question came from) as readable
+// markdown in a Radix Dialog. Vault sources read from the Obsidian vault; ingested
+// docs/videos (kind: "library") read from content/library.
+export function SourceDoc({ source, onClose }: { source: VaultSource | null; onClose: () => void }) {
   const [data, setData] = useState<ReadResult | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -13,7 +15,8 @@ export function SourceDoc({ source, onClose }: { source: { title: string; path: 
     if (!source) return;
     setData(null);
     setLoading(true);
-    vaultReadSource(source.path)
+    const read = source.kind === "library" ? libraryReadSource : vaultReadSource;
+    read(source.path)
       .then(setData)
       .catch(() => setData({ error: "network", message: "Couldn't open that document." }))
       .finally(() => setLoading(false));
@@ -24,7 +27,9 @@ export function SourceDoc({ source, onClose }: { source: { title: string; path: 
       {source && (
         <DialogContent className="max-w-2xl">
           <div className="pr-8">
-            <div className="mb-1 font-mono text-[11px] uppercase tracking-widest text-peach">vault source</div>
+            <div className="mb-1 font-mono text-[11px] uppercase tracking-widest text-peach">
+              {source.kind === "library" ? "ingested source" : "vault source"}
+            </div>
             <DialogTitle className="text-h3 leading-tight">{data?.title ?? source.title}</DialogTitle>
             <div className="mt-1 truncate font-mono text-[11px] text-overlay0">{source.path}</div>
           </div>

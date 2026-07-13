@@ -200,6 +200,43 @@ def pipeline_build():
     return pipeline_mod.build_related()
 
 
+class LibraryReadReq(BaseModel):
+    path: str
+
+
+@app.post("/library/read")
+def library_read(req: LibraryReadReq):
+    """Read one ingested library document (by library-relative path) as markdown."""
+    return capture_mod.library_read(req.path)
+
+
+class VideoQuizReq(BaseModel):
+    url: str
+    topic: str = "AI"
+
+
+@app.post("/quiz/from_video")
+def quiz_from_video(req: VideoQuizReq):
+    """End-to-end: YouTube URL → transcript → library markdown → ingest (with
+    zero-token MCQ synthesis) → related index. Returns the source path to scope a
+    quiz to just this video. No API key, no model required."""
+    saved = capture_mod.read(req.url, req.topic)
+    if saved.get("error"):
+        return saved
+    result = ingest_mod.ingest("deterministic")
+    try:
+        pipeline_mod.build_related()
+    except Exception as exc:
+        log.warning("related build after video ingest failed: %s", exc)
+    return {
+        "ok": True,
+        "title": saved.get("title"),
+        "source_path": (saved.get("saved") or "").replace("content/library/", ""),
+        "cards": result.get("cards"),
+        "synth_quizzes": result.get("synth_quizzes"),
+    }
+
+
 @app.post("/vault/ingest")
 def vault_ingest():
     """Scan the Obsidian vault (config/vault.yaml) → deduped, source-tagged questions."""
