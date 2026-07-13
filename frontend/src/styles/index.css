@@ -68,6 +68,24 @@
 :root[data-textsize="lg"] { font-size: 17.5px; }
 :root[data-textsize="xl"] { font-size: 19px; }
 
+/* light-theme (Latte) rendering fixes — glass borders + backdrop are tuned for dark;
+   on light, white borders vanish and the dark grain/glows clash. */
+:root[data-theme="latte"] body {
+  background-image:
+    radial-gradient(60rem 60rem at 85% -10%, rgba(136, 57, 239, 0.06), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 20%, rgba(30, 102, 245, 0.05), transparent 55%);
+}
+:root[data-theme="latte"] body::before {
+  opacity: 0.02;
+}
+:root[data-theme="latte"] .glass {
+  border-color: rgba(0, 0, 0, 0.08);
+  background-color: rgb(var(--ctp-base) / 0.7);
+}
+:root[data-theme="latte"] .input {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
 html,
 body,
 #root {
