@@ -53,7 +53,7 @@ tickets, Kanban-ready. Checked = done.
 ## Information density & scanning
 - [ ] Comfortable vs compact density toggle per user preference.
 - [ ] Skimmable question cards: topic, difficulty, source, and a one-line preview.
-- [ ] Group nav into sections (Study / Content / Insights) to reduce the 11-item list.
+- [x] Group nav into sections (Study / Content / Insights) to reduce the 11-item list.
 - [ ] Result counts + active-filter chips that are dismissible.
 - [ ] Virtualized long lists (Browse with 1700+ questions) for smooth scroll.
 

@@ -11,20 +11,23 @@ interface NavItem {
   to: string;
   label: string;
   icon: ReactNode;
+  group: "Study" | "Content" | "Insights";
 }
 
 const NAV: NavItem[] = [
-  { to: "/learn", label: "Learn", icon: <IconSpark /> },
-  { to: "/", label: "Browse", icon: <IconGrid /> },
-  { to: "/flashcards", label: "Flashcards", icon: <IconCards /> },
-  { to: "/quiz", label: "Quiz", icon: <IconTarget /> },
-  { to: "/resources", label: "Resources", icon: <IconFeed /> },
-  { to: "/reader", label: "Reader", icon: <IconBook /> },
-  { to: "/notes", label: "Notes", icon: <IconNote /> },
-  { to: "/graph", label: "Graph", icon: <IconGraph /> },
-  { to: "/dashboard", label: "Dashboard", icon: <IconChart /> },
-  { to: "/bookmarks", label: "Bookmarks", icon: <IconBookmark /> },
+  { to: "/learn", label: "Learn", icon: <IconSpark />, group: "Study" },
+  { to: "/", label: "Browse", icon: <IconGrid />, group: "Study" },
+  { to: "/flashcards", label: "Flashcards", icon: <IconCards />, group: "Study" },
+  { to: "/quiz", label: "Quiz", icon: <IconTarget />, group: "Study" },
+  { to: "/resources", label: "Resources", icon: <IconFeed />, group: "Content" },
+  { to: "/reader", label: "Reader", icon: <IconBook />, group: "Content" },
+  { to: "/notes", label: "Notes", icon: <IconNote />, group: "Content" },
+  { to: "/graph", label: "Graph", icon: <IconGraph />, group: "Content" },
+  { to: "/dashboard", label: "Dashboard", icon: <IconChart />, group: "Insights" },
+  { to: "/bookmarks", label: "Bookmarks", icon: <IconBookmark />, group: "Insights" },
 ];
+
+const NAV_GROUPS: NavItem["group"][] = ["Study", "Content", "Insights"];
 
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
@@ -65,11 +68,15 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <nav className="flex flex-col gap-1">
-            {NAV.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === "/"}>
-                {({ isActive }) => (
-                  <div className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors">
+          <nav className="flex flex-col gap-4">
+            {NAV_GROUPS.map((group) => (
+              <div key={group}>
+                <div className="mb-1 px-3 font-mono text-[9px] uppercase tracking-[0.2em] text-overlay0">{group}</div>
+                <div className="flex flex-col gap-0.5">
+                  {NAV.filter((item) => item.group === group).map((item) => (
+                    <NavLink key={item.to} to={item.to} end={item.to === "/"}>
+                      {({ isActive }) => (
+                        <div className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors">
                     {isActive && (
                       <motion.div
                         layoutId="nav-active"
@@ -96,9 +103,12 @@ export function Layout({ children }: { children: ReactNode }) {
                         {navBadge(item.to)}
                       </span>
                     )}
-                  </div>
-                )}
-              </NavLink>
+                        </div>
+                      )}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </div>
