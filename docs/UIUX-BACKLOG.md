@@ -124,6 +124,12 @@ checkbox tickets, no priority labels. Checked items are done this session.
 - [ ] Consistent icon set + sizes (currently hand-rolled SVGs vary).
 - [ ] Consolidate the `ACCENT_*` maps into one theme util.
 
+## Requested — memory graph & resource tagging (next session)
+- [ ] **Concept/mind-map graph** — link question↔question through shared concepts/tags (tag = hub node), so recalling one question pulls related ones. Add a "Concepts" mode beside Notes/Learning; cluster by concept for memory, not just prerequisite.
+- [ ] **Resource source-tags** — tag each resource by source type (YouTube, Substack, LinkedIn, blog, upload) + topic; show as chips.
+- [ ] **Resource filter + sort + search** — filter feed by source-type/topic, search within, sort by date/source; "show only this YouTube search" view.
+- [ ] Author the 7 answer lenses for the 1651 vault questions (only curated 100 cached so far).
+
 ## Reading & content UX
 - [ ] A real "reading mode" (max-width, larger type, quiet chrome) in the Reader.
 - [ ] Table-of-contents sidebar for long source docs.

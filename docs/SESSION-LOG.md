@@ -58,6 +58,15 @@ framer-motion, Recharts) · Python FastAPI · flat JSON/Markdown storage · loca
 - **Session-end audit** → `docs/AUDIT-BACKLOG.md`: **155 Kanban tickets** across 20 areas, incl. real bugs (docs port mismatch, dead persona cache key, deterministic quiz "shuffle", unused difficulty/interest settings).
 - Total bank now ~**1751 questions** (100 curated + 1651 vault).
 
+### v5 — 7 lenses, shadcn, themes, mobile, graph fix (2026-07-12/13)
+- **7 answer lenses + "My content"** per question: grounded · STAR · ELI5 · first-principles · **AWS (Amazon LP)** · **Thinking-process** · **FAANG** · **My content** (paste your own, localStorage). All served cache-first as `.md` (Claude Code authored, no key).
+- **shadcn/ui** foundations (Tailwind-v3 manual, tokens on Catppuccin): Button/Dialog/Tabs/Sonner. SettingsPanel→Dialog, DeepAnswer→Tabs, global toasts.
+- **Theme system** — Mocha↔Latte (Dark/Light/System) + text-scale S/M/L/XL in Settings, via CSS vars; Latte light-render fixes.
+- **Resource→auto-Q&A** generator selector (deterministic / Ollama / Claude).
+- **Mobile batch** — safe dialogs, overflow-clip, coarse-pointer targets, icon mobile nav, nav count badges.
+- **Graph fix** — was a 1751-node hairball; now topic filter + 240-node cap + auto-scaled iterations + defaults to Learning when no notes.
+- a11y: focus rings, reduced-motion, Esc/aria, 404.
+
 ---
 
 ## Content pipeline (a core principle)
