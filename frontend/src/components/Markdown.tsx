@@ -1,10 +1,17 @@
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import rehypeSlug from "rehype-slug";
+import { rehypeHighlightLite } from "@/lib/rehype-highlight-lite";
 
 export function Markdown({ children }: { children: string }) {
   return (
     <div className="prose-answer">
-      <ReactMarkdown components={{ pre: PreWithCopy }}>{children}</ReactMarkdown>
+      <ReactMarkdown
+        rehypePlugins={[rehypeSlug, rehypeHighlightLite]}
+        components={{ pre: PreWithCopy }}
+      >
+        {children}
+      </ReactMarkdown>
     </div>
   );
 }

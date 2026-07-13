@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Markdown } from "../components/Markdown";
+import { ReadingPane } from "../components/ReadingPane";
 import { readResource, uploadResource, type ReadResult } from "../lib/api";
 
 // Read-only viewer for local files (PDF native + markdown/text) AND web pages,
@@ -114,9 +114,7 @@ function LocalReader() {
 
       {text !== null && (
         <div className="glass rounded-2xl p-6 shadow-card">
-          <div className="max-h-[74vh] overflow-y-auto">
-            <Markdown>{text}</Markdown>
-          </div>
+          <ReadingPane md={text} storageKey={`local:${file?.name ?? "doc"}`} />
         </div>
       )}
     </div>
@@ -173,9 +171,7 @@ function WebReader() {
                 <h2 className="font-display text-h2 font-semibold text-text">{data.title}</h2>
                 <a href={url} target="_blank" rel="noreferrer" className="pill shrink-0 text-subtext0 hover:text-text">↗ New tab</a>
               </div>
-              <div className="max-h-[68vh] overflow-y-auto">
-                <Markdown>{data.markdown ?? ""}</Markdown>
-              </div>
+              <ReadingPane md={data.markdown ?? ""} storageKey={`web:${url}`} maxHeight="68vh" />
               {data.saved && <div className="mt-3 font-mono text-[11px] text-green">✓ Saved to {data.saved}</div>}
             </>
           )}

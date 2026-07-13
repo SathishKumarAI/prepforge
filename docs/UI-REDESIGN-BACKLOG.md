@@ -23,7 +23,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] `text-wrap: balance` on headings, `pretty` on paragraphs.
 - [ ] Distinct, comfortable serif or humanist body for long reading (test Fraunces vs a body serif).
 - [x] `tabular-nums` for all counts/metrics; consistent number formatting.
-- [ ] Larger, calmer "reading mode" typography in the Reader and expanded answers.
+- [x] Larger, calmer "reading mode" typography in the Reader (`.reading-lg`: 1.075rem / 1.85 line-height / 72ch) via the shared `ReadingPane`.
 
 ## Eye strain & long-session comfort
 - [x] Soften max contrast — no pure text on pure bg (Catppuccin text 205/214/244 on base 30/30/46); body copy uses `subtext1`, verified zero `text-white`/`#fff` body usage.
@@ -35,10 +35,10 @@ tickets, Kanban-ready. Checked = done.
 - [x] Respect reduced-motion everywhere — global CSS override **plus** `<MotionConfig reducedMotion="user">` at the root, so every framer-motion animation honors the OS setting.
 
 ## Reading experience
-- [ ] Table-of-contents / section jumps for long source docs in the Reader.
+- [x] Table-of-contents / section jumps for long source docs — `ReadingPane` builds a sticky TOC from h1–h3 (rehype-slug anchors) and smooth-scrolls on click.
 - [x] Collapse long answers with "show more"; expand-in-place.
-- [ ] Persist scroll position when reopening a source/answer.
-- [~] Code blocks styled + copy button (syntax highlighting still TODO).
+- [x] Persist scroll position when reopening a source/answer — `ReadingPane` saves/restores `scrollTop` per doc in sessionStorage (rAF-throttled).
+- [x] Code blocks styled + copy button **+ syntax highlighting** — custom lightweight lowlight plugin (`rehype-highlight-lite`, curated grammars) with a theme-aware hljs palette.
 - [x] Related-questions rail (from the new memory index) beside each question.
 - [x] Progress indicator / reading time on long content.
 

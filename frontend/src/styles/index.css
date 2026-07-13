@@ -321,6 +321,19 @@ select:disabled {
   .prose-answer strong {
     @apply text-text font-semibold;
   }
+  /* calmer, larger "reading mode" for the Reader / long source docs */
+  .reading-lg .prose-answer {
+    font-size: 1.075rem;
+    line-height: 1.85;
+    max-width: 72ch;
+  }
+  .reading-lg .prose-answer p {
+    @apply my-4;
+  }
+  /* offset anchored headings so smooth-scroll jumps aren't hidden under the top */
+  .prose-answer :is(h1, h2, h3, h4)[id] {
+    scroll-margin-top: 1rem;
+  }
   .prose-answer code {
     @apply rounded bg-crust px-1.5 py-0.5 font-mono text-[0.85em] text-peach;
   }
@@ -350,6 +363,37 @@ select:disabled {
   .prose-answer pre code {
     @apply bg-transparent p-0 text-subtext1;
   }
+  /* highlight.js token colors — mapped to the live theme palette so code
+     highlighting follows Mocha / Latte / Databricks / Sepia automatically. */
+  .prose-answer .hljs-comment,
+  .prose-answer .hljs-quote { @apply italic text-overlay0; }
+  .prose-answer .hljs-keyword,
+  .prose-answer .hljs-selector-tag,
+  .prose-answer .hljs-literal,
+  .prose-answer .hljs-section,
+  .prose-answer .hljs-doctag { @apply text-mauve; }
+  .prose-answer .hljs-string,
+  .prose-answer .hljs-regexp,
+  .prose-answer .hljs-addition { @apply text-green; }
+  .prose-answer .hljs-number,
+  .prose-answer .hljs-symbol,
+  .prose-answer .hljs-bullet { @apply text-peach; }
+  .prose-answer .hljs-title,
+  .prose-answer .hljs-name,
+  .prose-answer .hljs-function .hljs-title,
+  .prose-answer .hljs-title.function_ { @apply text-blue; }
+  .prose-answer .hljs-attr,
+  .prose-answer .hljs-attribute,
+  .prose-answer .hljs-variable,
+  .prose-answer .hljs-template-variable { @apply text-yellow; }
+  .prose-answer .hljs-type,
+  .prose-answer .hljs-class .hljs-title,
+  .prose-answer .hljs-built_in,
+  .prose-answer .hljs-builtin-name { @apply text-teal; }
+  .prose-answer .hljs-meta { @apply text-overlay1; }
+  .prose-answer .hljs-deletion { @apply text-red; }
+  .prose-answer .hljs-emphasis { @apply italic; }
+  .prose-answer .hljs-strong { @apply font-semibold; }
   .prose-answer blockquote {
     @apply my-3 border-l-2 border-mauve/40 pl-3 italic text-subtext0;
   }
