@@ -151,11 +151,13 @@ export interface Positioned {
   positions: Record<string, { x: number; y: number }>;
 }
 
-/** Deterministic force-directed layout. Returns node positions in [0,w]×[0,h]. */
-export function layout(graph: Graph, w: number, h: number, iterations = 260): Positioned {
+/** Deterministic force-directed layout. Returns node positions in [0,w]×[0,h].
+ *  Iterations auto-scale down for large graphs so the O(n²) step never freezes. */
+export function layout(graph: Graph, w: number, h: number, iterations?: number): Positioned {
   const { nodes, edges } = graph;
   const pos: Record<string, { x: number; y: number }> = {};
   const n = nodes.length;
+  const iters = iterations ?? Math.max(60, Math.min(260, Math.round(50000 / Math.max(1, n))));
   if (n === 0) return { positions: pos };
   if (n === 1) {
     pos[nodes[0].id] = { x: w / 2, y: h / 2 };
@@ -174,7 +176,7 @@ export function layout(graph: Graph, w: number, h: number, iterations = 260): Po
   const idx = new Map(nodes.map((node, i) => [node.id, i]));
   const disp = nodes.map(() => ({ x: 0, y: 0 }));
 
-  for (let it = 0; it < iterations; it++) {
+  for (let it = 0; it < iters; it++) {
     for (let i = 0; i < n; i++) disp[i].x = disp[i].y = 0;
     // repulsion
     for (let i = 0; i < n; i++) {
@@ -201,7 +203,7 @@ export function layout(graph: Graph, w: number, h: number, iterations = 260): Po
       disp[ib].x += dx * force; disp[ib].y += dy * force;
     }
     // integrate with cooling; clamp step and keep inside bounds
-    const temp = 8 * (1 - it / iterations);
+    const temp = 8 * (1 - it / iters);
     for (let i = 0; i < n; i++) {
       const d = Math.hypot(disp[i].x, disp[i].y) || 0.01;
       const step = Math.min(d, temp);

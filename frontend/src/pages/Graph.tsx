@@ -7,20 +7,43 @@ import { ACCENT_HEX } from "../lib/topics";
 
 const W = 1000;
 const H = 680;
+const MAX_NODES = 240; // keep the force layout fast + readable (Obsidian-like clusters)
 
 type Mode = "notes" | "learning";
 
 export function Graph() {
   const { notes } = useNotes();
   const { questions, loading } = useQuestions();
-  const [mode, setMode] = useState<Mode>("notes");
+  const [mode, setMode] = useState<Mode>(notes.length ? "notes" : "learning");
+  const [topicFilter, setTopicFilter] = useState<string | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
 
-  const graph = useMemo(
-    () => (mode === "notes" ? notesGraph(notes) : learningGraph(questions)),
-    [mode, notes, questions]
-  );
+  function switchMode(m: Mode) {
+    setMode(m);
+    setSelected(null);
+    setTopicFilter(null);
+  }
+
+  const topicOptions = useMemo(() => {
+    const src =
+      mode === "notes"
+        ? (notes.map((n) => n.topic).filter(Boolean) as string[])
+        : questions.map((q) => q.topic);
+    return Array.from(new Set(src)).sort();
+  }, [mode, notes, questions]);
+
+  const { graph, capped, total } = useMemo(() => {
+    if (mode === "notes") {
+      const ns = topicFilter ? notes.filter((n) => n.topic === topicFilter) : notes;
+      return { graph: notesGraph(ns), capped: false, total: ns.length };
+    }
+    let qs = topicFilter ? questions.filter((q) => q.topic === topicFilter) : questions;
+    const t = qs.length;
+    const cap = qs.length > MAX_NODES;
+    if (cap) qs = qs.slice(0, MAX_NODES);
+    return { graph: learningGraph(qs), capped: cap, total: t };
+  }, [mode, notes, questions, topicFilter]);
   const { positions } = useMemo(() => layout(graph, W, H), [graph]);
 
   if (loading) return <Loader label="Building graph" />;
@@ -50,9 +73,21 @@ export function Graph() {
               : "Questions sequenced by topic & prerequisite (easier → harder)."}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Toggle active={mode === "notes"} onClick={() => { setMode("notes"); setSelected(null); }} label="Notes" />
-          <Toggle active={mode === "learning"} onClick={() => { setMode("learning"); setSelected(null); }} label="Learning" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Toggle active={mode === "notes"} onClick={() => switchMode("notes")} label="Notes" />
+          <Toggle active={mode === "learning"} onClick={() => switchMode("learning")} label="Learning" />
+          {topicOptions.length > 1 && (
+            <select
+              value={topicFilter ?? ""}
+              onChange={(e) => { setTopicFilter(e.target.value || null); setSelected(null); }}
+              className="input w-auto py-1.5 text-xs"
+            >
+              <option value="">All topics</option>
+              {topicOptions.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
         </div>
       </header>
 
@@ -118,7 +153,10 @@ export function Graph() {
           </svg>
 
           <div className="flex items-center justify-between border-t border-white/[0.05] px-4 py-2 font-mono text-[11px] text-overlay0">
-            <span>{graph.nodes.length} nodes · {graph.edges.length} links</span>
+            <span>
+              {graph.nodes.length} nodes · {graph.edges.length} links
+              {capped && <span className="text-peach"> · showing first {MAX_NODES} of {total} — filter by topic to focus</span>}
+            </span>
             {selected && nodeById.get(selected) && (
               <span className="text-subtext1">
                 {nodeById.get(selected)!.label} · {neighbors.size - 1} connection{neighbors.size - 1 !== 1 ? "s" : ""}
