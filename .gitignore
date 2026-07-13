@@ -61,3 +61,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# derived memory index
+backend/content/related.json

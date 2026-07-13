@@ -18,6 +18,7 @@ except Exception:
 import capture as capture_mod
 import generate as generate_mod
 import ingest as ingest_mod
+import pipeline as pipeline_mod
 import vault as vault_mod
 from scrapers import html as html_scraper
 from scrapers import rss as rss_scraper
@@ -53,7 +54,15 @@ def _load_questions() -> list[dict]:
     curated = _read_bank(CONTENT / "questions.json")
     generated = _read_bank(CONTENT / "generated.json")
     vault_q = _read_bank(CONTENT / "vault_questions.json")
-    return curated + generated + vault_q
+    qs = curated + generated + vault_q
+    # attach the zero-token related-questions memory index, if built
+    related = pipeline_mod.load_related()
+    if related:
+        for q in qs:
+            rel = related.get(q.get("id", ""))
+            if rel:
+                q["related"] = rel
+    return qs
 
 
 def _load_resources() -> list[dict]:
@@ -183,6 +192,12 @@ def library():
 def run_ingest(mode: str = "deterministic"):
     """Parse library markdown into Q&A cards. mode: deterministic | ollama | claude."""
     return ingest_mod.ingest(mode)
+
+
+@app.post("/pipeline/build")
+def pipeline_build():
+    """Build the zero-token related-questions memory index (TF-IDF, no LLM)."""
+    return pipeline_mod.build_related()
 
 
 @app.post("/vault/ingest")
