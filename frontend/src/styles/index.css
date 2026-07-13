@@ -63,26 +63,86 @@
   --ctp-lavender: 114 135 253;
 }
 
+/* Databricks — light (clean data-tool look, brand red accent) */
+:root[data-theme="databricks-light"] {
+  color-scheme: light;
+  --ctp-base: 255 255 255;
+  --ctp-mantle: 247 248 249;
+  --ctp-crust: 240 242 244;
+  --ctp-surface0: 231 234 237;
+  --ctp-surface1: 214 218 222;
+  --ctp-surface2: 196 201 206;
+  --ctp-overlay0: 150 157 164;
+  --ctp-overlay1: 107 114 122;
+  --ctp-subtext0: 74 82 90;
+  --ctp-subtext1: 45 52 60;
+  --ctp-text: 17 23 28;
+  --ctp-rosewater: 255 108 92;
+  --ctp-flamingo: 255 90 74;
+  --ctp-pink: 214 51 132;
+  --ctp-mauve: 255 54 33;
+  --ctp-red: 225 29 72;
+  --ctp-maroon: 200 40 40;
+  --ctp-peach: 245 158 11;
+  --ctp-yellow: 217 145 20;
+  --ctp-green: 22 150 96;
+  --ctp-teal: 13 148 148;
+  --ctp-sky: 14 130 200;
+  --ctp-sapphire: 32 114 180;
+  --ctp-blue: 34 114 180;
+  --ctp-lavender: 90 90 220;
+}
+
+/* Databricks — dark */
+:root[data-theme="databricks-dark"] {
+  color-scheme: dark;
+  --ctp-base: 15 18 23;
+  --ctp-mantle: 27 32 39;
+  --ctp-crust: 10 13 17;
+  --ctp-surface0: 38 45 54;
+  --ctp-surface1: 51 59 69;
+  --ctp-surface2: 67 76 87;
+  --ctp-overlay0: 107 117 128;
+  --ctp-overlay1: 139 149 161;
+  --ctp-subtext0: 174 182 192;
+  --ctp-subtext1: 201 208 216;
+  --ctp-text: 232 236 239;
+  --ctp-rosewater: 255 140 120;
+  --ctp-flamingo: 255 120 104;
+  --ctp-pink: 236 110 180;
+  --ctp-mauve: 255 90 68;
+  --ctp-red: 255 90 68;
+  --ctp-maroon: 235 120 120;
+  --ctp-peach: 245 170 70;
+  --ctp-yellow: 240 200 90;
+  --ctp-green: 52 211 153;
+  --ctp-teal: 45 200 200;
+  --ctp-sky: 90 190 240;
+  --ctp-sapphire: 74 158 235;
+  --ctp-blue: 74 158 235;
+  --ctp-lavender: 150 150 240;
+}
+
 /* text scaling — applied on <html data-textsize> */
 :root[data-textsize="sm"] { font-size: 15px; }
 :root[data-textsize="lg"] { font-size: 17.5px; }
 :root[data-textsize="xl"] { font-size: 19px; }
 
-/* light-theme (Latte) rendering fixes — glass borders + backdrop are tuned for dark;
-   on light, white borders vanish and the dark grain/glows clash. */
-:root[data-theme="latte"] body {
+/* light-mode rendering fixes — glass borders + backdrop are tuned for dark;
+   on any light theme, white borders vanish and the dark grain/glows clash. */
+:root[data-mode="light"] body {
   background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgba(136, 57, 239, 0.06), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 20%, rgba(30, 102, 245, 0.05), transparent 55%);
+    radial-gradient(60rem 60rem at 85% -10%, rgb(var(--ctp-mauve) / 0.06), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 20%, rgb(var(--ctp-blue) / 0.05), transparent 55%);
 }
-:root[data-theme="latte"] body::before {
+:root[data-mode="light"] body::before {
   opacity: 0.02;
 }
-:root[data-theme="latte"] .glass {
+:root[data-mode="light"] .glass {
   border-color: rgba(0, 0, 0, 0.08);
   background-color: rgb(var(--ctp-base) / 0.7);
 }
-:root[data-theme="latte"] .input {
+:root[data-mode="light"] .input {
   border-color: rgba(0, 0, 0, 0.12);
 }
 
