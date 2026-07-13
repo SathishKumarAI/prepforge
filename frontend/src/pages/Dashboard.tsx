@@ -14,24 +14,7 @@ import {
 import { Loader } from "../components/States";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
-
-const CAT = {
-  base: "#1e1e2e",
-  surface0: "#313244",
-  overlay0: "#6c7086",
-  text: "#cdd6f4",
-  mauve: "#cba6f7",
-  blue: "#89b4fa",
-  teal: "#94e2d5",
-  peach: "#fab387",
-  green: "#a6e3a1",
-};
-const TOPIC_HEX: Record<string, string> = {
-  AI: CAT.mauve,
-  "Machine Learning": CAT.blue,
-  "Data Science": CAT.teal,
-  "Data Analytics": CAT.peach,
-};
+import { useThemeColors } from "../hooks/useThemeColors";
 
 function computeStreak(days: string[]): number {
   const set = new Set(days);
@@ -52,6 +35,21 @@ function computeStreak(days: string[]): number {
 export function Dashboard() {
   const { questions, topics, loading } = useQuestions();
   const { progress } = useProgress();
+  const CAT = useThemeColors();
+  const TOPIC_HEX: Record<string, string> = {
+    AI: CAT.mauve,
+    "Machine Learning": CAT.blue,
+    "Data Science": CAT.teal,
+    "Data Analytics": CAT.peach,
+  };
+  const tipStyle = {
+    background: CAT.mantle,
+    border: `1px solid ${CAT.surface1}`,
+    borderRadius: 12,
+    color: CAT.text,
+    fontSize: 12,
+    fontFamily: "JetBrains Mono, monospace",
+  };
 
   const stats = useMemo(() => {
     const known = Object.values(progress.flash).filter((s) => s === "known").length;
@@ -165,14 +163,6 @@ export function Dashboard() {
   );
 }
 
-const tipStyle = {
-  background: "#181825",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: 12,
-  color: "#cdd6f4",
-  fontSize: 12,
-  fontFamily: "JetBrains Mono, monospace",
-};
 
 function Stat({ label, value, unit, tone }: { label: string; value: number; unit?: string; tone: string }) {
   const toneText: Record<string, string> = {

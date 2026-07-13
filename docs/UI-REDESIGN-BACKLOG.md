@@ -61,7 +61,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Semantic palette (primary/success/warn/danger/info) instead of accent sprawl.
 - [ ] One accent per topic used consistently (badges, graph, charts match).
 - [ ] Verify WCAG AA contrast for all body/secondary text in every theme.
-- [ ] Theme-aware chart colors (dashboard currently hardcoded dark hex).
+- [x] Theme-aware chart colors — Dashboard reads live CSS-var palette (works in all 5 themes).
 - [ ] Stronger disabled-state contrast (opacity-40 is too faint).
 
 ## Component & polish
