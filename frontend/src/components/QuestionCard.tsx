@@ -45,7 +45,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
               </span>
             )}
           </div>
-          <h3 className="font-display text-lg font-medium leading-snug text-text">
+          <h3 className="font-display text-h3 font-medium text-text">
             {q.question}
           </h3>
           {!open && (

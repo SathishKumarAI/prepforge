@@ -54,6 +54,25 @@ export function Browse() {
     return list;
   }, [questions, fuse, query, topic, diff]);
 
+  // Windowed rendering — the bank is 1700+ cards, each expandable/animated, so we
+  // render a growing slice and extend it as a sentinel scrolls into view. Keeps the
+  // DOM small and scrolling smooth without mounting everything at once.
+  const PAGE = 48;
+  const [visible, setVisible] = useState(PAGE);
+  const sentinel = useRef<HTMLDivElement>(null);
+  useEffect(() => setVisible(PAGE), [query, topic, diff]); // reset window when the filter changes
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => entries[0]?.isIntersecting && setVisible((v) => v + PAGE),
+      { rootMargin: "800px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filtered.length]);
+  const shown = filtered.slice(0, visible);
+
   if (loading)
     return (
       <div>
@@ -155,11 +174,18 @@ export function Browse() {
       {filtered.length === 0 ? (
         <Empty title="No matches" hint="Try a different search or clear the filters." />
       ) : (
-        <div className="pf-deck grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
-          {filtered.map((q, i) => (
-            <QuestionCard key={q.id} q={q} index={i} />
-          ))}
-        </div>
+        <>
+          <div className="pf-deck grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
+            {shown.map((q, i) => (
+              <QuestionCard key={q.id} q={q} index={Math.min(i, 12)} />
+            ))}
+          </div>
+          {visible < filtered.length && (
+            <div ref={sentinel} className="py-8 text-center font-mono text-[11px] text-overlay0">
+              showing {shown.length} of {filtered.length} — scroll for more
+            </div>
+          )}
+        </>
       )}
     </div>
   );

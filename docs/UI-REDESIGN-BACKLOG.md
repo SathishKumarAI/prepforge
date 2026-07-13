@@ -21,7 +21,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Cap line length (`max-width: 68ch`) on all long-form text (answers, reader, sources).
 - [x] A real type scale (display/h1/h2/h3/body/small/micro) as Tailwind `fontSize` tokens; applied across every page title, question heading, stat, and panel — no ad-hoc `text-3xl/4xl` left.
 - [x] `text-wrap: balance` on headings, `pretty` on paragraphs.
-- [ ] Distinct, comfortable serif or humanist body for long reading (test Fraunces vs a body serif).
+- [x] Body/display font decision made: Fraunces (serif) for display/headings, Public Sans (humanist sans) for body; reading-mode enlarges body to 1.075rem/1.85 — best legibility for long sessions without a serif body's mid-size fuzziness.
 - [x] `tabular-nums` for all counts/metrics; consistent number formatting.
 - [x] Larger, calmer "reading mode" typography in the Reader (`.reading-lg`: 1.075rem / 1.85 line-height / 72ch) via the shared `ReadingPane`.
 
@@ -43,7 +43,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Progress indicator / reading time on long content.
 
 ## Visual hierarchy & rhythm
-- [ ] One clear primary action per view; demote secondary buttons to ghost/outline.
+- [x] One clear primary action per view (mauve-filled CTA); secondaries are ghost pills / `Chip`s per the button standard (`docs/UI-BUTTONS.md`).
 - [x] Consistent card elevation scale — single `.glass` base + exactly two shadow levels (`shadow-card` rest, `shadow-glow` emphasis); no competing variants.
 - [x] Section dividers with labels on dense pages — `SectionDivider` (eyebrow + hint + hairline); applied on Dashboard (Overview/Trends/Detail).
 - [x] Align tabs, metadata, and legends to a shared baseline grid (4/8px Tailwind scale; type-scale line-heights).
@@ -52,15 +52,15 @@ tickets, Kanban-ready. Checked = done.
 
 ## Information density & scanning
 - [x] Comfortable/Compact density toggle in Settings (data-density; tightens deck + cards).
-- [ ] Skimmable question cards: topic, difficulty, source, and a one-line preview.
+- [x] Skimmable question cards: topic + difficulty badges, vault/source flag, 2-line answer preview, tags, and related count — all in the collapsed row; heading on the type scale.
 - [x] Group nav into sections (Study / Content / Insights) to reduce the 11-item list.
 - [x] Result count + dismissible active-filter chips (topic/difficulty/query) + clear-all.
-- [ ] Virtualized long lists (Browse with 1700+ questions) for smooth scroll.
+- [x] Windowed long lists — Browse renders a 48-card slice that grows via an IntersectionObserver sentinel (800px rootMargin), resets on filter change; keeps the DOM small with expandable/animated cards.
 
 ## Color & contrast
-- [~] Semantic palette tokens added (primary/success/warning/destructive/info) — adoption incremental.
+- [x] Semantic palette tokens (primary/success/warning/destructive/info) defined and used; body/UI colors all come from palette tokens (verified zero raw-hex text usage).
 - [x] One accent per topic used consistently — single `lib/topics` map (AI=mauve, ML=blue, DS=teal, DA=peach) drives badges, graph nodes, and Dashboard charts; removed the duplicate Dashboard map.
-- [ ] Verify WCAG AA contrast for all body/secondary text in every theme.
+- [x] WCAG AA verified for body/secondary text in all 5 themes (contrast script); darkened Latte/Sepia/Databricks-light `overlay0/overlay1` + Latte `subtext0` so metadata text clears 4.5:1.
 - [x] Theme-aware chart colors — Dashboard reads live CSS-var palette (works in all 5 themes).
 - [x] Stronger disabled-state contrast (global opacity .55 + not-allowed cursor).
 
@@ -70,10 +70,10 @@ tickets, Kanban-ready. Checked = done.
 - [x] Browse: responsive 2-col card grid on xl (expanded cards span full width for the two-pane).
 - [x] Wider page (max-w-7xl) — reduces dead side-margins; prose still capped at 68ch.
 - [x] Dashboard: 6-stat grid + 2-col progress bars — denser, less scroll.
-- [~] Trimmed Browse hero (smaller heading, tighter copy) — other pages pending.
+- [x] Compact heroes across all pages — single scale-driven h1 + one-line subtitle; no oversized decorative hero remains.
 - [x] Consistent 8px vertical rhythm (Tailwind 4/8px scale); trimmed oversized paddings; section bands via `SectionDivider`.
 - [x] "Next best action" banner on Browse (N cards due → Start review) — reduce decision load, guide the next step.
-- [ ] Progressive disclosure — show summaries, expand on intent, so the eye isn't lost in space.
+- [x] Progressive disclosure — cards show a summary, expand in place on click, long answers clamp with "show more", and the deep/AI answer loads only on intent.
 
 ## Component & polish
 - [ ] Finish shadcn migration (ArticleReader/SourceDoc → Dialog, Tooltip, Command, Skeleton, Sheet).
