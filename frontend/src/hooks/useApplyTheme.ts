@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { applyTextSize, applyTheme } from "../lib/theme";
+import { applyDensity, applyTextSize, applyTheme } from "../lib/theme";
 import { useSettings } from "./useSettings";
 
 // Applies the saved theme + text size to <html>, and follows the OS theme when
@@ -14,6 +14,10 @@ export function useApplyTheme() {
   useEffect(() => {
     applyTextSize(settings.textSize);
   }, [settings.textSize]);
+
+  useEffect(() => {
+    applyDensity(settings.density);
+  }, [settings.density]);
 
   useEffect(() => {
     if (settings.theme !== "system") return;

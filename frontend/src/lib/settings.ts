@@ -1,6 +1,6 @@
 // User profile + interests + appearance. Local-only. Feeds the generator persona and Learn mix.
 import { load, save } from "./storage";
-import type { TextSize, ThemeMode } from "./theme";
+import type { Density, TextSize, ThemeMode } from "./theme";
 
 export interface Settings {
   name: string;
@@ -11,6 +11,7 @@ export interface Settings {
   companies: string; // free text, capped
   theme: ThemeMode; // appearance
   textSize: TextSize; // global text scale
+  density: Density; // card/list spacing
 }
 
 export const EMPTY_SETTINGS: Settings = {
@@ -22,6 +23,7 @@ export const EMPTY_SETTINGS: Settings = {
   companies: "",
   theme: "mocha",
   textSize: "base",
+  density: "comfortable",
 };
 
 const MAX_TEXT = 200;
@@ -36,6 +38,7 @@ export function loadSettings(): Settings {
   s.difficulty = Array.isArray(s.difficulty) ? s.difficulty : [];
   s.theme = s.theme ?? "mocha";
   s.textSize = s.textSize ?? "base";
+  s.density = s.density ?? "comfortable";
   return s;
 }
 

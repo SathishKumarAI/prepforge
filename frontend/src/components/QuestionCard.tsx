@@ -33,7 +33,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
     >
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-start gap-4 px-5 py-4 text-left"
+        className="pf-card flex w-full items-start gap-4 px-5 py-4 text-left"
       >
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">

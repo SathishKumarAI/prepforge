@@ -2,6 +2,7 @@
 export type ThemeMode =
   | "mocha" | "latte" | "databricks-dark" | "databricks-light" | "sepia" | "system";
 export type TextSize = "sm" | "base" | "lg" | "xl";
+export type Density = "comfortable" | "compact";
 
 // which themes are light (for data-mode) — drives the light-render fixes in CSS
 const LIGHT_THEMES = new Set(["latte", "databricks-light", "sepia"]);
@@ -22,6 +23,11 @@ export const TEXT_SIZES: { value: TextSize; label: string }[] = [
   { value: "xl", label: "XL" },
 ];
 
+export const DENSITIES: { value: Density; label: string }[] = [
+  { value: "comfortable", label: "Comfortable" },
+  { value: "compact", label: "Compact" },
+];
+
 function prefersLight(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches;
 }
@@ -40,4 +46,10 @@ export function applyTextSize(size: TextSize): void {
   const root = document.documentElement;
   if (size === "base") root.removeAttribute("data-textsize");
   else root.setAttribute("data-textsize", size);
+}
+
+export function applyDensity(density: Density): void {
+  const root = document.documentElement;
+  if (density === "comfortable") root.removeAttribute("data-density");
+  else root.setAttribute("data-density", density);
 }

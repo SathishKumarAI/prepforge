@@ -1,7 +1,7 @@
 import { useQuestions } from "../hooks/useQuestions";
 import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
-import { TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
+import { DENSITIES, TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 const SENIORITY: Settings["seniority"][] = ["junior", "mid", "senior", "staff"];
@@ -40,6 +40,14 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             <div className="flex flex-wrap gap-2">
               {TEXT_SIZES.map((t) => (
                 <Chip key={t.value} active={settings.textSize === t.value} onClick={() => update({ textSize: t.value })} label={t.label} />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Density">
+            <div className="flex flex-wrap gap-2">
+              {DENSITIES.map((d) => (
+                <Chip key={d.value} active={settings.density === d.value} onClick={() => update({ density: d.value })} label={d.label} />
               ))}
             </div>
           </Field>

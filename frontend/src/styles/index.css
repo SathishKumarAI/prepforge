@@ -153,6 +153,11 @@
   --ctp-lavender: 130 100 140;
 }
 
+/* density — applied on <html data-density>; compact tightens deck spacing for scanning */
+:root[data-density="compact"] .pf-deck { gap: 0.5rem; }
+:root[data-density="compact"] .pf-card { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+:root[data-density="compact"] .prose-answer { line-height: 1.6; }
+
 /* text scaling — applied on <html data-textsize> */
 :root[data-textsize="sm"] { font-size: 15px; }
 :root[data-textsize="lg"] { font-size: 17.5px; }

@@ -51,7 +51,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Skeleton loading states (Browse deck) + designed empty/error surfaces.
 
 ## Information density & scanning
-- [ ] Comfortable vs compact density toggle per user preference.
+- [x] Comfortable/Compact density toggle in Settings (data-density; tightens deck + cards).
 - [ ] Skimmable question cards: topic, difficulty, source, and a one-line preview.
 - [x] Group nav into sections (Study / Content / Insights) to reduce the 11-item list.
 - [ ] Result counts + active-filter chips that are dismissible.
