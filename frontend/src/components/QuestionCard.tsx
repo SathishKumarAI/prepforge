@@ -48,6 +48,20 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
           <h3 className="font-display text-lg font-medium leading-snug text-text">
             {q.question}
           </h3>
+          {!open && (
+            <>
+              {q.answer && (
+                <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-overlay1">{stripMd(q.answer)}</p>
+              )}
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10px] text-overlay0">
+                {q.tags.slice(0, 4).map((t) => (
+                  <span key={t}>#{t}</span>
+                ))}
+                {q.related && q.related.length > 0 && <span className="text-lavender">◈ {q.related.length} related</span>}
+                {q.sources && q.sources.length > 0 && <span className="text-peach">⛁ {q.sources.length} source{q.sources.length > 1 ? "s" : ""}</span>}
+              </div>
+            </>
+          )}
         </div>
         <span
           className={`mt-1 shrink-0 text-overlay1 transition-transform duration-300 ${
@@ -174,6 +188,17 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
       <SourceDoc source={openSource} onClose={() => setOpenSource(null)} />
     </motion.article>
   );
+}
+
+// strip markdown syntax for a clean one-line preview
+function stripMd(md: string): string {
+  return md
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#*`>_~]/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
 }
 
 function RelatedRail({ related, onJump }: { related?: { id: string; score: number }[]; onJump: (id: string) => void }) {

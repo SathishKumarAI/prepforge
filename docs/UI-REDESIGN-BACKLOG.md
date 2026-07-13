@@ -64,6 +64,17 @@ tickets, Kanban-ready. Checked = done.
 - [x] Theme-aware chart colors — Dashboard reads live CSS-var palette (works in all 5 themes).
 - [ ] Stronger disabled-state contrast (opacity-40 is too faint).
 
+## Space audit — kill empty space, deliver content (user psychology)
+- [x] Enrich collapsed question cards with an answer **preview** + related/source meta — rows were empty voids; now they deliver content + spark curiosity.
+- [x] Tighten oversized empty/loading states (py-24 → py-16).
+- [ ] Browse: responsive 2-col card grid on xl/2xl so wide screens fill with content, not margin.
+- [ ] Fluid page width with a sensible cap — reduce dead side-margins on ultrawide.
+- [ ] Dashboard: denser stat + insight layout that fills the viewport (less scroll = less ADHD friction).
+- [ ] Trim hero whitespace on every page; lead with content, not big empty headers.
+- [ ] Consistent 8px vertical rhythm; remove ad-hoc large paddings.
+- [ ] "Next best action" prompt (due cards / continue) up top — psychology: reduce decision load, guide the next step.
+- [ ] Progressive disclosure — show summaries, expand on intent, so the eye isn't lost in space.
+
 ## Component & polish
 - [ ] Finish shadcn migration (ArticleReader/SourceDoc → Dialog, Tooltip, Command, Skeleton, Sheet).
 - [ ] Unify Pill / Badge / Button / Tab into single components.
