@@ -400,7 +400,7 @@ export function Quiz() {
                         {a.correct ? "✓" : "✗"}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-text">{a.q.question}</div>
+                        <div className="text-sm font-medium text-text">{aq.prompt ?? a.q.question}</div>
                         {!a.correct && (
                           <div className="mt-1 text-xs text-red/90">Your answer: {yourText}</div>
                         )}
@@ -485,7 +485,10 @@ export function Quiz() {
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          <h2 className="mb-6 font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
+          {quiz.kind === "cloze" && (
+            <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-teal">Fill in the blank</div>
+          )}
+          <h2 className="mb-6 font-display text-h2 font-medium leading-snug text-text">{quiz.prompt ?? q.question}</h2>
           <div className="flex flex-col gap-3">
             {quiz.choices.map((c, idx) => {
               const isCorrect = idx === quiz.correctIndex;

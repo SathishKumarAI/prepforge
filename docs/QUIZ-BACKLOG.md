@@ -26,9 +26,12 @@ Goal: quizzes the user can **shape** (how many, which topics/tags, how hard) and
       opens it via `POST /library/read` (SourceDoc routes vault vs library by `kind`).
 - [~] **Generate MCQs on demand** — done for videos via `/quiz/from_video`; a generic
       "generate for this resource" button in Resources + Ollama/Claude tiers still TODO.
-- [ ] Better distractors: use the TF-IDF related index to pick *near-miss* concepts as wrong answers
-      (harder, more educational than random same-topic glosses).
-- [ ] Question kinds: definition-match (current), true/false, "spot the wrong statement", cloze/fill-blank.
-- [ ] Weakness-aware quizzes: bias selection toward low-mastery topics + due SRS cards.
-- [ ] Timed mode + per-question explanations on the results screen (link back to the full answer).
-- [ ] Persist quiz config in Settings so it's remembered between sessions.
+- [x] Better distractors: ingest now builds a local TF-IDF index over the card set and picks the
+      *most similar* other cards as distractors (near-miss, not random). `_build_vectors`/`_similarity`.
+- [~] Question kinds: **definition-match** + **cloze/fill-blank** shipped (deterministic, near-miss
+      distractors; `quiz.kind` + `quiz.prompt`, rendered on the run + results screens). true/false and
+      "spot the wrong statement" deferred — reliably generating a *false* statement needs semantic
+      validation (a model), which breaks the zero-token guarantee.
+- [x] Weakness-aware quizzes: "Focus weak spots" toggle floats not-yet-mastered / unseen cards first.
+- [x] Timed mode + per-question explanations on the results screen (gloss from the source answer).
+- [x] Persist quiz config so it's remembered between sessions (`pf-quiz-config` in localStorage).

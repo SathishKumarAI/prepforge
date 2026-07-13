@@ -176,30 +176,122 @@ def _first_sentence(text: str, cap: int = 160) -> str:
     return (s[: cap - 1] + "…") if len(s) > cap else s
 
 
-def _synthesize_quiz(card: dict, others: list[dict]) -> dict | None:
-    """Build a zero-token multiple-choice quiz for a card that has none.
+# ---- lightweight TF-IDF over the card set, for *near-miss* distractors ----
+_QTOKEN = re.compile(r"[a-z0-9][a-z0-9+#.-]{1,}")
+_QSTOP = {
+    "the", "and", "for", "with", "what", "which", "when", "does", "your", "have", "this", "that",
+    "how", "why", "are", "is", "an", "of", "to", "in", "on", "explain", "describe", "between",
+    "difference", "you", "would", "should", "about", "can", "using", "use", "from", "or", "it", "a",
+}
 
-    Format: "Which description best matches '<heading/question>'?" — the correct
-    choice is this card's own one-line gloss; 3 distractors are glosses from other
-    cards (same topic preferred for plausibility). Fully deterministic (no RNG, no
-    model) so any ingested resource — including notes from a YouTube video — becomes
-    quizzable offline.
+
+def _card_tokens(card: dict) -> list[str]:
+    text = (card.get("question", "") + " " + _first_sentence(card.get("answer", ""), 200)).lower()
+    toks = [t for t in _QTOKEN.findall(text) if t not in _QSTOP and len(t) > 2]
+    for tag in card.get("tags", []) or []:
+        t = str(tag).lower()
+        if len(t) > 2:
+            toks += [t, t, t]  # tags carry strong topical signal
+    return toks
+
+
+def _build_vectors(cards: list[dict]) -> tuple[dict, dict]:
+    """TF-IDF sparse vectors + norms keyed by card id (pure Python, no deps)."""
+    import math
+    from collections import Counter
+
+    docs = [(c["id"], _card_tokens(c)) for c in cards]
+    n = len(docs)
+    df: Counter = Counter()
+    for _, toks in docs:
+        for term in set(toks):
+            df[term] += 1
+    idf = {term: math.log(n / (1 + freq)) + 1.0 for term, freq in df.items()}
+    vec: dict[str, dict[str, float]] = {}
+    norm: dict[str, float] = {}
+    for cid, toks in docs:
+        if not toks:
+            vec[cid], norm[cid] = {}, 1e-9
+            continue
+        tf = Counter(toks)
+        v = {term: (freq / len(toks)) * idf.get(term, 0.0) for term, freq in tf.items()}
+        vec[cid] = v
+        norm[cid] = math.sqrt(sum(w * w for w in v.values())) or 1e-9
+    return vec, norm
+
+
+def _similarity(a: str, b: str, vec: dict, norm: dict) -> float:
+    va, vb = vec.get(a, {}), vec.get(b, {})
+    small, big = (va, vb) if len(va) <= len(vb) else (vb, va)
+    dot = sum(w * big.get(term, 0.0) for term, w in small.items())
+    return dot / (norm.get(a, 1e-9) * norm.get(b, 1e-9))
+
+
+def _cloze(card: dict, h: int) -> tuple[str, str] | None:
+    """Turn the gloss into a fill-in-the-blank: (prompt_with_blank, answer_term).
+    Blanks the most salient token (longest content word, tags preferred)."""
+    gloss = _first_sentence(card.get("answer", ""))
+    words = re.findall(r"[A-Za-z][A-Za-z0-9+#.-]{2,}", gloss)
+    tagset = {str(t).lower() for t in card.get("tags", []) or []}
+    cands = [w for w in words if w.lower() not in _QSTOP and len(w) > 3]
+    if not cands:
+        return None
+    # prefer a word that is also a tag (topical), else the longest word — stable pick
+    tagged = [w for w in cands if w.lower() in tagset]
+    pool = tagged or cands
+    term = sorted(pool, key=lambda w: (-len(w), w))[h % len(pool)] if pool else None
+    if not term:
+        return None
+    prompt = re.sub(r"\b" + re.escape(term) + r"\b", "_____", gloss, count=1)
+    if "_____" not in prompt:
+        return None
+    return prompt, term
+
+
+def _synthesize_quiz(card: dict, others: list[dict], vec: dict, norm: dict) -> dict | None:
+    """Zero-token MCQ for a card that has none. Deterministic (seeded by card id),
+    no model. Distractors are the *most similar* other cards (TF-IDF near-miss), so
+    the wrong answers are plausible rather than random. Two kinds, chosen by hash:
+
+    - definition-match: "which one-line description matches this?" (distractors = glosses)
+    - cloze: fill in the blanked key term (distractors = other cards' salient terms)
     """
+    h = int(hashlib.sha1(card["id"].encode()).hexdigest(), 16)
+    correct_index = h % 4
+    cid = card["id"]
+    # rank other cards by similarity to this one → near-miss distractors first
+    ranked = sorted(
+        (o for o in others if o["id"] != cid),
+        key=lambda o: (-_similarity(cid, o["id"], vec, norm), o["id"]),
+    )
+    if len(ranked) < 3:
+        return None
+
+    # kind: every 3rd card (by hash) becomes a cloze, the rest definition-match
+    if h % 3 == 0:
+        cz = _cloze(card, h)
+        if cz:
+            prompt, term = cz
+            wrongs: list[str] = []
+            for o in ranked:
+                for t in (o.get("tags", []) or []):
+                    ts = str(t)
+                    if ts.lower() != term.lower() and ts not in wrongs and len(ts) > 3:
+                        wrongs.append(ts)
+                        break
+                if len(wrongs) == 3:
+                    break
+            if len(wrongs) == 3:
+                choices = wrongs[:]
+                choices.insert(correct_index, term)
+                return {"choices": choices, "correctIndex": correct_index, "kind": "cloze", "prompt": prompt}
+
+    # definition-match (default)
     correct = _first_sentence(card.get("answer", ""))
     if len(correct) < 20:
         return None
-    same_topic = [o for o in others if o["topic"] == card["topic"] and o["id"] != card["id"]]
-    fallback = [o for o in others if o["id"] != card["id"]]
-    pool = same_topic if len(same_topic) >= 3 else fallback
-    # deterministic rotation seeded by this card's id, so choices are stable per card
-    h = int(hashlib.sha1(card["id"].encode()).hexdigest(), 16)
-    ordered = sorted(pool, key=lambda o: o["id"])
-    if len(ordered) < 3:
-        return None
-    off = h % len(ordered)
-    rotated = ordered[off:] + ordered[:off]
     distractors: list[str] = []
-    for o in rotated:
+    for o in ranked:
         g = _first_sentence(o.get("answer", ""))
         if len(g) >= 20 and g != correct and g not in distractors:
             distractors.append(g)
@@ -207,18 +299,18 @@ def _synthesize_quiz(card: dict, others: list[dict]) -> dict | None:
             break
     if len(distractors) < 3:
         return None
-    correct_index = h % 4
     choices = distractors[:]
     choices.insert(correct_index, correct)
-    return {"choices": choices, "correctIndex": correct_index}
+    return {"choices": choices, "correctIndex": correct_index, "kind": "mcq"}
 
 
 def _add_synthetic_quizzes(cards: list[dict]) -> int:
-    """Give every quiz-less card a deterministic MCQ. Returns count added."""
+    """Give every quiz-less card a deterministic near-miss MCQ. Returns count added."""
+    vec, norm = _build_vectors(cards)
     added = 0
     for c in cards:
         if not c.get("quiz"):
-            quiz = _synthesize_quiz(c, cards)
+            quiz = _synthesize_quiz(c, cards, vec, norm)
             if quiz:
                 c["quiz"] = quiz
                 added += 1
