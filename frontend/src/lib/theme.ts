@@ -1,15 +1,17 @@
 // Theme + text-scale application. Pure DOM side-effects; state lives in settings.
-export type ThemeMode = "mocha" | "latte" | "databricks-dark" | "databricks-light" | "system";
+export type ThemeMode =
+  | "mocha" | "latte" | "databricks-dark" | "databricks-light" | "sepia" | "system";
 export type TextSize = "sm" | "base" | "lg" | "xl";
 
 // which themes are light (for data-mode) — drives the light-render fixes in CSS
-const LIGHT_THEMES = new Set(["latte", "databricks-light"]);
+const LIGHT_THEMES = new Set(["latte", "databricks-light", "sepia"]);
 
 export const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: "mocha", label: "Catppuccin dark" },
   { value: "latte", label: "Catppuccin light" },
   { value: "databricks-dark", label: "Databricks dark" },
   { value: "databricks-light", label: "Databricks light" },
+  { value: "sepia", label: "Sepia (low-blue)" },
   { value: "system", label: "System" },
 ];
 

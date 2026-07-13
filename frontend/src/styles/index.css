@@ -123,6 +123,36 @@
   --ctp-lavender: 150 150 240;
 }
 
+/* Sepia — warm, low-blue reading theme (easy on the eyes for long night study) */
+:root[data-theme="sepia"] {
+  color-scheme: light;
+  --ctp-base: 244 236 216;
+  --ctp-mantle: 237 228 205;
+  --ctp-crust: 228 218 195;
+  --ctp-surface0: 220 208 182;
+  --ctp-surface1: 205 191 162;
+  --ctp-surface2: 190 175 145;
+  --ctp-overlay0: 150 135 108;
+  --ctp-overlay1: 120 105 82;
+  --ctp-subtext0: 92 78 58;
+  --ctp-subtext1: 74 62 46;
+  --ctp-text: 56 46 34;
+  --ctp-rosewater: 190 120 90;
+  --ctp-flamingo: 185 110 90;
+  --ctp-pink: 180 100 120;
+  --ctp-mauve: 150 88 44;
+  --ctp-red: 168 60 50;
+  --ctp-maroon: 150 70 60;
+  --ctp-peach: 190 110 50;
+  --ctp-yellow: 170 130 40;
+  --ctp-green: 96 120 60;
+  --ctp-teal: 90 130 120;
+  --ctp-sky: 110 130 150;
+  --ctp-sapphire: 90 120 150;
+  --ctp-blue: 90 110 130;
+  --ctp-lavender: 130 100 140;
+}
+
 /* text scaling — applied on <html data-textsize> */
 :root[data-textsize="sm"] { font-size: 15px; }
 :root[data-textsize="lg"] { font-size: 17.5px; }
@@ -155,6 +185,7 @@ body,
 /* prevent stray horizontal scroll on mobile (clip is sticky-safe, unlike hidden) */
 html {
   overflow-x: clip;
+  font-size: 16.5px; /* comfortable base; data-textsize overrides below */
 }
 
 /* comfortable touch targets on touch devices */

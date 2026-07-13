@@ -16,7 +16,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Responsive gutters (px-5 → sm:px-8 → lg:px-12) + left-aligned wide content.
 
 ## Typography & readability
-- [ ] Bump base body size to ~16.5–17px with `line-height: 1.7` for prose.
+- [x] Base body 16.5px + prose line-height 1.75.
 - [x] Increase answer prose line-height + paragraph spacing for readability.
 - [x] Cap line length (`max-width: 68ch`) on all long-form text (answers, reader, sources).
 - [ ] A real type scale (display / h1 / h2 / body / small / mono) as tokens; apply consistently.
@@ -30,7 +30,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Warm, low-glare dark default (Catppuccin already helps) + verify Databricks dark isn't harsh.
 - [ ] Generous whitespace + vertical rhythm (8px baseline grid) to reduce density fatigue.
 - [ ] Dim/secondary text for non-critical metadata so the eye rests on content.
-- [ ] Optional sepia / reduced-blue-light reading theme for night study.
+- [x] Sepia (low-blue) reading theme added to the theme switcher.
 - [ ] Comfortable focus mode: hide chrome (nav/sidebar), center the current question.
 - [ ] Respect reduced-motion everywhere (done globally; audit per-component).
 
