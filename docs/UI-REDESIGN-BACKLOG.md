@@ -79,7 +79,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Finish shadcn migration (ArticleReader/SourceDoc → Dialog, Tooltip, Command, Skeleton, Sheet).
 - [ ] Unify Pill / Badge / Button / Tab into single components.
 - [ ] Global toast system already in (Sonner) — route all feedback through it.
-- [ ] Keyboard shortcuts + a `?` cheatsheet overlay.
+- [x] Keyboard shortcuts + a `?` cheatsheet overlay (ShortcutHelp dialog, footer link).
 - [x] Code-split — lazy-load Dashboard(recharts)/Graph/Reader/Notes; main bundle 1013kB → 595kB.
 
 ---

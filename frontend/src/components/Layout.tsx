@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { NavLink, useLocation } from "react-router-dom";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { SettingsPanel } from "./SettingsPanel";
+import { ShortcutHelp } from "./ShortcutHelp";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { useNotes } from "../hooks/useNotes";
@@ -32,9 +33,24 @@ const NAV_GROUPS: NavItem["group"][] = ["Study", "Content", "Insights"];
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { questions } = useQuestions();
   const { progress } = useProgress();
   const { notes } = useNotes();
+
+  // global "?" opens the shortcut cheatsheet (ignored while typing in a field)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
+      e.preventDefault();
+      setHelpOpen((v) => !v);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // cards due today for spaced repetition — surfaced as a nav badge
   const dueCount = useMemo(
@@ -51,6 +67,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="relative z-10 flex min-h-screen">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       {/* sidebar */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col justify-between border-r border-white/[0.05] px-5 py-7 md:flex">
         <div>
@@ -172,6 +189,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="flex items-center gap-3">
               <NavLink to="/learn" className="hover:text-subtext1">Review due</NavLink>
               <NavLink to="/graph" className="hover:text-subtext1">Memory graph</NavLink>
+              <button onClick={() => setHelpOpen(true)} className="hover:text-subtext1">Shortcuts (?)</button>
               <button onClick={() => setSettingsOpen(true)} className="hover:text-subtext1">Settings</button>
             </span>
           </footer>
