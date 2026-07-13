@@ -77,8 +77,8 @@ tickets, Kanban-ready. Checked = done.
 
 ## Component & polish
 - [ ] Finish shadcn migration (ArticleReader/SourceDoc → Dialog, Tooltip, Command, Skeleton, Sheet).
-- [ ] Unify Pill / Badge / Button / Tab into single components.
-- [ ] Global toast system already in (Sonner) — route all feedback through it.
+- [x] Unify Pill / Badge / Button / Tab into single components — shared `ui/chip` (was 5 copy-pasted `Pill`/`Toggle`/`Chip` defs across Quiz/Resources/Settings/Reader/Graph), plus existing `ui/button`, `Badge`, `ui/tabs`.
+- [x] Route transient feedback through Sonner — Reader upload/extract/web-save now `toast.success/error` instead of inline text; contextual empty/error surfaces kept intentionally.
 - [x] Keyboard shortcuts + a `?` cheatsheet overlay (ShortcutHelp dialog, footer link).
 - [x] Code-split — lazy-load Dashboard(recharts)/Graph/Reader/Notes; main bundle 1013kB → 595kB.
 

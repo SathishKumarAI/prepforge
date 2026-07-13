@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { Chip } from "@/components/ui/chip";
 import { ReadingPane } from "../components/ReadingPane";
 import { readResource, uploadResource, type ReadResult } from "../lib/api";
 
@@ -21,8 +23,8 @@ export function Reader() {
       </header>
 
       <div className="mb-6 flex gap-2">
-        <Toggle active={src === "local"} onClick={() => setSrc("local")} label="Local file" />
-        <Toggle active={src === "web"} onClick={() => setSrc("web")} label="Web URL" />
+        <Chip active={src === "local"} onClick={() => setSrc("local")} label="Local file" />
+        <Chip active={src === "web"} onClick={() => setSrc("web")} label="Web URL" />
       </div>
 
       {src === "local" ? <LocalReader /> : <WebReader />}
@@ -34,7 +36,6 @@ function LocalReader() {
   const [file, setFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   // revoke object URLs to avoid leaks
@@ -44,28 +45,27 @@ function LocalReader() {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     setPdfUrl(null);
     setText(null);
-    setMsg(null);
     setFile(f);
     if (!f) return;
     const ext = f.name.split(".").pop()?.toLowerCase();
     if (ext === "pdf") {
       setPdfUrl(URL.createObjectURL(f));
     } else if (ext === "md" || ext === "markdown" || ext === "txt") {
-      try { setText(await f.text()); } catch { setMsg("Couldn't read the file."); }
+      try { setText(await f.text()); } catch { toast.error("Couldn't read the file."); }
     } else {
-      setMsg("Only PDF, .md, or .txt files.");
+      toast.error("Only PDF, .md, or .txt files.");
     }
   }
 
   async function extract() {
     if (!file) return;
     setBusy(true);
-    setMsg(null);
     try {
       const r: ReadResult = await uploadResource(file);
-      setMsg(r.error ? r.message ?? "Extract failed." : `Saved to ${r.saved} — now in Resources & the pipeline.`);
+      if (r.error) toast.error(r.message ?? "Extract failed.");
+      else toast.success(`Saved to ${r.saved}`, { description: "Now in Resources & the pipeline." });
     } catch {
-      setMsg("Upload failed — is the backend running?");
+      toast.error("Upload failed — is the backend running?");
     } finally {
       setBusy(false);
     }
@@ -96,8 +96,6 @@ function LocalReader() {
           </>
         )}
       </div>
-
-      {msg && <div className="mb-4 font-mono text-xs text-teal">{msg}</div>}
 
       {!file && (
         <div className="glass grid place-items-center rounded-2xl py-24 text-center text-subtext0 shadow-card">
@@ -132,9 +130,12 @@ function WebReader() {
     setLoading(true);
     setData(null);
     try {
-      setData(await readResource(u));
+      const r = await readResource(u);
+      setData(r);
+      if (!r.error && r.saved) toast.success(`Saved to ${r.saved}`);
     } catch {
       setData({ error: "network", message: "Couldn't load that URL." });
+      toast.error("Couldn't load that URL.");
     } finally {
       setLoading(false);
     }
@@ -172,22 +173,10 @@ function WebReader() {
                 <a href={url} target="_blank" rel="noreferrer" className="pill shrink-0 text-subtext0 hover:text-text">↗ New tab</a>
               </div>
               <ReadingPane md={data.markdown ?? ""} storageKey={`web:${url}`} maxHeight="68vh" />
-              {data.saved && <div className="mt-3 font-mono text-[11px] text-green">✓ Saved to {data.saved}</div>}
             </>
           )}
         </div>
       )}
     </div>
-  );
-}
-
-function Toggle({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill transition-all ${active ? "border-mauve/40 bg-mauve/10 text-text" : "text-subtext0 hover:text-subtext1"}`}
-    >
-      {label}
-    </button>
   );
 }

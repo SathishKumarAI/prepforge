@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Chip } from "@/components/ui/chip";
 import { Empty, Loader } from "../components/States";
 import { useNotes } from "../hooks/useNotes";
 import { useQuestions } from "../hooks/useQuestions";
@@ -74,8 +75,8 @@ export function Graph() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Toggle active={mode === "notes"} onClick={() => switchMode("notes")} label="Notes" />
-          <Toggle active={mode === "learning"} onClick={() => switchMode("learning")} label="Learning" />
+          <Chip active={mode === "notes"} onClick={() => switchMode("notes")} label="Notes" />
+          <Chip active={mode === "learning"} onClick={() => switchMode("learning")} label="Learning" />
           {topicOptions.length > 1 && (
             <select
               value={topicFilter ?? ""}
@@ -169,13 +170,3 @@ export function Graph() {
   );
 }
 
-function Toggle({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill transition-all ${active ? "border-mauve/40 bg-mauve/10 text-text" : "text-subtext0 hover:text-subtext1"}`}
-    >
-      {label}
-    </button>
-  );
-}

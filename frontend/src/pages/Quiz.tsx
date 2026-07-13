@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { Chip } from "@/components/ui/chip";
 import { useMemo, useState } from "react";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
@@ -113,16 +114,16 @@ export function Quiz() {
           <Section label="How many questions">
             <div className="flex flex-wrap gap-2">
               {COUNTS.map((c) => (
-                <Pill key={c} active={count === c} onClick={() => setCount(c)} label={String(c)} />
+                <Chip key={c} active={count === c} onClick={() => setCount(c)} label={String(c)} />
               ))}
             </div>
           </Section>
 
           <Section label="Topic">
             <div className="flex flex-wrap gap-2">
-              <Pill active={!topic} onClick={() => setTopic(null)} label="Mixed" />
+              <Chip active={!topic} onClick={() => setTopic(null)} label="Mixed" />
               {topics.map((t) => (
-                <Pill key={t} active={topic === t} onClick={() => setTopic(t)} label={t} />
+                <Chip key={t} active={topic === t} onClick={() => setTopic(t)} label={t} />
               ))}
             </div>
           </Section>
@@ -130,7 +131,7 @@ export function Quiz() {
           <Section label="Difficulty" hint="empty = all">
             <div className="flex flex-wrap gap-2">
               {DIFFS.map((d) => (
-                <Pill key={d} active={diffs.includes(d)} onClick={() => toggle(diffs, setDiffs, d)} label={d} />
+                <Chip key={d} active={diffs.includes(d)} onClick={() => toggle(diffs, setDiffs, d)} label={d} />
               ))}
             </div>
           </Section>
@@ -139,7 +140,7 @@ export function Quiz() {
             <Section label="Tags" hint={tags.length ? `${tags.length} selected · any match` : "optional"}>
               <div className="flex flex-wrap gap-2">
                 {allTags.map((t) => (
-                  <Pill key={t} active={tags.includes(t)} onClick={() => toggle(tags, setTags, t)} label={`#${t}`} />
+                  <Chip key={t} active={tags.includes(t)} onClick={() => toggle(tags, setTags, t)} label={`#${t}`} />
                 ))}
               </div>
             </Section>
@@ -148,9 +149,9 @@ export function Quiz() {
           {quizSources.length > 0 && (
             <Section label="Quiz from a specific source" hint="a doc / video you ingested">
               <div className="flex flex-wrap gap-2">
-                <Pill active={!source} onClick={() => setSource(null)} label="Any source" />
+                <Chip active={!source} onClick={() => setSource(null)} label="Any source" />
                 {quizSources.map((s) => (
-                  <Pill key={s.path} active={source === s.path} onClick={() => setSource(s.path)} label={`⛁ ${s.title} · ${s.count}`} />
+                  <Chip key={s.path} active={source === s.path} onClick={() => setSource(s.path)} label={`⛁ ${s.title} · ${s.count}`} />
                 ))}
               </div>
             </Section>
@@ -301,15 +302,3 @@ function Section({ label, hint, children }: { label: string; hint?: string; chil
   );
 }
 
-function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill transition-all ${
-        active ? "border-mauve/40 bg-mauve/10 text-text" : "text-subtext0 hover:text-subtext1"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}

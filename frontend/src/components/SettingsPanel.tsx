@@ -1,4 +1,5 @@
 import { useQuestions } from "../hooks/useQuestions";
+import { Chip } from "@/components/ui/chip";
 import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
 import { DENSITIES, TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
@@ -63,7 +64,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <Field label="Seniority">
             <div className="flex flex-wrap gap-2">
               {SENIORITY.map((s) => (
-                <Chip key={s} active={settings.seniority === s} onClick={() => update({ seniority: s })} label={s} />
+                <Chip key={s} active={settings.seniority === s} onClick={() => update({ seniority: s })} label={s} className="capitalize" />
               ))}
             </div>
           </Field>
@@ -72,7 +73,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             <div className="flex flex-wrap gap-2">
               {topics.length === 0 && <span className="text-sm text-overlay0">Load questions first.</span>}
               {topics.map((t) => (
-                <Chip key={t} active={settings.interests.includes(t)} onClick={() => toggleInterest(t)} label={t} />
+                <Chip key={t} active={settings.interests.includes(t)} onClick={() => toggleInterest(t)} label={t} className="capitalize" />
               ))}
             </div>
           </Field>
@@ -80,7 +81,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <Field label="Preferred difficulty (empty = all)">
             <div className="flex flex-wrap gap-2">
               {DIFFS.map((d) => (
-                <Chip key={d} active={settings.difficulty.includes(d)} onClick={() => toggleDiff(d)} label={d} />
+                <Chip key={d} active={settings.difficulty.includes(d)} onClick={() => toggleDiff(d)} label={d} className="capitalize" />
               ))}
             </div>
           </Field>
@@ -110,13 +111,3 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Chip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill capitalize transition-all ${active ? "border-mauve/40 bg-mauve/10 text-text" : "text-subtext0 hover:text-subtext1"}`}
-    >
-      {label}
-    </button>
-  );
-}

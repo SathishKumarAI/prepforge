@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { Chip } from "@/components/ui/chip";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
@@ -239,9 +240,9 @@ export function Resources() {
       </div>
 
       <div className="mb-6 flex gap-2">
-        <Pill active={!kind} onClick={() => setKind(null)} label="All" />
-        <Pill active={kind === "video"} onClick={() => setKind("video")} label="Videos" />
-        <Pill active={kind === "article"} onClick={() => setKind("article")} label="Articles" />
+        <Chip active={!kind} onClick={() => setKind(null)} label="All" />
+        <Chip active={kind === "video"} onClick={() => setKind("video")} label="Videos" />
+        <Chip active={kind === "article"} onClick={() => setKind("article")} label="Articles" />
       </div>
 
       {loading ? (
@@ -311,15 +312,3 @@ function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen
   );
 }
 
-function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill transition-all ${
-        active ? "border-mauve/40 bg-mauve/10 text-text" : "text-subtext0 hover:text-subtext1"
-      }`}
-    >
-      {label}
-    </button>
-  );
-}
