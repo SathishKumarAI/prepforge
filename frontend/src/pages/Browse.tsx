@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { QuestionCard } from "../components/QuestionCard";
 import { CardSkeletonGrid, Empty } from "../components/States";
+import { ChevronRight } from "../components/NavButton";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { isDue } from "../lib/srs";
@@ -81,8 +82,9 @@ export function Browse() {
           <span className="text-sm text-subtext1">
             <span className="font-semibold text-text">{dueCount}</span> card{dueCount !== 1 ? "s" : ""} due for review — keep your streak going.
           </span>
-          <span className="shrink-0 rounded-lg bg-gradient-to-r from-mauve to-blue px-3 py-1.5 text-xs font-semibold text-crust">
-            Start review →
+          <span className="group flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-mauve to-blue px-3 py-1.5 text-xs font-semibold text-crust">
+            Start review
+            <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
           </span>
         </Link>
       )}

@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { DifficultyBadge, TopicBadge } from "../components/Badge";
 import { Markdown } from "../components/Markdown";
 import { Empty, Loader } from "../components/States";
+import { BackButton, ChevronRight, NavButton } from "../components/NavButton";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { isDue, previewInterval, type Rating } from "../lib/srs";
@@ -122,9 +123,10 @@ export function Learn() {
           <button
             onClick={startSession}
             disabled={sessionSize === 0}
-            className="mx-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-mauve to-blue px-8 py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
+            className="group mx-auto flex items-center gap-2 rounded-xl bg-gradient-to-r from-mauve to-blue px-8 py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40"
           >
-            Begin session →
+            Begin session
+            <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
           </button>
           {sessionSize === 0 && (
             <div className="mt-4 font-mono text-xs text-green">
@@ -147,12 +149,9 @@ export function Learn() {
           Each card is now scheduled by how well you recalled it. Consistency beats cramming — a
           short daily session keeps the forgetting curve at bay.
         </p>
-        <button
-          onClick={() => setQueue(null)}
-          className="mt-8 rounded-xl border border-mauve/40 bg-mauve/10 px-6 py-2.5 text-text"
-        >
-          Back to overview
-        </button>
+        <div className="mt-8 flex justify-center">
+          <NavButton dir="prev" label="Back to overview" onClick={() => setQueue(null)} />
+        </div>
       </motion.div>
     );
   }
@@ -185,9 +184,7 @@ export function Learn() {
     <div>
       {/* header */}
       <div className="mb-4 flex items-center justify-between">
-        <button onClick={() => setQueue(null)} className="font-mono text-xs text-overlay0 hover:text-subtext1">
-          ← exit
-        </button>
+        <BackButton label="exit" onClick={() => setQueue(null)} />
         <span className="font-mono text-xs text-overlay1">
           {pos + 1} / {queue.length}
         </span>
@@ -223,9 +220,10 @@ export function Learn() {
               </div>
               <button
                 onClick={toRecall}
-                className="mt-5 w-full rounded-xl bg-surface0 py-3 font-display text-lg font-medium text-text hover:bg-surface1"
+                className="group mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-surface0 py-3 font-display text-lg font-medium text-text hover:bg-surface1"
               >
-                I’ve read it — test my recall →
+                I’ve read it — test my recall
+                <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
               </button>
             </div>
           )}

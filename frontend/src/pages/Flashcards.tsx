@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Markdown } from "../components/Markdown";
 import { DifficultyBadge, TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
+import { NavButton } from "../components/NavButton";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import type { FlashState } from "../lib/storage";
@@ -108,9 +109,7 @@ export function Flashcards() {
 
       {/* controls */}
       <div className="mt-6 flex items-center justify-between gap-3">
-        <button onClick={() => go(-1)} className="pill px-4 py-2 text-subtext0 hover:text-text">
-          ← Prev
-        </button>
+        <NavButton dir="prev" label="Prev" onClick={() => go(-1)} />
         <div className="flex gap-2">
           <button onClick={() => grade("learning")} className="pill border-red/40 px-4 py-2 text-red hover:bg-red/10">
             Again
@@ -119,9 +118,7 @@ export function Flashcards() {
             Got it
           </button>
         </div>
-        <button onClick={() => go(1)} className="pill px-4 py-2 text-subtext0 hover:text-text">
-          Next →
-        </button>
+        <NavButton dir="next" label="Next" onClick={() => go(1)} />
       </div>
     </div>
   );

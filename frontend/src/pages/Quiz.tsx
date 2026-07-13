@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState } from "react";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
+import { ChevronRight } from "../components/NavButton";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import type { Question } from "../lib/types";
@@ -53,9 +54,10 @@ export function Quiz() {
           <button
             onClick={start}
             disabled={pool.length === 0}
-            className="w-full rounded-xl bg-gradient-to-r from-mauve to-blue py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40"
+            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-mauve to-blue py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40"
           >
-            Start quiz →
+            Start quiz
+            <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
           </button>
           <div className="mt-3 text-center font-mono text-xs text-overlay0">
             {pool.length} questions available
@@ -159,9 +161,10 @@ export function Quiz() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               onClick={next}
-              className="mt-6 w-full rounded-xl bg-surface0 py-3 font-display text-lg font-medium text-text hover:bg-surface1"
+              className="group mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-surface0 py-3 font-display text-lg font-medium text-text hover:bg-surface1"
             >
-              {i + 1 >= deck.length ? "See results →" : "Next question →"}
+              {i + 1 >= deck.length ? "See results" : "Next question"}
+              <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
             </motion.button>
           )}
         </motion.div>

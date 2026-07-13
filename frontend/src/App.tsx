@@ -3,6 +3,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { useApplyTheme } from "./hooks/useApplyTheme";
 import { Layout } from "./components/Layout";
 import { Loader } from "./components/States";
+import { ChevronLeft } from "./components/NavButton";
 import { Toaster } from "./components/ui/sonner";
 import { Learn } from "./pages/Learn";
 import { Browse } from "./pages/Browse";
@@ -23,8 +24,14 @@ function NotFound() {
       <div>
         <div className="font-display text-6xl font-black text-mauve">404</div>
         <p className="mt-2 text-subtext0">That page doesn’t exist.</p>
-        <Link to="/" className="mt-6 inline-block rounded-xl border border-mauve/40 bg-mauve/10 px-5 py-2.5 text-text">
-          ← Back to study
+        <Link
+          to="/"
+          className="group mt-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-surface0/40 px-4 py-2 text-sm font-medium text-subtext1 transition-colors hover:border-white/20 hover:text-text"
+        >
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-white/[0.06] text-subtext0 transition-all duration-300 group-hover:-translate-x-0.5 group-hover:bg-mauve/20 group-hover:text-mauve">
+            <ChevronLeft />
+          </span>
+          Back to study
         </Link>
       </div>
     </div>
