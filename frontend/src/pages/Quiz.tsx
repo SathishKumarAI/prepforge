@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Chip } from "@/components/ui/chip";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { TopicBadge } from "../components/Badge";
 import { Loader } from "../components/States";
@@ -32,15 +32,29 @@ function loadRun(): SavedRun | null {
 function saveRun(r: SavedRun) { localStorage.setItem(RUN_KEY, JSON.stringify(r)); }
 function clearRun() { localStorage.removeItem(RUN_KEY); }
 
+// Quiz preferences remembered between sessions.
+const CFG_KEY = "pf-quiz-config";
+type QuizCfg = { count: number; topic: string | null; tags: string[]; diffs: Difficulty[]; source: string | null; weak: boolean; timed: boolean };
+function loadCfg(): Partial<QuizCfg> {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY) || "{}") || {}; } catch { return {}; }
+}
+const TIMED_SECONDS = 30;
+
+// one answered question, kept for the results review
+type Answered = { q: Question; picked: number; correct: boolean };
+
 export function Quiz() {
   const { questions, topics, loading } = useQuestions();
-  const { addQuiz } = useProgress();
+  const { addQuiz, progress } = useProgress();
+  const cfg0 = useRef(loadCfg()).current;
   const [phase, setPhase] = useState<Phase>("setup");
-  const [topic, setTopic] = useState<string | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [diffs, setDiffs] = useState<Difficulty[]>([]);
-  const [count, setCount] = useState(10);
-  const [source, setSource] = useState<string | null>(null); // vault source path
+  const [topic, setTopic] = useState<string | null>(cfg0.topic ?? null);
+  const [tags, setTags] = useState<string[]>(cfg0.tags ?? []);
+  const [diffs, setDiffs] = useState<Difficulty[]>(cfg0.diffs ?? []);
+  const [count, setCount] = useState(cfg0.count ?? 10);
+  const [source, setSource] = useState<string | null>(cfg0.source ?? null); // vault source path
+  const [weak, setWeak] = useState(cfg0.weak ?? false);
+  const [timed, setTimed] = useState(cfg0.timed ?? false);
   const [seed, setSeed] = useState(0);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoBusy, setVideoBusy] = useState(false);
@@ -48,7 +62,36 @@ export function Quiz() {
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
+  const [answers, setAnswers] = useState<Answered[]>([]);
+  const [remaining, setRemaining] = useState(TIMED_SECONDS);
   const [saved, setSaved] = useState<SavedRun | null>(() => loadRun());
+
+  // remember preferences between sessions
+  useEffect(() => {
+    const c: QuizCfg = { count, topic, tags, diffs, source, weak, timed };
+    localStorage.setItem(CFG_KEY, JSON.stringify(c));
+  }, [count, topic, tags, diffs, source, weak, timed]);
+
+  // per-question countdown in timed mode; hitting zero auto-reveals as a miss
+  useEffect(() => {
+    if (phase !== "run" || !timed || picked !== null) return;
+    setRemaining(TIMED_SECONDS);
+    const id = setInterval(() => {
+      setRemaining((r) => {
+        if (r <= 1) { clearInterval(id); timeUp(); return 0; }
+        return r - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, i, timed, picked]);
+
+  // is this a card the user hasn't mastered yet? (weakness-aware selection)
+  const isWeak = (q: Question): boolean => {
+    if (progress.flash[q.id] === "known") return false;
+    if (progress.srs[q.id]?.stage === "mastered") return false;
+    return true;
+  };
 
   // only questions that actually carry a multiple-choice quiz can be quizzed
   const quizzable = useMemo(() => questions.filter((q) => q.quiz), [questions]);
@@ -114,13 +157,17 @@ export function Quiz() {
     // "Retry" / a new run surfaces a different slice instead of the same 10.
     const ordered = [...pool].sort((a, b) => a.id.localeCompare(b.id));
     const off = seed % ordered.length;
-    const rotated = [...ordered.slice(off), ...ordered.slice(0, off)];
+    let rotated = [...ordered.slice(off), ...ordered.slice(0, off)];
+    // weakness-aware: float not-yet-mastered / unseen cards to the front (stable)
+    if (weak) rotated = [...rotated].sort((a, b) => Number(isWeak(b)) - Number(isWeak(a)));
     const d = rotated.slice(0, Math.min(count, rotated.length));
     setDeck(d);
     setSeed((s) => s + 7);
     setI(0);
     setPicked(null);
     setCorrect(0);
+    setAnswers([]);
+    setRemaining(TIMED_SECONDS);
     setPhase("run");
     const run: SavedRun = { deckIds: d.map((q) => q.id), i: 0, correct: 0, topic };
     saveRun(run);
@@ -239,6 +286,13 @@ export function Quiz() {
             </div>
           </Section>
 
+          <Section label="Mode" hint="how you want to be tested">
+            <div className="flex flex-wrap gap-2">
+              <Chip active={weak} onClick={() => setWeak((v) => !v)} label="◎ Focus weak spots" />
+              <Chip active={timed} onClick={() => setTimed((v) => !v)} label={`⏱ Timed · ${TIMED_SECONDS}s`} />
+            </div>
+          </Section>
+
           {allTags.length > 0 && (
             <Section label="Tags" hint={tags.length ? `${tags.length} selected · any match` : "optional"}>
               <div className="flex flex-wrap gap-2">
@@ -314,20 +368,52 @@ export function Quiz() {
     const pct = Math.round((correct / deck.length) * 100);
     const tone = pct >= 80 ? "green" : pct >= 50 ? "yellow" : "red";
     return (
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-md text-center">
-        <div className="mb-2 font-mono text-xs uppercase tracking-widest text-overlay0">Quiz complete</div>
-        <div className={`font-display text-7xl font-black text-${tone}`}>{pct}%</div>
-        <div className="mt-2 text-subtext1">
-          {correct} / {deck.length} correct{topic ? ` · ${topic}` : " · Mixed"}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-2xl">
+        <div className="text-center">
+          <div className="mb-2 font-mono text-xs uppercase tracking-widest text-overlay0">Quiz complete</div>
+          <div className={`font-display text-7xl font-black text-${tone}`}>{pct}%</div>
+          <div className="mt-2 text-subtext1">
+            {correct} / {deck.length} correct{topic ? ` · ${topic}` : " · Mixed"}
+          </div>
+          <div className="mt-8 flex justify-center gap-3">
+            <button onClick={() => setPhase("setup")} className="pill px-5 py-2.5 text-subtext1 hover:text-text">
+              New quiz
+            </button>
+            <button onClick={start} className="pill border-mauve/40 bg-mauve/10 px-5 py-2.5 text-text">
+              Retry
+            </button>
+          </div>
         </div>
-        <div className="mt-8 flex justify-center gap-3">
-          <button onClick={() => setPhase("setup")} className="pill px-5 py-2.5 text-subtext1 hover:text-text">
-            New quiz
-          </button>
-          <button onClick={start} className="pill border-mauve/40 bg-mauve/10 px-5 py-2.5 text-text">
-            Retry
-          </button>
-        </div>
+
+        {answers.length > 0 && (
+          <div className="mt-10">
+            <div className="mb-3 font-mono text-[11px] uppercase tracking-widest text-overlay0">Review &amp; explanations</div>
+            <div className="space-y-3">
+              {answers.map((a, idx) => {
+                const aq = a.q.quiz!;
+                const correctText = aq.choices[aq.correctIndex];
+                const yourText = a.picked >= 0 ? aq.choices[a.picked] : "— timed out —";
+                return (
+                  <div key={idx} className={`rounded-2xl border p-4 ${a.correct ? "border-green/30 bg-green/[0.04]" : "border-red/30 bg-red/[0.04]"}`}>
+                    <div className="flex items-start gap-2">
+                      <span className={`mt-0.5 shrink-0 font-mono text-sm ${a.correct ? "text-green" : "text-red"}`}>
+                        {a.correct ? "✓" : "✗"}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-text">{a.q.question}</div>
+                        {!a.correct && (
+                          <div className="mt-1 text-xs text-red/90">Your answer: {yourText}</div>
+                        )}
+                        <div className="mt-1 text-xs text-green/90">Correct: {correctText}</div>
+                        <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-subtext0">{glossOf(a.q.answer)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   }
@@ -339,8 +425,15 @@ export function Quiz() {
 
   function pick(idx: number) {
     if (answered || idx >= quiz.choices.length) return;
+    const ok = idx === quiz.correctIndex;
     setPicked(idx);
-    if (idx === quiz.correctIndex) setCorrect((c) => c + 1);
+    if (ok) setCorrect((c) => c + 1);
+    setAnswers((a) => [...a, { q, picked: idx, correct: ok }]);
+  }
+  function timeUp() {
+    if (picked !== null) return;
+    setPicked(-1); // sentinel: timed out, no credit
+    setAnswers((a) => [...a, { q, picked: -1, correct: false }]);
   }
   function next() {
     if (i + 1 >= deck.length) {
@@ -365,13 +458,24 @@ export function Quiz() {
           <BackButton label="Exit" onClick={exit} />
           <TopicBadge topic={q.topic} />
         </div>
-        <span className="font-mono text-xs text-overlay1">
-          {i + 1} / {deck.length} · score {correct}
+        <span className="flex items-center gap-3 font-mono text-xs text-overlay1">
+          {timed && !answered && (
+            <span className={remaining <= 5 ? "text-red" : "text-subtext1"}>⏱ {remaining}s</span>
+          )}
+          <span>{i + 1} / {deck.length} · score {correct}</span>
         </span>
       </div>
       <div className="mb-6 h-1 w-full overflow-hidden rounded-full bg-surface0">
         <motion.div className="h-full bg-gradient-to-r from-mauve to-blue" animate={{ width: `${((i + 1) / deck.length) * 100}%` }} />
       </div>
+      {timed && !answered && (
+        <div className="mb-6 -mt-4 h-0.5 w-full overflow-hidden rounded-full bg-surface0/60">
+          <div
+            className={`h-full transition-all duration-1000 ease-linear ${remaining <= 5 ? "bg-red" : "bg-peach/70"}`}
+            style={{ width: `${(remaining / TIMED_SECONDS) * 100}%` }}
+          />
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         <motion.div
@@ -424,6 +528,16 @@ export function Quiz() {
       </AnimatePresence>
     </div>
   );
+}
+
+// plain-text gloss of a markdown answer, for the results explanation
+function glossOf(md: string): string {
+  return (md || "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/[#*`>_~[\]()]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 280);
 }
 
 function Section({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
