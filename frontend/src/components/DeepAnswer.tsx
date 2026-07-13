@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useState } from "react";
+import { useProgress } from "../hooks/useProgress";
 import { useSettings } from "../hooks/useSettings";
 import { generateAnswer } from "../lib/api";
 import { personaHint } from "../lib/settings";
@@ -7,7 +8,7 @@ import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
-type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang";
+type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang" | "custom";
 type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
 
 const TABS: { mode: Mode; label: string }[] = [
@@ -18,6 +19,7 @@ const TABS: { mode: Mode; label: string }[] = [
   { mode: "aws", label: "AWS" },
   { mode: "thinking", label: "Thinking" },
   { mode: "faang", label: "FAANG" },
+  { mode: "custom", label: "My content" },
 ];
 
 const MODE_TITLE: Record<Mode, string> = {
@@ -28,6 +30,7 @@ const MODE_TITLE: Record<Mode, string> = {
   aws: "▲ Amazon / AWS interview",
   thinking: "◎ The thinking process",
   faang: "◆ FAANG approach",
+  custom: "✎ My content",
 };
 
 const MODE_LOADING: Record<Mode, string> = {
@@ -38,6 +41,7 @@ const MODE_LOADING: Record<Mode, string> = {
   aws: "Framing it the Amazon/AWS way…",
   thinking: "Mapping the thinking process…",
   faang: "Structuring the FAANG answer…",
+  custom: "",
 };
 
 // The "how to approach it" legend — teaches the structure so you can reuse it.
@@ -84,6 +88,11 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
     { tag: "Edge cases", desc: "what breaks" },
     { tag: "Optimize", desc: "improve + narrate" },
   ],
+  custom: [
+    { tag: "Paste", desc: "drop your own content" },
+    { tag: "Save", desc: "kept for this question" },
+    { tag: "Recall", desc: "your words, your memory" },
+  ],
 };
 
 // Two answer variants per question, in one box:
@@ -93,7 +102,9 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<Mode>("deep");
   const [slots, setSlots] = useState<Partial<Record<Mode, Slot>>>({});
+  const [customText, setCustomText] = useState("");
   const { settings } = useSettings();
+  const { progress, setCustom } = useProgress();
 
   const load = useCallback(
     async (m: Mode) => {
@@ -116,6 +127,10 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
 
   function switchTo(m: Mode) {
     setMode(m);
+    if (m === "custom") {
+      setCustomText(progress.custom[qid] ?? "");
+      return; // your own content — no generation
+    }
     if (!slots[m]) load(m);
   }
 
@@ -128,7 +143,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8" />
         </svg>
-        Deep answer — 4 lenses
+        Answers — 7 lenses + your notes
       </button>
     );
   }
@@ -147,6 +162,38 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
           ))}
         </TabsList>
       </Tabs>
+
+      {mode === "custom" && (
+        <div>
+          <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-mantle/50 px-3 py-2">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-overlay0">your content ›</span>
+            <span className="text-[11px] italic text-overlay1">drop the text/notes you want to remember for this question</span>
+          </div>
+          <textarea
+            value={customText}
+            onChange={(e) => setCustomText(e.target.value)}
+            placeholder="Paste your own answer, notes, or reference content for this question… (markdown supported)"
+            className="input min-h-[9rem] resize-y font-mono"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => setCustom(qid, customText)}
+              className="rounded-xl bg-gradient-to-r from-mauve to-blue px-4 py-2 text-sm font-semibold text-crust"
+            >
+              Save
+            </button>
+            {(progress.custom[qid] ?? "") === customText && customText.trim() && (
+              <span className="font-mono text-[11px] text-green">✓ saved</span>
+            )}
+          </div>
+          {progress.custom[qid] && (
+            <div className="mt-4 border-t border-white/[0.05] pt-3">
+              <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-lavender">✎ My content</div>
+              <Markdown>{progress.custom[qid]}</Markdown>
+            </div>
+          )}
+        </div>
+      )}
 
       {slot?.status === "loading" && (
         <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">

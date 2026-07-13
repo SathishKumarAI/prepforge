@@ -34,6 +34,8 @@ export interface Progress {
   bookmarks: string[];
   // personal notes keyed by question id
   notes: Record<string, string>;
+  // user-provided "my content" answers keyed by question id
+  custom: Record<string, string>;
   // quiz session history
   quizzes: QuizResult[];
   // day-strings the user studied, for streaks e.g. "2026-07-10"
@@ -52,6 +54,7 @@ export const EMPTY_PROGRESS: Progress = {
   srs: {},
   bookmarks: [],
   notes: {},
+  custom: {},
   quizzes: [],
   studyDays: [],
 };

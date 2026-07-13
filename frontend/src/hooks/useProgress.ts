@@ -59,6 +59,13 @@ export function useProgress() {
     set({ ...shared, notes });
   }, []);
 
+  const setCustom = useCallback((id: string, text: string) => {
+    const custom = { ...shared.custom };
+    if (text.trim()) custom[id] = text;
+    else delete custom[id];
+    set({ ...shared, custom });
+  }, []);
+
   const addQuiz = useCallback(
     (r: QuizResult) => {
       set({ ...shared, quizzes: [...shared.quizzes, r] });
@@ -93,6 +100,7 @@ export function useProgress() {
     setFlash,
     toggleBookmark,
     setNote,
+    setCustom,
     addQuiz,
     markStudied,
     getCard,
