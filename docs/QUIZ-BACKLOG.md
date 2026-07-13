@@ -11,6 +11,9 @@ Goal: quizzes the user can **shape** (how many, which topics/tags, how hard) and
 - [x] Only quiz-ready questions are drawn; clear "N match · drawing K" + empty-filter hint.
 - [x] **Deterministic MCQ synthesis** in ingest — every ingested card (incl. notes from a video)
       gets a zero-token "which description matches X?" quiz. `_synthesize_quiz` in `backend/ingest.py`.
+- [x] **Session controls**: Exit mid-run (back to setup) + **Resume** — an in-progress quiz is
+      persisted to localStorage (`pf-quiz-run`), so leaving the page shows a Resume banner that
+      picks up at the same question; completing or discarding clears it.
 
 ## Next (roadmap)
 - [ ] **Quiz from a YouTube video, end-to-end**: capture transcript (yt-dlp/`youtube-transcript-api`)

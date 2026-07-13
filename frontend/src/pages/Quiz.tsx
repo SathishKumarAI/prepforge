@@ -2,9 +2,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Chip } from "@/components/ui/chip";
 import { useMemo, useState } from "react";
 import { TopicBadge } from "../components/Badge";
-import { Empty, Loader } from "../components/States";
+import { Loader } from "../components/States";
 import { Kbd } from "../components/Kbd";
-import { ChevronRight } from "../components/NavButton";
+import { BackButton, ChevronRight } from "../components/NavButton";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
@@ -14,6 +14,21 @@ type Phase = "setup" | "run" | "done";
 
 const COUNTS = [5, 10, 15, 20];
 const DIFFS: Difficulty[] = ["easy", "medium", "hard"];
+
+// A quiz run persisted to localStorage so leaving the page mid-quiz doesn't lose
+// progress — the setup screen offers "Resume" and picks up at the same question.
+const RUN_KEY = "pf-quiz-run";
+type SavedRun = { deckIds: string[]; i: number; correct: number; topic: string | null };
+function loadRun(): SavedRun | null {
+  try {
+    const r = JSON.parse(localStorage.getItem(RUN_KEY) || "null");
+    return r && Array.isArray(r.deckIds) && r.deckIds.length && r.i < r.deckIds.length ? r : null;
+  } catch {
+    return null;
+  }
+}
+function saveRun(r: SavedRun) { localStorage.setItem(RUN_KEY, JSON.stringify(r)); }
+function clearRun() { localStorage.removeItem(RUN_KEY); }
 
 export function Quiz() {
   const { questions, topics, loading } = useQuestions();
@@ -29,6 +44,7 @@ export function Quiz() {
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
+  const [saved, setSaved] = useState<SavedRun | null>(() => loadRun());
 
   // only questions that actually carry a multiple-choice quiz can be quizzed
   const quizzable = useMemo(() => questions.filter((q) => q.quiz), [questions]);
@@ -95,12 +111,43 @@ export function Quiz() {
     const ordered = [...pool].sort((a, b) => a.id.localeCompare(b.id));
     const off = seed % ordered.length;
     const rotated = [...ordered.slice(off), ...ordered.slice(0, off)];
-    setDeck(rotated.slice(0, Math.min(count, rotated.length)));
+    const d = rotated.slice(0, Math.min(count, rotated.length));
+    setDeck(d);
     setSeed((s) => s + 7);
     setI(0);
     setPicked(null);
     setCorrect(0);
     setPhase("run");
+    const run: SavedRun = { deckIds: d.map((q) => q.id), i: 0, correct: 0, topic };
+    saveRun(run);
+    setSaved(run);
+  }
+
+  // resume a persisted run — rebuild the deck from saved ids, jump to the question
+  function resume() {
+    if (!saved) return;
+    const d = saved.deckIds.map((id) => quizzable.find((q) => q.id === id)).filter(Boolean) as Question[];
+    if (d.length !== saved.deckIds.length) { clearRun(); setSaved(null); return; } // content changed
+    setDeck(d);
+    setI(Math.min(saved.i, d.length - 1));
+    setCorrect(saved.correct);
+    setPicked(null);
+    setTopic(saved.topic);
+    setPhase("run");
+  }
+
+  // leave the run but keep it resumable; a fully-answered current question counts
+  function exit() {
+    const advanced = picked !== null ? i + 1 : i;
+    if (advanced < deck.length) {
+      const run: SavedRun = { deckIds: deck.map((q) => q.id), i: advanced, correct, topic };
+      saveRun(run);
+      setSaved(run);
+    } else {
+      clearRun();
+      setSaved(null);
+    }
+    setPhase("setup");
   }
 
   if (phase === "setup") {
@@ -110,6 +157,34 @@ export function Quiz() {
         <p className="mb-6 text-sm text-subtext0">
           Pick how many questions, which topic &amp; tags, and how hard. Self-graded, scored at the end.
         </p>
+
+        {saved && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-mauve/30 bg-mauve/10 px-4 py-3">
+            <div className="min-w-0">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-mauve">Quiz in progress</div>
+              <div className="text-sm text-subtext1">
+                Question {Math.min(saved.i + 1, saved.deckIds.length)} of {saved.deckIds.length}
+                {saved.topic ? ` · ${saved.topic}` : " · Mixed"} · score {saved.correct}
+              </div>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button
+                onClick={() => { clearRun(); setSaved(null); }}
+                className="pill text-subtext0 hover:text-red"
+              >
+                Discard
+              </button>
+              <button
+                onClick={resume}
+                className="group inline-flex items-center gap-2 rounded-full border border-mauve/40 bg-mauve/15 px-4 py-1.5 text-sm font-medium text-text hover:bg-mauve/25"
+              >
+                Resume
+                <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="glass space-y-6 rounded-2xl p-6 shadow-card">
           <Section label="How many questions">
             <div className="flex flex-wrap gap-2">
@@ -218,17 +293,26 @@ export function Quiz() {
   function next() {
     if (i + 1 >= deck.length) {
       addQuiz({ date: new Date().toISOString(), topic: topic ?? "Mixed", total: deck.length, correct });
+      clearRun();
+      setSaved(null);
       setPhase("done");
     } else {
-      setI((v) => v + 1);
+      const ni = i + 1;
+      setI(ni);
       setPicked(null);
+      const run: SavedRun = { deckIds: deck.map((c) => c.id), i: ni, correct, topic };
+      saveRun(run);
+      setSaved(run);
     }
   }
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <TopicBadge topic={q.topic} />
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <BackButton label="Exit" onClick={exit} />
+          <TopicBadge topic={q.topic} />
+        </div>
         <span className="font-mono text-xs text-overlay1">
           {i + 1} / {deck.length} · score {correct}
         </span>
