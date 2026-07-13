@@ -7,7 +7,7 @@ import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
-type Mode = "deep" | "star" | "eli5" | "first_principles";
+type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang";
 type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
 
 const TABS: { mode: Mode; label: string }[] = [
@@ -15,6 +15,9 @@ const TABS: { mode: Mode; label: string }[] = [
   { mode: "star", label: "Interview · STAR" },
   { mode: "eli5", label: "ELI5" },
   { mode: "first_principles", label: "First-principles" },
+  { mode: "aws", label: "AWS" },
+  { mode: "thinking", label: "Thinking" },
+  { mode: "faang", label: "FAANG" },
 ];
 
 const MODE_TITLE: Record<Mode, string> = {
@@ -22,6 +25,9 @@ const MODE_TITLE: Record<Mode, string> = {
   star: "★ Interview answer (STAR)",
   eli5: "◕ Explain like I'm 5",
   first_principles: "△ From first principles",
+  aws: "▲ Amazon / AWS interview",
+  thinking: "◎ The thinking process",
+  faang: "◆ FAANG approach",
 };
 
 const MODE_LOADING: Record<Mode, string> = {
@@ -29,6 +35,9 @@ const MODE_LOADING: Record<Mode, string> = {
   star: "Composing a STAR interview answer…",
   eli5: "Finding a simple, vivid explanation…",
   first_principles: "Deriving it from fundamentals…",
+  aws: "Framing it the Amazon/AWS way…",
+  thinking: "Mapping the thinking process…",
+  faang: "Structuring the FAANG answer…",
 };
 
 // The "how to approach it" legend — teaches the structure so you can reuse it.
@@ -55,6 +64,25 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
     { tag: "Why", desc: "derive, don't recite" },
     { tag: "Deeper principle", desc: "the underlying law" },
     { tag: "Insight", desc: "what most people miss" },
+  ],
+  aws: [
+    { tag: "Leadership Principle", desc: "anchor to the LP" },
+    { tag: "STAR / design", desc: "structure it" },
+    { tag: "Data", desc: "quantified result" },
+    { tag: "Dive deep", desc: "depth + trade-offs" },
+  ],
+  thinking: [
+    { tag: "Clarify", desc: "assumptions first" },
+    { tag: "Framework", desc: "the mental model" },
+    { tag: "Reason", desc: "step by step" },
+    { tag: "Check", desc: "sanity + communicate" },
+  ],
+  faang: [
+    { tag: "Clarify", desc: "restate + assumptions" },
+    { tag: "Approach", desc: "plan first" },
+    { tag: "Depth", desc: "detail + complexity" },
+    { tag: "Edge cases", desc: "what breaks" },
+    { tag: "Optimize", desc: "improve + narrate" },
   ],
 };
 

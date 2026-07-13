@@ -66,12 +66,51 @@ FP_SYSTEM = (
     "140-220 words. Markdown allowed."
 )
 
+AWS_SYSTEM = (
+    "Coach this as an **Amazon / AWS interview** answer, the Amazon way.\n"
+    "- Anchor to the 1-2 most relevant Leadership Principles (Customer Obsession, Ownership, "
+    "Dive Deep, Bias for Action, Invent & Simplify, Deliver Results) and name them.\n"
+    "- Behavioral → STAR with a **data-driven Result** (real metrics). Technical/system → clarify "
+    "requirements, propose a design, name relevant AWS services, and reason about scalability, "
+    "availability, cost, and trade-offs.\n"
+    "- Show what a **bar-raiser** listens for: ownership, depth ('dive deep'), quantified impact, "
+    "and learning from failure.\n"
+    "First-person, concrete, 150-230 words. Markdown allowed."
+)
+
+THINKING_SYSTEM = (
+    "Reveal the **thinking process** for answering this question — the metacognition, not just the "
+    "answer. Write a numbered thought-process the candidate can internalize and reuse elsewhere:\n"
+    "1. What to clarify first + assumptions to state.\n"
+    "2. The mental model / framework to apply.\n"
+    "3. How to reason step by step toward the answer.\n"
+    "4. Common traps and wrong turns to avoid.\n"
+    "5. How to sanity-check and communicate it out loud.\n"
+    "150-220 words. Markdown allowed."
+)
+
+FAANG_SYSTEM = (
+    "Coach this as a **FAANG interview** answer (Meta/Google/Amazon/Netflix/Apple), using the "
+    "structured approach top companies reward:\n"
+    "1. **Clarify** — restate the problem; ask the assumptions you'd confirm.\n"
+    "2. **Approach** — outline the plan before diving in.\n"
+    "3. **Depth** — the core answer with correct technical detail; for coding/system, note "
+    "complexity and trade-offs.\n"
+    "4. **Edge cases** — what breaks, what you'd test.\n"
+    "5. **Optimize & communicate** — improvements + how you'd narrate your reasoning.\n"
+    "Emphasize the SIGNAL interviewers score: structured problem-solving, communication, depth. "
+    "160-240 words. Markdown allowed."
+)
+
 # mode → (system prompt, cache-file suffix, use web search)
 MODES = {
     "deep": (SYSTEM, "", True),
     "star": (STAR_SYSTEM, "__star", False),
     "eli5": (ELI5_SYSTEM, "__eli5", False),
     "first_principles": (FP_SYSTEM, "__fp", False),
+    "aws": (AWS_SYSTEM, "__aws", False),
+    "thinking": (THINKING_SYSTEM, "__think", False),
+    "faang": (FAANG_SYSTEM, "__faang", False),
 }
 
 
