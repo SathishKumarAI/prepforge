@@ -86,7 +86,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
             <div className="border-t border-white/[0.05] px-5 py-4 lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-6">
               <div className="min-w-0">
               {q.answer ? (
-                <Markdown>{q.answer}</Markdown>
+                <CollapsibleAnswer md={q.answer} />
               ) : q.from_vault ? (
                 <p className="text-sm text-overlay0">
                   No inline answer was extracted — open the source document below, or generate one.
@@ -187,6 +187,32 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
 
       <SourceDoc source={openSource} onClose={() => setOpenSource(null)} />
     </motion.article>
+  );
+}
+
+// Long vault answers get clamped with a "show more" reveal + a reading-time hint,
+// so a card doesn't blow out to a wall of text before you decide to read it.
+function CollapsibleAnswer({ md }: { md: string }) {
+  const long = md.length > 900;
+  const [expanded, setExpanded] = useState(!long);
+  const mins = Math.max(1, Math.round(md.split(/\s+/).length / 200));
+  if (!long) return <Markdown>{md}</Markdown>;
+  return (
+    <div>
+      <div className="mb-2 font-mono text-[10px] uppercase tracking-widest text-overlay0">~{mins} min read</div>
+      <div className={expanded ? "" : "relative max-h-72 overflow-hidden"}>
+        <Markdown>{md}</Markdown>
+        {!expanded && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-mantle to-transparent" />
+        )}
+      </div>
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-2 font-mono text-[11px] text-mauve transition-colors hover:text-lavender"
+      >
+        {expanded ? "Show less ▲" : "Show more ▼"}
+      </button>
+    </div>
   );
 }
 

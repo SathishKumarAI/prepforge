@@ -9,9 +9,9 @@ tickets, Kanban-ready. Checked = done.
 - [x] Widen the main container (`max-w-5xl` → `max-w-6xl`) so content uses the screen.
 - [x] Two-pane reading layout: content column at a comfortable measure + a right rail (metadata, related, sources) using the extra width.
 - [x] Left-aligned content (no mx-auto) — killed the sidebar↔content gap; widened to 92rem.
-- [ ] Collapsible sidebar (icon-rail) to reclaim reading width on demand.
+- [x] Collapsible sidebar (icon-rail) to reclaim reading width on demand.
 - [x] Content-aware widths — cards/lists go wide (2-col), prose capped at 68ch.
-- [ ] Sticky page header + filters so controls stay reachable while scrolling long lists.
+- [x] Sticky search + filters bar (glass, `top-2`) so controls stay reachable while scrolling.
 - [x] 68ch reading container for answers inside the wide page.
 - [x] Responsive gutters (px-5 → sm:px-8 → lg:px-12) + left-aligned wide content.
 
@@ -36,11 +36,11 @@ tickets, Kanban-ready. Checked = done.
 
 ## Reading experience
 - [ ] Table-of-contents / section jumps for long source docs in the Reader.
-- [ ] Collapse long answers with "show more"; expand-in-place.
+- [x] Collapse long answers with "show more"; expand-in-place.
 - [ ] Persist scroll position when reopening a source/answer.
 - [~] Code blocks styled + copy button (syntax highlighting still TODO).
 - [x] Related-questions rail (from the new memory index) beside each question.
-- [ ] Progress indicator / reading time on long content.
+- [x] Progress indicator / reading time on long content.
 
 ## Visual hierarchy & rhythm
 - [ ] One clear primary action per view; demote secondary buttons to ghost/outline.
