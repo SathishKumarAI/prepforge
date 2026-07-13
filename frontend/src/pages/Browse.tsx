@@ -2,7 +2,7 @@ import Fuse from "fuse.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { QuestionCard } from "../components/QuestionCard";
-import { Empty, Loader } from "../components/States";
+import { CardSkeletonGrid, Empty } from "../components/States";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { isDue } from "../lib/srs";
@@ -53,7 +53,13 @@ export function Browse() {
     return list;
   }, [questions, fuse, query, topic, diff]);
 
-  if (loading) return <Loader label="Loading question bank" />;
+  if (loading)
+    return (
+      <div>
+        <div className="mb-6 h-9 w-72 animate-pulse rounded-lg bg-surface0/60" />
+        <CardSkeletonGrid count={6} />
+      </div>
+    );
   if (error)
     return (
       <Empty

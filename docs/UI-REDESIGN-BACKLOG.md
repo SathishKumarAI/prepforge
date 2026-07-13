@@ -48,7 +48,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Section dividers with labels on dense pages.
 - [ ] Align tabs, metadata, and legends to a shared baseline grid.
 - [ ] Consistent spacing tokens (gap/padding) — no ad-hoc values.
-- [ ] Clear empty/loading/error states with a designed surface + CTA.
+- [x] Skeleton loading states (Browse deck) + designed empty/error surfaces.
 
 ## Information density & scanning
 - [ ] Comfortable vs compact density toggle per user preference.
