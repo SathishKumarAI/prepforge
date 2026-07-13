@@ -27,6 +27,8 @@ export interface Question {
   sources?: VaultSource[];
   alt_answers?: AltAnswer[];
   from_vault?: boolean;
+  // zero-token TF-IDF memory index — related question ids
+  related?: { id: string; score: number }[];
 }
 
 export interface Source {

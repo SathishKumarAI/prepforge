@@ -10,6 +10,13 @@ interface State {
 }
 
 let cache: { questions: Question[]; topics: string[] } | null = null;
+let idMap: Map<string, Question> | null = null;
+
+/** Shared id → question lookup (built once from the cached bank). */
+export function questionMap(): Map<string, Question> {
+  if (!idMap && cache) idMap = new Map(cache.questions.map((q) => [q.id, q]));
+  return idMap ?? new Map();
+}
 
 export function useQuestions(): State {
   const [state, setState] = useState<State>({

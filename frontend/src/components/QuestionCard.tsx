@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useProgress } from "../hooks/useProgress";
+import { questionMap } from "../hooks/useQuestions";
 import type { Question, VaultSource } from "../lib/types";
 import { ACCENT_BORDER, topicColor } from "../lib/topics";
 import { DifficultyBadge, TopicBadge } from "./Badge";
@@ -18,12 +19,17 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
   const note = progress.notes[q.id] ?? "";
   const accent = topicColor(q.topic);
 
+  function jumpTo(id: string) {
+    document.getElementById(`q-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   return (
     <motion.article
+      id={`q-${q.id}`}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className={`glass group rounded-2xl border-l-2 ${ACCENT_BORDER[accent]} shadow-card`}
+      className={`glass group scroll-mt-24 rounded-2xl border-l-2 ${ACCENT_BORDER[accent]} shadow-card`}
     >
       <button
         onClick={() => setOpen((o) => !o)}
@@ -63,7 +69,8 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-white/[0.05] px-5 py-4">
+            <div className="border-t border-white/[0.05] px-5 py-4 lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-6">
+              <div className="min-w-0">
               {q.answer ? (
                 <Markdown>{q.answer}</Markdown>
               ) : q.from_vault ? (
@@ -155,6 +162,10 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
                   />
                 )}
               </AnimatePresence>
+              </div>
+
+              {/* right rail — related questions (zero-token memory index) */}
+              <RelatedRail related={q.related} onJump={jumpTo} />
             </div>
           </motion.div>
         )}
@@ -162,5 +173,36 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
 
       <SourceDoc source={openSource} onClose={() => setOpenSource(null)} />
     </motion.article>
+  );
+}
+
+function RelatedRail({ related, onJump }: { related?: { id: string; score: number }[]; onJump: (id: string) => void }) {
+  const map = questionMap();
+  const items = (related ?? []).map((r) => ({ id: r.id, q: map.get(r.id) })).filter((x) => x.q);
+  if (items.length === 0) return null;
+  return (
+    <aside className="mt-6 lg:mt-0">
+      <div className="rounded-2xl border border-white/[0.05] bg-crust/40 p-3 lg:sticky lg:top-24">
+        <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-lavender">
+          Related questions
+        </div>
+        <div className="flex flex-col gap-1">
+          {items.map(({ id, q }) => (
+            <button
+              key={id}
+              onClick={() => onJump(id)}
+              title="Jump to this question"
+              className="group/rel rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface0/50"
+            >
+              <span className="line-clamp-2 text-xs text-subtext1 group-hover/rel:text-lavender">{q!.question}</span>
+              <span className="mt-0.5 block font-mono text-[10px] text-overlay0">{q!.topic}</span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 border-t border-white/[0.05] pt-2 font-mono text-[10px] text-overlay0">
+          linked by shared concepts — recall one, remember the rest
+        </div>
+      </div>
+    </aside>
   );
 }
