@@ -198,6 +198,23 @@ body::before {
   color: #fff;
 }
 
+/* global typography & reading comfort */
+body {
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4,
+.font-display {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
 /* keyboard focus visibility — visible ring for keyboard users, none on mouse click */
 :focus-visible {
   outline: 2px solid #cba6f7;
@@ -269,5 +286,28 @@ body::before {
   }
   .prose-answer p {
     @apply my-3;
+  }
+  .prose-answer li {
+    @apply leading-relaxed;
+  }
+  .prose-answer h1,
+  .prose-answer h2 {
+    @apply mb-2 mt-5 font-display text-lg font-semibold text-text;
+  }
+  .prose-answer h3,
+  .prose-answer h4 {
+    @apply mb-1.5 mt-4 font-display text-base font-medium text-text;
+  }
+  .prose-answer pre {
+    @apply my-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-crust p-3 text-[0.85em] leading-relaxed;
+  }
+  .prose-answer pre code {
+    @apply bg-transparent p-0 text-subtext1;
+  }
+  .prose-answer blockquote {
+    @apply my-3 border-l-2 border-mauve/40 pl-3 italic text-subtext0;
+  }
+  .prose-answer a {
+    @apply text-blue underline underline-offset-2 hover:text-lavender;
   }
 }

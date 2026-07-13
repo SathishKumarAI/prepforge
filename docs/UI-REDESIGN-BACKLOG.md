@@ -7,7 +7,7 @@ tickets, Kanban-ready. Checked = done.
 
 ## Layout & space utilization
 - [x] Widen the main container (`max-w-5xl` → `max-w-6xl`) so content uses the screen.
-- [ ] Two-pane reading layout: content column at a comfortable measure + a right rail (metadata, related, sources) using the extra width.
+- [x] Two-pane reading layout: content column at a comfortable measure + a right rail (metadata, related, sources) using the extra width.
 - [ ] Left-align content to the sidebar instead of centering with big dead margins.
 - [ ] Collapsible sidebar (icon-rail) to reclaim reading width on demand.
 - [ ] Content-aware widths: dense lists/tables go wide; prose answers stay at a readable measure.
@@ -18,11 +18,11 @@ tickets, Kanban-ready. Checked = done.
 ## Typography & readability
 - [ ] Bump base body size to ~16.5–17px with `line-height: 1.7` for prose.
 - [x] Increase answer prose line-height + paragraph spacing for readability.
-- [ ] Cap line length (`max-width: 68ch`) on all long-form text (answers, reader, sources).
+- [x] Cap line length (`max-width: 68ch`) on all long-form text (answers, reader, sources).
 - [ ] A real type scale (display / h1 / h2 / body / small / mono) as tokens; apply consistently.
-- [ ] `text-wrap: balance` on headings, `pretty` on paragraphs.
+- [x] `text-wrap: balance` on headings, `pretty` on paragraphs.
 - [ ] Distinct, comfortable serif or humanist body for long reading (test Fraunces vs a body serif).
-- [ ] `tabular-nums` for all counts/metrics; consistent number formatting.
+- [x] `tabular-nums` for all counts/metrics; consistent number formatting.
 - [ ] Larger, calmer "reading mode" typography in the Reader and expanded answers.
 
 ## Eye strain & long-session comfort
@@ -38,8 +38,8 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Table-of-contents / section jumps for long source docs in the Reader.
 - [ ] Collapse long answers with "show more"; expand-in-place.
 - [ ] Persist scroll position when reopening a source/answer.
-- [ ] Syntax-highlighted code blocks with a copy button.
-- [ ] Related-questions rail (from the new memory index) beside each question.
+- [x] Syntax-highlighted code blocks with a copy button.
+- [x] Related-questions rail (from the new memory index) beside each question.
 - [ ] Progress indicator / reading time on long content.
 
 ## Visual hierarchy & rhythm
