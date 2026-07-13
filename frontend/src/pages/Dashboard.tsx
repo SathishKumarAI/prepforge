@@ -87,11 +87,13 @@ export function Dashboard() {
     <div>
       <h1 className="mb-6 font-display text-3xl font-semibold tracking-tight text-text">Dashboard</h1>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Day streak" value={stats.streak} unit="🔥" tone="peach" />
         <Stat label="Cards known" value={stats.known} tone="green" />
+        <Stat label="Learning" value={stats.learning} tone="teal" />
         <Stat label="Avg quiz" value={stats.avgQuiz} unit="%" tone="mauve" />
         <Stat label="Bookmarked" value={stats.bookmarks} tone="yellow" />
+        <Stat label="Question bank" value={questions.length} tone="blue" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -140,7 +142,7 @@ export function Dashboard() {
 
       {/* mastery detail bars */}
       <Panel title="Progress detail" subtitle="Per-topic completion" className="mt-4">
-        <div className="flex flex-col gap-4 py-2">
+        <div className="grid gap-x-8 gap-y-4 py-2 sm:grid-cols-2">
           {stats.mastery.map((m) => (
             <div key={m.topic}>
               <div className="mb-1.5 flex justify-between text-sm">
@@ -167,6 +169,7 @@ export function Dashboard() {
 function Stat({ label, value, unit, tone }: { label: string; value: number; unit?: string; tone: string }) {
   const toneText: Record<string, string> = {
     peach: "text-peach", green: "text-green", mauve: "text-mauve", yellow: "text-yellow",
+    teal: "text-teal", blue: "text-blue",
   };
   return (
     <div className="glass rounded-2xl p-4 shadow-card">

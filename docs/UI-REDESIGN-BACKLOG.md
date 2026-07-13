@@ -69,7 +69,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Tighten oversized empty/loading states (py-24 → py-16).
 - [x] Browse: responsive 2-col card grid on xl (expanded cards span full width for the two-pane).
 - [x] Wider page (max-w-7xl) — reduces dead side-margins; prose still capped at 68ch.
-- [ ] Dashboard: denser stat + insight layout that fills the viewport (less scroll = less ADHD friction).
+- [x] Dashboard: 6-stat grid + 2-col progress bars — denser, less scroll.
 - [~] Trimmed Browse hero (smaller heading, tighter copy) — other pages pending.
 - [ ] Consistent 8px vertical rhythm; remove ad-hoc large paddings.
 - [x] "Next best action" banner on Browse (N cards due → Start review) — reduce decision load, guide the next step.
