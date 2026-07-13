@@ -164,9 +164,17 @@ export function Layout({ children }: { children: ReactNode }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="mx-auto w-full max-w-7xl flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12"
+          className="w-full max-w-[92rem] flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12"
         >
           {children}
+          <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-5 font-mono text-[11px] text-overlay0">
+            <span>PrepForge · local-first · your answers stay on your machine</span>
+            <span className="flex items-center gap-3">
+              <NavLink to="/learn" className="hover:text-subtext1">Review due</NavLink>
+              <NavLink to="/graph" className="hover:text-subtext1">Memory graph</NavLink>
+              <button onClick={() => setSettingsOpen(true)} className="hover:text-subtext1">Settings</button>
+            </span>
+          </footer>
         </motion.main>
       </div>
     </div>

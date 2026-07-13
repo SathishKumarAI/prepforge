@@ -8,12 +8,12 @@ tickets, Kanban-ready. Checked = done.
 ## Layout & space utilization
 - [x] Widen the main container (`max-w-5xl` → `max-w-6xl`) so content uses the screen.
 - [x] Two-pane reading layout: content column at a comfortable measure + a right rail (metadata, related, sources) using the extra width.
-- [ ] Left-align content to the sidebar instead of centering with big dead margins.
+- [x] Left-aligned content (no mx-auto) — killed the sidebar↔content gap; widened to 92rem.
 - [ ] Collapsible sidebar (icon-rail) to reclaim reading width on demand.
-- [ ] Content-aware widths: dense lists/tables go wide; prose answers stay at a readable measure.
+- [x] Content-aware widths — cards/lists go wide (2-col), prose capped at 68ch.
 - [ ] Sticky page header + filters so controls stay reachable while scrolling long lists.
-- [ ] A max-width reading container for answers (~68ch) inside a wider page — space without long lines.
-- [ ] Responsive gutters that scale with viewport (not fixed px) — fills ultrawide cleanly.
+- [x] 68ch reading container for answers inside the wide page.
+- [x] Responsive gutters (px-5 → sm:px-8 → lg:px-12) + left-aligned wide content.
 
 ## Typography & readability
 - [ ] Bump base body size to ~16.5–17px with `line-height: 1.7` for prose.
@@ -80,7 +80,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Unify Pill / Badge / Button / Tab into single components.
 - [ ] Global toast system already in (Sonner) — route all feedback through it.
 - [ ] Keyboard shortcuts + a `?` cheatsheet overlay.
-- [ ] Code-split the >1MB bundle (dynamic import Recharts/graph/reader).
+- [x] Code-split — lazy-load Dashboard(recharts)/Graph/Reader/Notes; main bundle 1013kB → 595kB.
 
 ---
 

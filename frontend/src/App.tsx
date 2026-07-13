@@ -1,17 +1,21 @@
+import { Suspense, lazy } from "react";
 import { Link, Route, Routes } from "react-router-dom";
 import { useApplyTheme } from "./hooks/useApplyTheme";
 import { Layout } from "./components/Layout";
+import { Loader } from "./components/States";
 import { Toaster } from "./components/ui/sonner";
 import { Learn } from "./pages/Learn";
 import { Browse } from "./pages/Browse";
 import { Flashcards } from "./pages/Flashcards";
 import { Quiz } from "./pages/Quiz";
-import { Resources } from "./pages/Resources";
-import { Dashboard } from "./pages/Dashboard";
 import { Bookmarks } from "./pages/Bookmarks";
-import { Notes } from "./pages/Notes";
-import { Graph } from "./pages/Graph";
-import { Reader } from "./pages/Reader";
+
+// heavy pages (recharts, force-graph, pdf reader) — split out of the main bundle
+const Resources = lazy(() => import("./pages/Resources").then((m) => ({ default: m.Resources })));
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const Notes = lazy(() => import("./pages/Notes").then((m) => ({ default: m.Notes })));
+const Graph = lazy(() => import("./pages/Graph").then((m) => ({ default: m.Graph })));
+const Reader = lazy(() => import("./pages/Reader").then((m) => ({ default: m.Reader })));
 
 function NotFound() {
   return (
@@ -40,6 +44,7 @@ export default function App() {
 function LayoutRoutes() {
   return (
     <Layout>
+      <Suspense fallback={<Loader label="Loading" />}>
       <Routes>
         <Route path="/" element={<Browse />} />
         <Route path="/learn" element={<Learn />} />
@@ -53,6 +58,7 @@ function LayoutRoutes() {
         <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </Layout>
   );
 }
