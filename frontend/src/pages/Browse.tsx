@@ -107,7 +107,7 @@ export function Browse() {
       {filtered.length === 0 ? (
         <Empty title="No matches" hint="Try a different search or clear the filters." />
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
           {filtered.map((q, i) => (
             <QuestionCard key={q.id} q={q} index={i} />
           ))}

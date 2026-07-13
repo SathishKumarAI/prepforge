@@ -67,7 +67,7 @@ tickets, Kanban-ready. Checked = done.
 ## Space audit — kill empty space, deliver content (user psychology)
 - [x] Enrich collapsed question cards with an answer **preview** + related/source meta — rows were empty voids; now they deliver content + spark curiosity.
 - [x] Tighten oversized empty/loading states (py-24 → py-16).
-- [ ] Browse: responsive 2-col card grid on xl/2xl so wide screens fill with content, not margin.
+- [x] Browse: responsive 2-col card grid on xl (expanded cards span full width for the two-pane).
 - [ ] Fluid page width with a sensible cap — reduce dead side-margins on ultrawide.
 - [ ] Dashboard: denser stat + insight layout that fills the viewport (less scroll = less ADHD friction).
 - [ ] Trim hero whitespace on every page; lead with content, not big empty headers.

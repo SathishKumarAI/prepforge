@@ -29,7 +29,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className={`glass group scroll-mt-24 rounded-2xl border-l-2 ${ACCENT_BORDER[accent]} shadow-card`}
+      className={`glass group scroll-mt-24 rounded-2xl border-l-2 ${ACCENT_BORDER[accent]} shadow-card ${open ? "xl:col-span-2" : ""}`}
     >
       <button
         onClick={() => setOpen((o) => !o)}
