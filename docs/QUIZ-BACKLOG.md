@@ -24,8 +24,9 @@ Goal: quizzes the user can **shape** (how many, which topics/tags, how hard) and
 - [x] `source_file` (library/generated cards) now appears in the Quiz **source picker** — ingest
       attaches `sources:[{title,path,kind:"library"}]` (frontmatter title); the card source chip
       opens it via `POST /library/read` (SourceDoc routes vault vs library by `kind`).
-- [~] **Generate MCQs on demand** — done for videos via `/quiz/from_video`; a generic
-      "generate for this resource" button in Resources + Ollama/Claude tiers still TODO.
+- [x] **Generate MCQs on demand** — every resource card has a "＋ quiz" button →
+      `POST /quiz/from_resource` (article or video) → ingest → opens the quiz scoped to it.
+      Deterministic tier only; Ollama/Claude tiers optional (kept zero-token by default).
 - [x] Better distractors: ingest now builds a local TF-IDF index over the card set and picks the
       *most similar* other cards as distractors (near-miss, not random). `_build_vectors`/`_similarity`.
 - [~] Question kinds: **definition-match** + **cloze/fill-blank** shipped (deterministic, near-miss

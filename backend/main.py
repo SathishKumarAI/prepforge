@@ -215,19 +215,18 @@ class VideoQuizReq(BaseModel):
     topic: str = "AI"
 
 
-@app.post("/quiz/from_video")
-def quiz_from_video(req: VideoQuizReq):
-    """End-to-end: YouTube URL → transcript → library markdown → ingest (with
-    zero-token MCQ synthesis) → related index. Returns the source path to scope a
-    quiz to just this video. No API key, no model required."""
-    saved = capture_mod.read(req.url, req.topic)
+def _quiz_from_url(url: str, topic: str) -> dict:
+    """Any URL (YouTube video → transcript, or article → readable text) → library
+    markdown → ingest (zero-token MCQ synthesis) → related index. Returns the
+    source path so the quiz can be scoped to just that resource. No API key."""
+    saved = capture_mod.read(url, topic)
     if saved.get("error"):
         return saved
     result = ingest_mod.ingest("deterministic")
     try:
         pipeline_mod.build_related()
     except Exception as exc:
-        log.warning("related build after video ingest failed: %s", exc)
+        log.warning("related build after resource ingest failed: %s", exc)
     return {
         "ok": True,
         "title": saved.get("title"),
@@ -235,6 +234,18 @@ def quiz_from_video(req: VideoQuizReq):
         "cards": result.get("cards"),
         "synth_quizzes": result.get("synth_quizzes"),
     }
+
+
+@app.post("/quiz/from_video")
+def quiz_from_video(req: VideoQuizReq):
+    """YouTube URL → quizzable questions from that video (see _quiz_from_url)."""
+    return _quiz_from_url(req.url, req.topic)
+
+
+@app.post("/quiz/from_resource")
+def quiz_from_resource(req: VideoQuizReq):
+    """Any resource URL (article or video) → quizzable questions from it."""
+    return _quiz_from_url(req.url, req.topic)
 
 
 @app.post("/vault/ingest")

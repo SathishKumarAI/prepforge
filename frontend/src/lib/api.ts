@@ -119,6 +119,17 @@ export async function quizFromVideo(url: string, topic = "AI"): Promise<VideoQui
   return res.json();
 }
 
+// Any resource (article or video) → quizzable questions from it.
+export async function quizFromResource(url: string, topic = "AI"): Promise<VideoQuizResult> {
+  const res = await fetch(`${BASE}/quiz/from_resource`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url, topic }),
+  });
+  if (!res.ok) throw new Error(`quiz/from_resource → ${res.status}`);
+  return res.json();
+}
+
 export async function uploadResource(file: File, topic = "AI"): Promise<ReadResult> {
   const fd = new FormData();
   fd.append("file", file);

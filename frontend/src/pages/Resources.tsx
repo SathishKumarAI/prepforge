@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Chip } from "@/components/ui/chip";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
 import { Empty, Loader } from "../components/States";
-import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, refreshResources } from "../lib/api";
+import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, quizFromResource, refreshResources } from "../lib/api";
+import { reloadQuestions } from "../hooks/useQuestions";
 import { toast } from "../components/ui/sonner";
 import type { Resource } from "../lib/types";
 
@@ -261,6 +263,33 @@ export function Resources() {
 }
 
 function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen: () => void }) {
+  const navigate = useNavigate();
+  const [quizzing, setQuizzing] = useState(false);
+
+  async function makeQuiz(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (quizzing || !r.url) return;
+    setQuizzing(true);
+    const t = toast.loading(`Building a quiz from “${r.title}”…`);
+    try {
+      const res = await quizFromResource(r.url, r.topic);
+      if (res.error) {
+        toast.error(res.message ?? "Couldn't build a quiz from this resource.", { id: t });
+        return;
+      }
+      await reloadQuestions();
+      toast.success(`Quiz ready · ${res.synth_quizzes ?? 0} questions`, {
+        id: t,
+        description: "Opening the quiz, scoped to this resource.",
+      });
+      navigate("/quiz");
+    } catch {
+      toast.error("Failed — is the backend running?", { id: t });
+    } finally {
+      setQuizzing(false);
+    }
+  }
+
   return (
     <motion.div
       onClick={onOpen}
@@ -269,17 +298,27 @@ function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen
       transition={{ delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
       className="glass group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl shadow-card transition-transform hover:-translate-y-0.5"
     >
-      {/* open-in-new-tab, top-right; stops the card's in-app open */}
-      <a
-        href={r.url}
-        target="_blank"
-        rel="noreferrer"
-        onClick={(e) => e.stopPropagation()}
-        title="Open in a new tab"
-        className="absolute right-3 top-3 z-10 grid h-7 w-7 place-items-center rounded-lg bg-crust/80 text-subtext0 opacity-0 backdrop-blur transition-opacity hover:text-text group-hover:opacity-100"
-      >
-        ↗
-      </a>
+      {/* top-right actions; stop the card's in-app open */}
+      <div className="absolute right-3 top-3 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <button
+          onClick={makeQuiz}
+          disabled={quizzing}
+          title="Generate a quiz from this resource"
+          className="grid h-7 place-items-center rounded-lg bg-crust/80 px-2 font-mono text-[10px] uppercase tracking-widest text-mauve backdrop-blur hover:text-text disabled:opacity-50"
+        >
+          {quizzing ? "…" : "＋ quiz"}
+        </button>
+        <a
+          href={r.url}
+          target="_blank"
+          rel="noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          title="Open in a new tab"
+          className="grid h-7 w-7 place-items-center rounded-lg bg-crust/80 text-subtext0 backdrop-blur hover:text-text"
+        >
+          ↗
+        </a>
+      </div>
       {r.thumbnail ? (
         <div className="relative aspect-video overflow-hidden bg-crust">
           <img src={r.thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
