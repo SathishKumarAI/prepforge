@@ -123,21 +123,30 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* mobile top nav */}
-        <div className="sticky top-0 z-20 flex items-center gap-1 overflow-x-auto border-b border-white/[0.05] bg-base/80 px-3 py-2 backdrop-blur-xl md:hidden">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                `whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium ${
-                  isActive ? "bg-surface0 text-text" : "text-subtext0"
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+        <div className="no-scrollbar sticky top-0 z-20 flex items-center gap-1 overflow-x-auto border-b border-white/[0.05] bg-base/80 px-2 py-1.5 backdrop-blur-xl md:hidden">
+          {NAV.map((item) => {
+            const badge = navBadge(item.to);
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  `relative flex shrink-0 flex-col items-center gap-0.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-medium ${
+                    isActive ? "bg-surface0 text-text" : "text-subtext0"
+                  }`
+                }
+              >
+                <span className="[&_svg]:h-[18px] [&_svg]:w-[18px]">{item.icon}</span>
+                {item.label}
+                {badge !== null && (
+                  <span className="absolute right-1 top-0.5 rounded-full bg-mauve/30 px-1 font-mono text-[8px] font-bold text-mauve">
+                    {badge}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </div>
 
         <motion.main

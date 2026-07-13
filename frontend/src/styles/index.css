@@ -74,6 +74,27 @@ body,
   height: 100%;
 }
 
+/* prevent stray horizontal scroll on mobile (clip is sticky-safe, unlike hidden) */
+html {
+  overflow-x: clip;
+}
+
+/* comfortable touch targets on touch devices */
+@media (pointer: coarse) {
+  .pill {
+    min-height: 34px;
+  }
+}
+
+/* hide scrollbar on horizontal nav strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 body {
   @apply bg-base text-text font-sans antialiased;
   background-image:
