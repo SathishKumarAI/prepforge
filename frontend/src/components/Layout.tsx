@@ -36,19 +36,22 @@ export function Layout({ children }: { children: ReactNode }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("pf-sidebar") === "1");
   useEffect(() => { localStorage.setItem("pf-sidebar", collapsed ? "1" : "0"); }, [collapsed]);
+  const [focus, setFocus] = useState(false);
   const { questions } = useQuestions();
   const { progress } = useProgress();
   const { notes } = useNotes();
 
-  // global "?" opens the shortcut cheatsheet (ignored while typing in a field)
+  // global keys: "?" toggles the cheatsheet, "f" toggles focus mode, Esc exits focus.
+  // Ignored while typing in a field.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key !== "?" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
-      e.preventDefault();
-      setHelpOpen((v) => !v);
+      if (e.key === "?") { e.preventDefault(); setHelpOpen((v) => !v); }
+      else if (e.key === "f") { e.preventDefault(); setFocus((v) => !v); }
+      else if (e.key === "Escape") setFocus(false);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -71,10 +74,18 @@ export function Layout({ children }: { children: ReactNode }) {
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       {/* sidebar */}
+      {focus && (
+        <button
+          onClick={() => setFocus(false)}
+          className="fixed right-4 top-4 z-30 rounded-full border border-white/10 bg-crust/90 px-3 py-1.5 font-mono text-[11px] text-subtext0 backdrop-blur-xl transition-colors hover:text-text"
+        >
+          Exit focus · Esc
+        </button>
+      )}
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col justify-between border-r border-white/[0.05] py-7 transition-[width] duration-300 md:flex ${
-          collapsed ? "w-[4.75rem] px-3" : "w-64 px-5"
-        }`}
+        className={`sticky top-0 h-screen shrink-0 flex-col justify-between border-r border-white/[0.05] py-7 transition-[width] duration-300 ${
+          focus ? "hidden" : "hidden md:flex"
+        } ${collapsed ? "w-[4.75rem] px-3" : "w-64 px-5"}`}
       >
         <div>
           <div className={`mb-10 flex items-center px-1 ${collapsed ? "justify-center" : "gap-2.5"}`}>
@@ -173,7 +184,7 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* mobile top nav */}
-        <div className="no-scrollbar sticky top-0 z-20 flex items-center gap-1 overflow-x-auto border-b border-white/[0.05] bg-base/80 px-2 py-1.5 backdrop-blur-xl md:hidden">
+        <div className={`no-scrollbar sticky top-0 z-20 items-center gap-1 overflow-x-auto border-b border-white/[0.05] bg-base/80 px-2 py-1.5 backdrop-blur-xl ${focus ? "hidden" : "flex md:hidden"}`}>
           {NAV.map((item) => {
             const badge = navBadge(item.to);
             return (
@@ -204,14 +215,15 @@ export function Layout({ children }: { children: ReactNode }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[92rem] flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12"
+          className={`w-full flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12 ${focus ? "mx-auto max-w-3xl" : "max-w-[92rem]"}`}
         >
           {children}
-          <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-5 font-mono text-[11px] text-overlay0">
+          <footer className={`mt-12 flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-5 font-mono text-[11px] text-overlay0 ${focus ? "hidden" : "flex"}`}>
             <span>PrepForge · local-first · your answers stay on your machine</span>
             <span className="flex items-center gap-3">
               <NavLink to="/learn" className="hover:text-subtext1">Review due</NavLink>
               <NavLink to="/graph" className="hover:text-subtext1">Memory graph</NavLink>
+              <button onClick={() => setFocus(true)} className="hover:text-subtext1">Focus (f)</button>
               <button onClick={() => setHelpOpen(true)} className="hover:text-subtext1">Shortcuts (?)</button>
               <button onClick={() => setSettingsOpen(true)} className="hover:text-subtext1">Settings</button>
             </span>

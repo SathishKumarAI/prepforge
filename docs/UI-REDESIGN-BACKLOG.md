@@ -31,7 +31,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] Generous whitespace + vertical rhythm (8px baseline grid) to reduce density fatigue.
 - [ ] Dim/secondary text for non-critical metadata so the eye rests on content.
 - [x] Sepia (low-blue) reading theme added to the theme switcher.
-- [ ] Comfortable focus mode: hide chrome (nav/sidebar), center the current question.
+- [x] Focus mode (press `f`): hides nav/sidebar/footer, centers a narrow reading column.
 - [ ] Respect reduced-motion everywhere (done globally; audit per-component).
 
 ## Reading experience

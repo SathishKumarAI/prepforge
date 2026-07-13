@@ -2,7 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 const SHORTCUTS: { keys: string; desc: string }[] = [
   { keys: "/", desc: "Focus the search on Browse" },
-  { keys: "Esc", desc: "Close any dialog / reader" },
+  { keys: "f", desc: "Toggle focus mode (hide chrome)" },
+  { keys: "Esc", desc: "Exit focus / close any dialog" },
   { keys: "?", desc: "Show this shortcut help" },
   { keys: "Tab", desc: "Move between controls (focus ring shows)" },
   { keys: "Enter", desc: "Open the focused link / button" },
