@@ -68,11 +68,11 @@ tickets, Kanban-ready. Checked = done.
 - [x] Enrich collapsed question cards with an answer **preview** + related/source meta — rows were empty voids; now they deliver content + spark curiosity.
 - [x] Tighten oversized empty/loading states (py-24 → py-16).
 - [x] Browse: responsive 2-col card grid on xl (expanded cards span full width for the two-pane).
-- [ ] Fluid page width with a sensible cap — reduce dead side-margins on ultrawide.
+- [x] Wider page (max-w-7xl) — reduces dead side-margins; prose still capped at 68ch.
 - [ ] Dashboard: denser stat + insight layout that fills the viewport (less scroll = less ADHD friction).
 - [ ] Trim hero whitespace on every page; lead with content, not big empty headers.
 - [ ] Consistent 8px vertical rhythm; remove ad-hoc large paddings.
-- [ ] "Next best action" prompt (due cards / continue) up top — psychology: reduce decision load, guide the next step.
+- [x] "Next best action" banner on Browse (N cards due → Start review) — reduce decision load, guide the next step.
 - [ ] Progressive disclosure — show summaries, expand on intent, so the eye isn't lost in space.
 
 ## Component & polish

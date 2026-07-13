@@ -1,14 +1,22 @@
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { QuestionCard } from "../components/QuestionCard";
 import { Empty, Loader } from "../components/States";
+import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
+import { isDue } from "../lib/srs";
 import { ACCENT_DOT, topicColor } from "../lib/topics";
 
 const DIFFS = ["easy", "medium", "hard"];
 
 export function Browse() {
   const { questions, topics, loading, error } = useQuestions();
+  const { progress } = useProgress();
+  const dueCount = useMemo(
+    () => questions.filter((q) => { const c = progress.srs[q.id]; return c && c.seen && isDue(c); }).length,
+    [questions, progress.srs]
+  );
   const [topic, setTopic] = useState<string | null>(null);
   const [diff, setDiff] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -57,6 +65,21 @@ export function Browse() {
   return (
     <div>
       <Header count={questions.length} />
+
+      {/* next best action — guide the user, reduce decision load */}
+      {dueCount > 0 && (
+        <Link
+          to="/learn"
+          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-mauve/30 bg-gradient-to-r from-mauve/10 to-blue/10 px-4 py-3 transition-colors hover:from-mauve/20 hover:to-blue/20"
+        >
+          <span className="text-sm text-subtext1">
+            <span className="font-semibold text-text">{dueCount}</span> card{dueCount !== 1 ? "s" : ""} due for review — keep your streak going.
+          </span>
+          <span className="shrink-0 rounded-lg bg-gradient-to-r from-mauve to-blue px-3 py-1.5 text-xs font-semibold text-crust">
+            Start review →
+          </span>
+        </Link>
+      )}
 
       {/* search */}
       <div className="relative mb-5">
