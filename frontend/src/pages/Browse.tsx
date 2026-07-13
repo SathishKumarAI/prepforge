@@ -132,8 +132,22 @@ export function Browse() {
       </div>
       </div>
 
-      <div className="mb-4 font-mono text-xs text-overlay0">
-        {filtered.length} question{filtered.length !== 1 ? "s" : ""}
+      <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-xs text-overlay0">
+        <span>{filtered.length} question{filtered.length !== 1 ? "s" : ""}</span>
+        {(topic || diff || query.trim()) && (
+          <>
+            <span className="text-overlay0/60">·</span>
+            {query.trim() && <ActiveChip label={`“${query.trim()}”`} onClear={() => setQuery("")} />}
+            {topic && <ActiveChip label={topic} onClear={() => setTopic(null)} />}
+            {diff && <ActiveChip label={diff} onClear={() => setDiff(null)} />}
+            <button
+              onClick={() => { setQuery(""); setTopic(null); setDiff(null); }}
+              className="text-subtext0 underline decoration-dotted underline-offset-2 hover:text-red"
+            >
+              clear all
+            </button>
+          </>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -146,6 +160,19 @@ export function Browse() {
         </div>
       )}
     </div>
+  );
+}
+
+function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <button
+      onClick={onClear}
+      className="inline-flex items-center gap-1 rounded-full border border-mauve/30 bg-mauve/10 px-2 py-0.5 capitalize text-subtext1 transition-colors hover:border-red/40 hover:text-red"
+      title="Remove this filter"
+    >
+      {label}
+      <span className="text-[13px] leading-none">×</span>
+    </button>
   );
 }
 

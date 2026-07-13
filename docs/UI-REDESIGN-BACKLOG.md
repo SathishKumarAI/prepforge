@@ -54,7 +54,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Comfortable/Compact density toggle in Settings (data-density; tightens deck + cards).
 - [ ] Skimmable question cards: topic, difficulty, source, and a one-line preview.
 - [x] Group nav into sections (Study / Content / Insights) to reduce the 11-item list.
-- [ ] Result counts + active-filter chips that are dismissible.
+- [x] Result count + dismissible active-filter chips (topic/difficulty/query) + clear-all.
 - [ ] Virtualized long lists (Browse with 1700+ questions) for smooth scroll.
 
 ## Color & contrast
@@ -62,7 +62,7 @@ tickets, Kanban-ready. Checked = done.
 - [ ] One accent per topic used consistently (badges, graph, charts match).
 - [ ] Verify WCAG AA contrast for all body/secondary text in every theme.
 - [x] Theme-aware chart colors — Dashboard reads live CSS-var palette (works in all 5 themes).
-- [ ] Stronger disabled-state contrast (opacity-40 is too faint).
+- [x] Stronger disabled-state contrast (global opacity .55 + not-allowed cursor).
 
 ## Space audit — kill empty space, deliver content (user psychology)
 - [x] Enrich collapsed question cards with an answer **preview** + related/source meta — rows were empty voids; now they deliver content + spark curiosity.
