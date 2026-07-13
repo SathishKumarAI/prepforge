@@ -50,6 +50,13 @@ export default {
         "accent-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
         destructive: "rgb(var(--ctp-red) / <alpha-value>)",
         "destructive-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
+        // semantic status palette — use these instead of reaching for raw accent colors
+        success: "rgb(var(--ctp-green) / <alpha-value>)",
+        "success-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
+        warning: "rgb(var(--ctp-yellow) / <alpha-value>)",
+        "warning-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
+        info: "rgb(var(--ctp-blue) / <alpha-value>)",
+        "info-foreground": "rgb(var(--ctp-crust) / <alpha-value>)",
         border: "rgb(var(--ctp-surface1) / <alpha-value>)",
         input: "rgb(var(--ctp-surface1) / <alpha-value>)",
         ring: "rgb(var(--ctp-mauve) / <alpha-value>)",

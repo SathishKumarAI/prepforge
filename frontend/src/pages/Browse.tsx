@@ -178,16 +178,15 @@ function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) 
 
 function Header({ count }: { count: number }) {
   return (
-    <header className="mb-8">
-      <div className="mb-3 font-mono text-xs uppercase tracking-[0.25em] text-overlay0">
+    <header className="mb-6">
+      <div className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-overlay0">
         {count} curated questions
       </div>
-      <h1 className="font-display text-4xl font-semibold leading-[1.05] tracking-tight text-text sm:text-5xl">
+      <h1 className="font-display text-3xl font-semibold leading-[1.05] tracking-tight text-text sm:text-4xl">
         Forge your <span className="italic text-mauve">interview</span> answers.
       </h1>
-      <p className="mt-3 max-w-lg text-subtext0">
-        A local-first prep deck for AI, Machine Learning, Data Science, and Analytics roles. Browse,
-        drill flashcards, quiz yourself, and pull live resources from the web.
+      <p className="mt-2 max-w-xl text-sm text-subtext0">
+        Local-first prep for AI, ML, Data Science &amp; Analytics — browse, drill, quiz, and pull live resources.
       </p>
     </header>
   );
