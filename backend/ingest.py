@@ -156,6 +156,63 @@ def _ollama_card(client: httpx.Client, model: str, source: str, topic: str, head
         return None
 
 
+def _first_sentence(text: str, cap: int = 160) -> str:
+    """A short, quiz-friendly gloss: first sentence of an answer, stripped of markdown."""
+    plain = re.sub(r"[#*`>_~\[\]()]", "", text).replace("\n", " ").strip()
+    m = re.search(r"(.+?[.!?])(\s|$)", plain)
+    s = (m.group(1) if m else plain).strip()
+    return (s[: cap - 1] + "…") if len(s) > cap else s
+
+
+def _synthesize_quiz(card: dict, others: list[dict]) -> dict | None:
+    """Build a zero-token multiple-choice quiz for a card that has none.
+
+    Format: "Which description best matches '<heading/question>'?" — the correct
+    choice is this card's own one-line gloss; 3 distractors are glosses from other
+    cards (same topic preferred for plausibility). Fully deterministic (no RNG, no
+    model) so any ingested resource — including notes from a YouTube video — becomes
+    quizzable offline.
+    """
+    correct = _first_sentence(card.get("answer", ""))
+    if len(correct) < 20:
+        return None
+    same_topic = [o for o in others if o["topic"] == card["topic"] and o["id"] != card["id"]]
+    fallback = [o for o in others if o["id"] != card["id"]]
+    pool = same_topic if len(same_topic) >= 3 else fallback
+    # deterministic rotation seeded by this card's id, so choices are stable per card
+    h = int(hashlib.sha1(card["id"].encode()).hexdigest(), 16)
+    ordered = sorted(pool, key=lambda o: o["id"])
+    if len(ordered) < 3:
+        return None
+    off = h % len(ordered)
+    rotated = ordered[off:] + ordered[:off]
+    distractors: list[str] = []
+    for o in rotated:
+        g = _first_sentence(o.get("answer", ""))
+        if len(g) >= 20 and g != correct and g not in distractors:
+            distractors.append(g)
+        if len(distractors) == 3:
+            break
+    if len(distractors) < 3:
+        return None
+    correct_index = h % 4
+    choices = distractors[:]
+    choices.insert(correct_index, correct)
+    return {"choices": choices, "correctIndex": correct_index}
+
+
+def _add_synthetic_quizzes(cards: list[dict]) -> int:
+    """Give every quiz-less card a deterministic MCQ. Returns count added."""
+    added = 0
+    for c in cards:
+        if not c.get("quiz"):
+            quiz = _synthesize_quiz(c, cards)
+            if quiz:
+                c["quiz"] = quiz
+                added += 1
+    return added
+
+
 def ingest(mode: str = "deterministic") -> dict:
     """Turn library markdown into Q&A cards.
 
@@ -200,7 +257,13 @@ def ingest(mode: str = "deterministic") -> dict:
             seen.add(c["id"])
             deduped.append(c)
 
+    # make quiz-less cards (deterministic split, or any model miss) quizzable offline
+    synth = _add_synthetic_quizzes(deduped)
+
     OUT.write_text(json.dumps({"questions": deduped}, indent=2, ensure_ascii=False), encoding="utf-8")
     effective = "claude" if use_claude else ("ollama" if use_ollama else "deterministic")
-    log.info("ingest: %d files → %d cards (mode=%s, model_cards=%d)", len(files), len(deduped), effective, model_cards)
-    return {"files": len(files), "cards": len(deduped), "mode": effective, "model_cards": model_cards}
+    log.info(
+        "ingest: %d files → %d cards (mode=%s, model_cards=%d, synth_quizzes=%d)",
+        len(files), len(deduped), effective, model_cards, synth,
+    )
+    return {"files": len(files), "cards": len(deduped), "mode": effective, "model_cards": model_cards, "synth_quizzes": synth}

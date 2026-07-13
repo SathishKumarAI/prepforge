@@ -5,31 +5,78 @@ import { Empty, Loader } from "../components/States";
 import { ChevronRight } from "../components/NavButton";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
-import type { Question } from "../lib/types";
+import type { Difficulty, Question } from "../lib/types";
 
 type Phase = "setup" | "run" | "done";
+
+const COUNTS = [5, 10, 15, 20];
+const DIFFS: Difficulty[] = ["easy", "medium", "hard"];
 
 export function Quiz() {
   const { questions, topics, loading } = useQuestions();
   const { addQuiz } = useProgress();
   const [phase, setPhase] = useState<Phase>("setup");
   const [topic, setTopic] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [diffs, setDiffs] = useState<Difficulty[]>([]);
+  const [count, setCount] = useState(10);
+  const [source, setSource] = useState<string | null>(null); // vault source path
+  const [seed, setSeed] = useState(0);
   const [deck, setDeck] = useState<Question[]>([]);
   const [i, setI] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
 
+  // only questions that actually carry a multiple-choice quiz can be quizzed
+  const quizzable = useMemo(() => questions.filter((q) => q.quiz), [questions]);
+
+  // most common tags across quizzable questions — the tag chips to offer
+  const allTags = useMemo(() => {
+    const m = new Map<string, number>();
+    quizzable.forEach((q) => q.tags.forEach((t) => m.set(t, (m.get(t) ?? 0) + 1)));
+    return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 24).map((e) => e[0]);
+  }, [quizzable]);
+
+  // vault/resource documents that have quiz-ready questions (for source-scoped quizzes)
+  const quizSources = useMemo(() => {
+    const m = new Map<string, { title: string; count: number }>();
+    quizzable.forEach((q) =>
+      (q.sources ?? []).forEach((s) => {
+        const e = m.get(s.path) ?? { title: s.title, count: 0 };
+        e.count += 1;
+        m.set(s.path, e);
+      })
+    );
+    return [...m.entries()].map(([path, v]) => ({ path, ...v })).sort((a, b) => b.count - a.count);
+  }, [quizzable]);
+
   const pool = useMemo(
-    () => questions.filter((q) => q.quiz && (!topic || q.topic === topic)),
-    [questions, topic]
+    () =>
+      quizzable.filter(
+        (q) =>
+          (!topic || q.topic === topic) &&
+          (diffs.length === 0 || diffs.includes(q.difficulty)) &&
+          (tags.length === 0 || q.tags.some((t) => tags.includes(t))) &&
+          (!source || (q.sources ?? []).some((s) => s.path === source))
+      ),
+    [quizzable, topic, diffs, tags, source]
   );
 
   if (loading) return <Loader label="Loading quiz" />;
 
+  function toggle<T>(list: T[], set: (v: T[]) => void, v: T) {
+    set(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
+  }
+
   function start() {
-    // stable pseudo-shuffle without Math.random (deterministic but varied by length)
-    const shuffled = [...pool].sort((a, b) => a.id.localeCompare(b.id)).reverse();
-    setDeck(shuffled.slice(0, Math.min(10, shuffled.length)));
+    if (pool.length === 0) return;
+    // deterministic order (no Math.random), rotated by a per-session seed so
+    // "Retry" / a new run surfaces a different slice instead of the same 10.
+    const ordered = [...pool].sort((a, b) => a.id.localeCompare(b.id));
+    const off = seed % ordered.length;
+    const rotated = [...ordered.slice(off), ...ordered.slice(0, off)];
+    setDeck(rotated.slice(0, Math.min(count, rotated.length)));
+    setSeed((s) => s + 7);
     setI(0);
     setPicked(null);
     setCorrect(0);
@@ -38,31 +85,80 @@ export function Quiz() {
 
   if (phase === "setup") {
     return (
-      <div>
-        <h1 className="mb-2 font-display text-3xl font-semibold tracking-tight text-text">Quiz</h1>
-        <p className="mb-8 text-sm text-subtext0">
-          10 multiple-choice questions. Self-graded, scored at the end.
+      <div className="mx-auto max-w-2xl">
+        <h1 className="mb-2 font-display text-3xl font-semibold tracking-tight text-text">Build your quiz</h1>
+        <p className="mb-6 text-sm text-subtext0">
+          Pick how many questions, which topic &amp; tags, and how hard. Self-graded, scored at the end.
         </p>
-        <div className="glass rounded-2xl p-6 shadow-card">
-          <div className="mb-3 font-mono text-xs uppercase tracking-widest text-overlay0">Choose a topic</div>
-          <div className="mb-6 flex flex-wrap gap-2">
-            <Pill active={!topic} onClick={() => setTopic(null)} label="Mixed" />
-            {topics.map((t) => (
-              <Pill key={t} active={topic === t} onClick={() => setTopic(t)} label={t} />
-            ))}
-          </div>
-          <button
-            onClick={start}
-            disabled={pool.length === 0}
-            className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-mauve to-blue py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40"
-          >
-            Start quiz
-            <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
-          </button>
-          <div className="mt-3 text-center font-mono text-xs text-overlay0">
-            {pool.length} questions available
+        <div className="glass space-y-6 rounded-2xl p-6 shadow-card">
+          <Section label="How many questions">
+            <div className="flex flex-wrap gap-2">
+              {COUNTS.map((c) => (
+                <Pill key={c} active={count === c} onClick={() => setCount(c)} label={String(c)} />
+              ))}
+            </div>
+          </Section>
+
+          <Section label="Topic">
+            <div className="flex flex-wrap gap-2">
+              <Pill active={!topic} onClick={() => setTopic(null)} label="Mixed" />
+              {topics.map((t) => (
+                <Pill key={t} active={topic === t} onClick={() => setTopic(t)} label={t} />
+              ))}
+            </div>
+          </Section>
+
+          <Section label="Difficulty" hint="empty = all">
+            <div className="flex flex-wrap gap-2">
+              {DIFFS.map((d) => (
+                <Pill key={d} active={diffs.includes(d)} onClick={() => toggle(diffs, setDiffs, d)} label={d} />
+              ))}
+            </div>
+          </Section>
+
+          {allTags.length > 0 && (
+            <Section label="Tags" hint={tags.length ? `${tags.length} selected · any match` : "optional"}>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((t) => (
+                  <Pill key={t} active={tags.includes(t)} onClick={() => toggle(tags, setTags, t)} label={`#${t}`} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {quizSources.length > 0 && (
+            <Section label="Quiz from a specific source" hint="a doc / video you ingested">
+              <div className="flex flex-wrap gap-2">
+                <Pill active={!source} onClick={() => setSource(null)} label="Any source" />
+                {quizSources.map((s) => (
+                  <Pill key={s.path} active={source === s.path} onClick={() => setSource(s.path)} label={`⛁ ${s.title} · ${s.count}`} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          <div className="border-t border-white/[0.06] pt-5">
+            <button
+              onClick={start}
+              disabled={pool.length === 0}
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-mauve to-blue py-3.5 font-display text-lg font-semibold text-crust shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-40"
+            >
+              Start quiz · {Math.min(count, pool.length)} Q
+              <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
+            </button>
+            <div className="mt-3 text-center font-mono text-xs text-overlay0">
+              {pool.length === 0
+                ? "No quiz-ready questions match these filters — loosen them."
+                : `${pool.length} questions match · drawing ${Math.min(count, pool.length)}`}
+            </div>
           </div>
         </div>
+
+        <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-overlay0">
+          Want to quiz on a YouTube video or article? Ingest it under{" "}
+          <span className="text-subtext0">Resources → auto-Q&amp;A</span>, then generate quiz
+          questions for it. MCQ generation from a single resource is on the roadmap.
+        </p>
       </div>
     );
   }
@@ -169,6 +265,18 @@ export function Quiz() {
           )}
         </motion.div>
       </AnimatePresence>
+    </div>
+  );
+}
+
+function Section({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="mb-2.5 flex items-baseline gap-2">
+        <span className="font-mono text-xs uppercase tracking-widest text-overlay0">{label}</span>
+        {hint && <span className="font-mono text-[10px] text-overlay0/70">{hint}</span>}
+      </div>
+      {children}
     </div>
   );
 }
