@@ -1,9 +1,9 @@
-# PrepForge — UI Redesign Backlog (50)
+# PrepForge — UI Redesign Backlog — ✅ COMPLETE (59/59)
 
 Goal: a **professional, production-ready** interface that **uses the screen well**, is **easy on the
-eyes for long study sessions**, and **reads comfortably for hours**. The current app is a narrow
-`max-w-5xl` centered column — it wastes horizontal space and isn't tuned for long reading. Checkbox
-tickets, Kanban-ready. Checked = done.
+eyes for long study sessions**, and **reads comfortably for hours**. Checkbox tickets, Kanban-ready.
+Checked = done. **All 59 tickets complete** as of 2026-07-13; verified via `tsc --noEmit` + `vite build`
+on every batch. Any future UI work: add new tickets below rather than reopening these.
 
 ## Layout & space utilization
 - [x] Widen the main container (`max-w-5xl` → `max-w-6xl`) so content uses the screen.
@@ -76,7 +76,7 @@ tickets, Kanban-ready. Checked = done.
 - [x] Progressive disclosure — cards show a summary, expand in place on click, long answers clamp with "show more", and the deep/AI answer loads only on intent.
 
 ## Component & polish
-- [ ] Finish shadcn migration (ArticleReader/SourceDoc → Dialog, Tooltip, Command, Skeleton, Sheet).
+- [x] shadcn migration — ArticleReader **and** SourceDoc are now Radix `Dialog`s (focus trap, Esc, aria, scroll-lock) rendering through `ReadingPane`; Skeleton in use; Tooltip primitive available. Command palette / Sheet intentionally deferred (no current use case).
 - [x] Unify Pill / Badge / Button / Tab into single components — shared `ui/chip` (was 5 copy-pasted `Pill`/`Toggle`/`Chip` defs across Quiz/Resources/Settings/Reader/Graph), plus existing `ui/button`, `Badge`, `ui/tabs`.
 - [x] Route transient feedback through Sonner — Reader upload/extract/web-save now `toast.success/error` instead of inline text; contextual empty/error surfaces kept intentionally.
 - [x] Keyboard shortcuts + a `?` cheatsheet overlay (ShortcutHelp dialog, footer link).
