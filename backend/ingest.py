@@ -248,13 +248,94 @@ def _cloze(card: dict, h: int) -> tuple[str, str] | None:
     return prompt, term
 
 
-def _synthesize_quiz(card: dict, others: list[dict], vec: dict, norm: dict) -> dict | None:
-    """Zero-token MCQ for a card that has none. Deterministic (seeded by card id),
-    no model. Distractors are the *most similar* other cards (TF-IDF near-miss), so
-    the wrong answers are plausible rather than random. Two kinds, chosen by hash:
+def _subject(card: dict) -> str:
+    """The thing a card is about — its heading, minus the 'Explain:' scaffolding."""
+    q = (card.get("question", "") or "").strip()
+    q = re.sub(r"^(explain|describe|what is|define)\b[:\s]*", "", q, flags=re.IGNORECASE)
+    return q.rstrip("?").strip()
 
-    - definition-match: "which one-line description matches this?" (distractors = glosses)
-    - cloze: fill in the blanked key term (distractors = other cards' salient terms)
+
+def _cloze_quiz(card: dict, ranked: list[dict], h: int, correct_index: int) -> dict | None:
+    cz = _cloze(card, h)
+    if not cz:
+        return None
+    prompt, term = cz
+    wrongs: list[str] = []
+    for o in ranked:
+        for t in (o.get("tags", []) or []):
+            ts = str(t)
+            if ts.lower() != term.lower() and ts not in wrongs and len(ts) > 3:
+                wrongs.append(ts)
+                break
+        if len(wrongs) == 3:
+            break
+    if len(wrongs) < 3:
+        return None
+    choices = wrongs[:]
+    choices.insert(correct_index, term)
+    return {"choices": choices, "correctIndex": correct_index, "kind": "cloze", "prompt": prompt}
+
+
+def _true_false_quiz(card: dict, ranked: list[dict], h: int) -> dict | None:
+    """True/false by *construction*, so the label is always right with no model:
+    pair the subject with its own gloss (true) or a dissimilar card's gloss (false)."""
+    subject = _subject(card)
+    own = _first_sentence(card.get("answer", ""))
+    if len(subject) < 3 or len(own) < 20:
+        return None
+    if h % 2 == 0:  # TRUE statement
+        return {"choices": ["True", "False"], "correctIndex": 0, "kind": "truefalse",
+                "prompt": f"True or false — “{subject}” can be described as: {own}"}
+    # FALSE statement: borrow a *least*-similar card's gloss (reliably a different concept)
+    for o in reversed(ranked):
+        g = _first_sentence(o.get("answer", ""))
+        if len(g) >= 20 and g != own:
+            return {"choices": ["True", "False"], "correctIndex": 1, "kind": "truefalse",
+                    "prompt": f"True or false — “{subject}” can be described as: {g}"}
+    return None
+
+
+def _spot_wrong_quiz(card: dict, ranked: list[dict], h: int, wrong_index: int) -> dict | None:
+    """"Which statement is wrong?" — 3 cards paired with their own gloss (true) plus
+    one card paired with a mismatched gloss (false); the answer is the false one."""
+    subjects = [(card, own) for own in [_first_sentence(card.get("answer", ""))] if len(own) >= 20]
+    if not subjects:
+        return None
+    picks = [card]
+    for o in ranked:
+        if len(_first_sentence(o.get("answer", ""))) >= 20:
+            picks.append(o)
+        if len(picks) == 4:
+            break
+    if len(picks) < 4:
+        return None
+    stmts: list[str] = []
+    for idx, c in enumerate(picks):
+        subj = _subject(c)
+        if not subj:
+            return None
+        if idx == wrong_index:
+            # mismatch: pair this subject with a different pick's gloss → false
+            donor = picks[(idx + 1) % len(picks)]
+            gloss = _first_sentence(donor.get("answer", ""))
+        else:
+            gloss = _first_sentence(c.get("answer", ""))
+        stmts.append(f"{subj}: {gloss}")
+    if len(set(stmts)) < 4:
+        return None
+    return {"choices": stmts, "correctIndex": wrong_index, "kind": "spotwrong",
+            "prompt": "Which statement is INCORRECT?"}
+
+
+def _synthesize_quiz(card: dict, others: list[dict], vec: dict, norm: dict) -> dict | None:
+    """Zero-token quiz for a card that has none. Deterministic (seeded by card id),
+    no model. Distractors are the *most similar* other cards (TF-IDF near-miss).
+    Four kinds, chosen by hash — all with labels correct by construction:
+
+    - mcq: "which one-line description matches this?" (distractors = near-miss glosses)
+    - cloze: fill in the blanked key term
+    - truefalse: subject paired with its own gloss (true) or a dissimilar one (false)
+    - spotwrong: four subject:gloss statements, one deliberately mismatched
     """
     h = int(hashlib.sha1(card["id"].encode()).hexdigest(), 16)
     correct_index = h % 4
@@ -267,26 +348,22 @@ def _synthesize_quiz(card: dict, others: list[dict], vec: dict, norm: dict) -> d
     if len(ranked) < 3:
         return None
 
-    # kind: every 3rd card (by hash) becomes a cloze, the rest definition-match
-    if h % 3 == 0:
-        cz = _cloze(card, h)
-        if cz:
-            prompt, term = cz
-            wrongs: list[str] = []
-            for o in ranked:
-                for t in (o.get("tags", []) or []):
-                    ts = str(t)
-                    if ts.lower() != term.lower() and ts not in wrongs and len(ts) > 3:
-                        wrongs.append(ts)
-                        break
-                if len(wrongs) == 3:
-                    break
-            if len(wrongs) == 3:
-                choices = wrongs[:]
-                choices.insert(correct_index, term)
-                return {"choices": choices, "correctIndex": correct_index, "kind": "cloze", "prompt": prompt}
+    # kind rotation by hash; each falls through to mcq if it can't build cleanly
+    kind = h % 5
+    if kind == 0:
+        q = _cloze_quiz(card, ranked, h, correct_index)
+        if q:
+            return q
+    elif kind == 1:
+        q = _true_false_quiz(card, ranked, h)
+        if q:
+            return q
+    elif kind == 2 and len(ranked) >= 3:
+        q = _spot_wrong_quiz(card, ranked, h, correct_index)
+        if q:
+            return q
 
-    # definition-match (default)
+    # definition-match (default / fallback)
     correct = _first_sentence(card.get("answer", ""))
     if len(correct) < 20:
         return None

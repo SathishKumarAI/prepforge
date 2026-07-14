@@ -485,8 +485,8 @@ export function Quiz() {
           exit={{ opacity: 0, x: -24 }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         >
-          {quiz.kind === "cloze" && (
-            <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-teal">Fill in the blank</div>
+          {kindLabel(quiz.kind) && (
+            <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-teal">{kindLabel(quiz.kind)}</div>
           )}
           <h2 className="mb-6 font-display text-h2 font-medium leading-snug text-text">{quiz.prompt ?? q.question}</h2>
           <div className="flex flex-col gap-3">
@@ -531,6 +531,14 @@ export function Quiz() {
       </AnimatePresence>
     </div>
   );
+}
+
+// short label shown above a non-standard quiz question
+function kindLabel(kind?: string): string {
+  return kind === "cloze" ? "Fill in the blank"
+    : kind === "truefalse" ? "True or false"
+    : kind === "spotwrong" ? "Spot the wrong statement"
+    : "";
 }
 
 // plain-text gloss of a markdown answer, for the results explanation

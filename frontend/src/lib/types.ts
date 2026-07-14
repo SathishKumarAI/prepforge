@@ -3,8 +3,8 @@ export type Difficulty = "easy" | "medium" | "hard";
 export interface Quiz {
   choices: string[];
   correctIndex: number;
-  kind?: "mcq" | "cloze"; // default mcq; cloze uses `prompt` (fill in the blank)
-  prompt?: string; // overrides the displayed question (e.g. the cloze sentence)
+  kind?: "mcq" | "cloze" | "truefalse" | "spotwrong"; // default mcq
+  prompt?: string; // overrides the displayed question (cloze sentence, T/F statement, …)
 }
 
 export interface VaultSource {

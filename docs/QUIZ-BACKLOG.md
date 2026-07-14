@@ -29,10 +29,10 @@ Goal: quizzes the user can **shape** (how many, which topics/tags, how hard) and
       Deterministic tier only; Ollama/Claude tiers optional (kept zero-token by default).
 - [x] Better distractors: ingest now builds a local TF-IDF index over the card set and picks the
       *most similar* other cards as distractors (near-miss, not random). `_build_vectors`/`_similarity`.
-- [~] Question kinds: **definition-match** + **cloze/fill-blank** shipped (deterministic, near-miss
-      distractors; `quiz.kind` + `quiz.prompt`, rendered on the run + results screens). true/false and
-      "spot the wrong statement" deferred — reliably generating a *false* statement needs semantic
-      validation (a model), which breaks the zero-token guarantee.
+- [x] Question kinds — **four**, all zero-token & correctly labelled *by construction* (no model):
+      **definition-match**, **cloze/fill-blank**, **true/false** (subject paired with its own gloss =
+      true, or a least-similar card's gloss = reliably false), and **spot-the-wrong-statement** (four
+      `subject: gloss` lines, one deliberately mismatched). `quiz.kind` + `quiz.prompt` drive rendering.
 - [x] Weakness-aware quizzes: "Focus weak spots" toggle floats not-yet-mastered / unseen cards first.
 - [x] Timed mode + per-question explanations on the results screen (gloss from the source answer).
 - [x] Persist quiz config so it's remembered between sessions (`pf-quiz-config` in localStorage).
