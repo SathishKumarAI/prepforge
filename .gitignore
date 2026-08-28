@@ -72,3 +72,6 @@ Thumbs.db
 
 # derived memory index
 backend/content/related.json
+
+# Screenshots from scripts/shoot.mjs — evidence for a human, regenerated on demand
+frontend/scripts/.shots/
