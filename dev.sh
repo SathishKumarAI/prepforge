@@ -21,12 +21,18 @@ BIN="$(venv_bin)"
   echo "uvicorn missing in $BIN — run: '$BIN/pip' install -r requirements.txt"; exit 1;
 }
 
-# 8787, not 8000 — frontend/vite.config.ts proxies /api to 127.0.0.1:8787.
-"$BIN/uvicorn" main:app --reload --port 8787 &
+# 8787, not 8000 — frontend/vite.config.ts proxies /api to the same port, and
+# reads the same variable. Override both at once when 8787 is unusable:
+#   PF_API_PORT=8788 ./dev.sh
+# On Windows a listening socket can outlive its process, and then the port stays
+# taken until a reboot; that is what this exists for.
+API_PORT="${PF_API_PORT:-8787}"
+"$BIN/uvicorn" main:app --reload --port "$API_PORT" &
 BACK=$!
 
 cd "$ROOT/frontend"
 [ -d node_modules ] || npm install
+export PF_API_PORT="$API_PORT"
 # Vite picks the next free port if 5173 is taken — read the URL it prints.
 npm run dev &
 FRONT=$!
