@@ -17,11 +17,23 @@ Update this when you STOP working, not when you start.
   model" below. All six free lenses generate in 4-7s at `$0.0000`; `deep` never touched it. **Which
   model you load decides whether this works at all**, and the difference is not subtle: read that
   section before starting LM Studio.
-- **Next action:** the three things still unverified from the UI rebuild — a **timed quiz through a
-  real 30s expiry**, **Reader's PDF + web-fetch** against a real file and URL, and **drill mode**
-  end to end. The lens meta row has been verified through the API but not yet in the browser
-  (port 8787 was occupied — see the environment traps).
-- **Blocked on:** Nothing. Plane: COD-33 Done, COD-34 Backlog, COD-39 (this session's fix) In Review.
+- **Next action, in this order — the first step is a reboot, deliberately:**
+  1. **Reboot.** Port 8787 is held by a process that cannot be killed from a shell (see the
+     environment traps). Nothing that needs the browser can be checked until it is gone.
+  2. `./dev.sh`, then confirm the backend is the current one:
+     `curl 127.0.0.1:8787/openapi.json | grep generate/providers`. Empty means it is stale again.
+  3. Start the local model — `lms server start --port 1234` then `lms load openai/gpt-oss-20b -y`
+     (see "Running the local model"; loading the wrong one silently costs money).
+  4. **Verify the lens meta row in the browser.** Open Library, hover a lens tab: the meta row
+     should read `openai/gpt-oss-20b` and `$0.0000`. This is proven through the API but never in
+     the UI — it is the last leg of the local-model work. Filed as **COD-44**.
+  5. Merge **PR #16** (COD-39) if it still reads right.
+  6. Then the three still unverified from the UI rebuild: a **timed quiz through a real 30s
+     expiry**, **Reader's PDF + web-fetch** against a real file and URL, and **drill mode** end
+     to end.
+- **Blocked on:** Nothing, but steps 1-4 above are blocked *on each other* — a reboot first, or
+  step 4 cannot run at all.
+- Plane: COD-33 Done, COD-34 Backlog, COD-39 In Review (PR #16), COD-44 Todo.
 - **Found, not fixed:** the question bank contains *"What's the weather like today?"* tagged
   `Behavioral`. Ingest noise. Filed as **COD-34**.
 
