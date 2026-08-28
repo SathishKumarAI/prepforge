@@ -121,7 +121,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="top-[12%] max-w-xl translate-y-0 gap-0 p-0">
+      {/* `[&>button]:hidden` drops the dialog's own close ×: in a palette it
+          lands inside the search field's corner, and Esc, the scrim and the
+          footer hint already close this. Every palette worth copying — Spotlight,
+          VS Code, Linear — has no close button either. */}
+      <DialogContent className="top-[12%] max-w-xl translate-y-0 gap-0 p-0 [&>button]:hidden">
         <DialogTitle className="sr-only">Search and jump</DialogTitle>
 
         <div className="relative border-b border-surface0">
@@ -134,7 +138,10 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             aria-label="Search questions, or jump to a page"
             aria-controls="command-palette-results"
             placeholder="Search questions, or jump to a page"
-            className="w-full bg-transparent py-3.5 pl-11 pr-4 text-small text-text outline-none placeholder:text-overlay0"
+            // pr-12 keeps the caret and the typed query clear of the dialog's
+            // close button, which sits in that corner and was overlapping the
+            // field's right edge.
+            className="w-full bg-transparent py-3.5 pl-11 pr-12 text-small text-text outline-none placeholder:text-overlay0"
           />
         </div>
 
