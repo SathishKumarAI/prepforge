@@ -29,10 +29,10 @@ so the button is safe to mash.
 
 ## How to start it
 
+`./dev.sh` from the repo root starts both (Git Bash on Windows). By hand:
+
 ```bash
-# backend — port 8787
 cd backend && ./.venv/Scripts/python.exe -m uvicorn main:app --port 8787   # Windows
-# frontend
 cd frontend && npm run dev
 ```
 
@@ -47,16 +47,17 @@ fixed. Anything else quoting 8000 is stale.
 **Vite will not land on 5173 here.** Ports 5173–5179 are taken by the user's other apps; the dev
 server picked **5180**. Read the actual URL off the Vite banner instead of assuming.
 
-**`dev.sh` is bash and assumes `.venv/bin/`.** On Windows use `.venv/Scripts/` and the two commands
-above; the venv on disk is now a Windows one, so `dev.sh` will not work as written.
+**`dev.sh` works from Git Bash now.** It resolves `.venv/Scripts` vs `.venv/bin` at runtime and
+picks `python3` or `python`, so the one helper covers both machines.
 
 **`npm install` alone is not enough on npm 11+.** esbuild's postinstall is blocked by default, and
 without it Vite cannot start. `package.json` now carries `allowScripts: {"esbuild@0.25.12": true}`;
 if a future esbuild bump reintroduces the prompt, run `npm approve-scripts esbuild`.
 
-**`backend/config/vault.yaml` still points at `/home/deva/coding/Obsidian Vault`** — a Linux path
-that does not exist here. `POST /vault/ingest` finds nothing until it is repointed. Unrelated to the
-GitHub banks above, which come in through `content/library/` instead.
+**The vault lives at `C:/Users/PRANAS/Documents/coding/learn/obsidian-vault`** (`config/vault.yaml`),
+not the old Linux path. `POST /vault/ingest` reproduces 1,545 questions from 21 files. PDF text
+extraction is noisy by nature — expect `pypdf` "Ignoring wrong pointing object" chatter, which is
+not an error.
 
 **The library content is git-ignored on purpose.** A fresh clone of this repo has none of it. The
 three `git clone` commands that rebuild it are in the README under "Seeding from public question

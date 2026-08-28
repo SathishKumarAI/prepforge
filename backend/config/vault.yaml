@@ -2,7 +2,7 @@
 # Only files whose folder or filename matches the interview/question patterns are
 # scanned — random books in the vault are skipped.
 
-path: "/home/deva/coding/Obsidian Vault"
+path: "C:/Users/PRANAS/Documents/coding/learn/obsidian-vault"
 
 # a file is ingested if its folder is in include_folders OR its name matches a keyword
 include_folders: ["Interview"]
