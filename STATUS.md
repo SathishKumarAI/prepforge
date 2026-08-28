@@ -9,9 +9,8 @@ Update this when you STOP working, not when you start.
   quizzable, 1,836 distinct "go deeper" links. Two branches, neither merged:
   `feat/ingest-github-question-banks` (ingest quality) → `feat/sources-tab` (the tab, the
   clone-by-URL endpoint, deep links). Build and tests green on the second.
-- **Next action:** The Quiz source picker renders ~850 buttons in a wall (one per ingested doc).
-  Make it a searchable/collapsed list — `frontend/src/pages/Quiz.tsx`, the "QUIZ FROM A SPECIFIC
-  SOURCE" block. It got worse with every repo added and is the first thing you hit when studying.
+- **Next action:** Nothing queued. Pick from `docs/BACKLOG.md` — 11 unchecked, the cheapest being
+  `P1 URL → clean article to library`, which `capture.read` already mostly does.
 - **Blocked on:** Nothing.
 
 ## What the Sources tab does
@@ -79,6 +78,9 @@ default ingest tier is `deterministic` — zero tokens, no model.
   dialog, Browse shows "Go deeper — 1836 links", filtering to "Blind 75" narrows it to 126, and an
   expanded card shows the full answer plus "Read the full document". Console has only the two
   pre-existing React Router v7 future-flag warnings — no errors.
+- Quiz source picker: 9 collection chips + a filter box + 8 rows. Typing "kafka" narrows 636 docs
+  to 16 across two collections; picking one shows the selection chip and the footer reads
+  "13 questions match · drawing 10".
 - `GET /questions` → 15 MB. Growing; if Browse ever feels slow, that payload is the first suspect.
 
 ## Open threads
