@@ -21,6 +21,9 @@ service-account*.json
 backend/content/library/
 backend/content/generated.json
 backend/content/vault_questions.json
+# What fetch_reading.py fetched, and what failed. Derived from the bank plus the
+# state of the web on the day it ran — regenerate it, do not share it.
+backend/content/reading_fetch.json
 
 # Answers a LOCAL model wrote. The curated bank in content/answers/ ships with
 # the repo; these are this machine's LM Studio output, cached under __local so it

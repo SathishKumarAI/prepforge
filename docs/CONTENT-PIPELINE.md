@@ -12,6 +12,7 @@ drop straight into Obsidian.
 | **Deep answer** (grounded, web-sourced) | `backend/content/answers/<qid>.md` | `generate()` on a cache-miss (or Claude Code authoring) | `generate()` cache-first — **no API call on a hit** |
 | **STAR interview answer** | `backend/content/answers/<qid>__star.md` | `generate(mode="star")` | same cache-first read |
 | **Captured / read resource** | `backend/content/library/<slug>.md` | `capture.read()` (in-app reader / manual URL) | ingestion + graph |
+| **Every page the bank cites** | `backend/content/library/<slug>.md` + `content/reading_fetch.json` | `fetch_reading.py` (batch, resumable) | ingestion + graph |
 | **Ingested book / notes** | `backend/content/library/*.md` (you drop them) | you | `POST /ingest` → cards |
 | **Curated question bank** | `backend/content/questions.json` | build-time | `GET /questions` |
 | **Aggregated feed** | `backend/data/resources.json` | scrapers / capture | `GET /resources` |
@@ -54,6 +55,42 @@ User clicks          ▼                                        │
 
 Resource reader:  URL ──► fetch + clean ──► content/library/<slug>.md ──► render in-app
 ```
+
+## Pulling in everything the bank cites
+
+The question bank does not only carry questions; it carries **7,398 citations to
+1,842 distinct URLs** ("go deeper" links, plus the reading index that lends a
+close neighbour's citation to a question with none). Those were links — you
+needed a browser and a connection. `backend/fetch_reading.py` turns them into
+the same Markdown files as anything else in the library:
+
+```bash
+cd backend
+./.venv/Scripts/python.exe fetch_reading.py --dry-run       # what it would fetch, most-cited first
+./.venv/Scripts/python.exe fetch_reading.py --limit 50      # a bounded pass
+./.venv/Scripts/python.exe fetch_reading.py --all           # everything still pending
+./.venv/Scripts/python.exe fetch_reading.py --retry-failed  # only the ones that failed
+./.venv/Scripts/python.exe -m uvicorn main:app --port 8787  # then POST /ingest turns them into cards
+```
+
+How it behaves, and why:
+
+| Behaviour | Reason |
+|---|---|
+| Walks **most-cited first** | the page 89 questions point at is worth more than the one a single question mentions |
+| Records **every** URL's outcome in `content/reading_fetch.json`, written after each fetch | a run is resumable, a re-run costs nothing for what already landed, and an interrupted run loses nothing |
+| ≥2s between hits on the **same host**, 0.3–0.5s globally | politeness; the delay is per host so a run across 40 hosts is not 40 sleeps long |
+| Refuses anything that is not public http(s) — localhost, RFC1918, link-local, `169.254.169.254` | these URLs come from **ingested third-party content**, so they are untrusted input. `test_fetch_reading.py` guards it |
+| Skips hosts in `BLOCKED_HOSTS` | measured, not assumed: `leetcode.com` 403s every scraper and is the most-cited host in the bank. For a problem page the link *is* the content |
+
+Failures are normal and recorded rather than hidden: Medium, Stack Overflow and
+some vendor docs answer a scraper with a wall or JavaScript. `reading_fetch.json`
+holds the status and the error for each, so "what is missing, and why" is a
+query rather than a guess.
+
+The fetched pages are **git-ignored**, like the rest of `content/library/`. They
+are third-party content that happens to live on your disk; the repo keeps the
+fetcher, not the copies.
 
 ## Committed vs. git-ignored
 
