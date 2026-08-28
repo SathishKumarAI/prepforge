@@ -10,18 +10,13 @@ import {
 } from "react";
 import {
   BarChart3,
-  BookOpen,
-  Bookmark,
   GraduationCap,
-  Grid2x2,
   Keyboard,
-  Layers,
   Library,
-  Network,
   PanelLeft,
-  Rss,
   Settings as SettingsIcon,
   StickyNote,
+  Sun,
 } from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { ShortcutHelp } from "./ShortcutHelp";
@@ -46,24 +41,18 @@ import { isDue } from "../lib/srs";
 interface NavItem {
   to: string;
   label: string;
-  /** Any 24px stroke icon — lucide's, or the one local SVG that matches them. */
+  /** Any 24px stroke icon from lucide. */
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
-  group: "Study" | "Content" | "Insights";
 }
 
 const NAV: NavItem[] = [
-  { to: "/study", label: "Study", icon: GraduationCap, group: "Study" },
-  { to: "/", label: "Browse", icon: Grid2x2, group: "Study" },
-  { to: "/sources", label: "Sources", icon: Library, group: "Content" },
-  { to: "/resources", label: "Resources", icon: Rss, group: "Content" },
-  { to: "/reader", label: "Reader", icon: BookOpen, group: "Content" },
-  { to: "/notes", label: "Notes", icon: StickyNote, group: "Content" },
-  { to: "/graph", label: "Graph", icon: Network, group: "Content" },
-  { to: "/dashboard", label: "Progress", icon: BarChart3, group: "Insights" },
-  { to: "/bookmarks", label: "Saved", icon: Bookmark, group: "Insights" },
+  { to: "/", label: "Today", icon: Sun },
+  { to: "/study", label: "Study", icon: GraduationCap },
+  { to: "/library", label: "Library", icon: Library },
+  { to: "/notes", label: "Notes", icon: StickyNote },
+  { to: "/progress", label: "Progress", icon: BarChart3 },
 ];
 
-const NAV_GROUPS: NavItem["group"][] = ["Study", "Content", "Insights"];
 const SIDEBAR_KEY = "pf-sidebar-open";
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -146,7 +135,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   function navBadge(to: string): number | null {
     if (to === "/study") return dueCount || null;
-    if (to === "/bookmarks") return progress.bookmarks.length || null;
+    if (to === "/library") return progress.bookmarks.length || null;
     if (to === "/notes") return notes.length || null;
     return null;
   }
@@ -188,49 +177,42 @@ export function Layout({ children }: { children: ReactNode }) {
               <span className="text-small font-semibold tracking-tight text-text">PrepForge</span>
             </div>
 
-            {NAV_GROUPS.map((group) => (
-              <div key={group} className="mb-5">
-                <h2 className="mb-1 px-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay0">
-                  {group}
-                </h2>
-                <ul className="flex flex-col gap-0.5">
-                  {NAV.filter((i) => i.group === group).map((item) => {
-                    const badge = navBadge(item.to);
-                    const Icon = item.icon;
-                    return (
-                      <li key={item.to}>
-                        <NavLink
-                          to={item.to}
-                          end={item.to === "/"}
-                          className={({ isActive }) =>
-                            `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-100 ${
-                              isActive
-                                ? "bg-surface0 font-medium text-text"
-                                : "text-subtext0 hover:bg-surface0/60 hover:text-text"
-                            }`
-                          }
-                        >
-                          {({ isActive }) => (
-                            <>
-                              <Icon
-                                aria-hidden="true"
-                                className={`size-4 shrink-0 ${isActive ? "text-mauve" : "text-overlay1"}`}
-                              />
-                              <span className="truncate">{item.label}</span>
-                              {badge !== null && (
-                                <span className="ml-auto tabular-nums text-micro text-overlay0">
-                                  {badge}
-                                </span>
-                              )}
-                            </>
+            <ul className="flex flex-col gap-0.5">
+              {NAV.map((item) => {
+                const badge = navBadge(item.to);
+                const Icon = item.icon;
+                return (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      end={item.to === "/"}
+                      className={({ isActive }) =>
+                        `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-100 ${
+                          isActive
+                            ? "bg-surface0 font-medium text-text"
+                            : "text-subtext0 hover:bg-surface0/60 hover:text-text"
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            aria-hidden="true"
+                            className={`size-4 shrink-0 ${isActive ? "text-mauve" : "text-overlay1"}`}
+                          />
+                          <span className="truncate">{item.label}</span>
+                          {badge !== null && (
+                            <span className="ml-auto tabular-nums text-micro text-overlay0">
+                              {badge}
+                            </span>
                           )}
-                        </NavLink>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+                        </>
+                      )}
+                    </NavLink>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
           <div className="shrink-0 border-t border-surface0 pt-2">
@@ -319,25 +301,5 @@ export function Layout({ children }: { children: ReactNode }) {
         </main>
       </div>
     </div>
-  );
-}
-
-/** lucide has no plain concentric-circle target at this weight; this matches
- *  the set's 1.5px stroke and 24px box so it sits with the others. */
-function Target({ className, ...props }: { className?: string } & Record<string, unknown>) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      {...props}
-    >
-      <circle cx="12" cy="12" r="8.5" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
   );
 }

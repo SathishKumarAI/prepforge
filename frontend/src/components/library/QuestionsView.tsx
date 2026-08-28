@@ -2,22 +2,20 @@ import Fuse from "fuse.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, ExternalLink, Search, X } from "lucide-react";
-import { QuestionCard } from "../components/QuestionCard";
-import { CardSkeletonGrid, Empty } from "../components/States";
-import { Page } from "../components/page/PageLayout";
-import { Orient, Fact } from "../components/page/Orient";
-import { StickyChrome } from "../components/page/StickyChrome";
-import { Button } from "../components/ui/button";
-import { Chip } from "../components/ui/chip";
-import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
-import { isDue } from "../lib/srs";
-import { ACCENT_DOT, topicColor } from "../lib/topics";
-import type { Question } from "../lib/types";
+import { QuestionCard } from "../QuestionCard";
+import { CardSkeletonGrid, Empty } from "../States";
+import { StickyChrome } from "../page/StickyChrome";
+import { Button } from "../ui/button";
+import { Chip } from "../ui/chip";
+import { useProgress } from "../../hooks/useProgress";
+import { useQuestions } from "../../hooks/useQuestions";
+import { isDue } from "../../lib/srs";
+import { ACCENT_DOT, topicColor } from "../../lib/topics";
+import type { Question } from "../../lib/types";
 
 const DIFFS = ["easy", "medium", "hard"];
 
-export function Browse() {
+export function QuestionsView() {
   const { questions, topics, loading, error } = useQuestions();
   const { progress } = useProgress();
   const dueCount = useMemo(
@@ -79,42 +77,26 @@ export function Browse() {
   }, [filtered.length]);
   const shown = filtered.slice(0, visible);
 
-  if (loading)
-    return (
-      <Page title="Browse">
-        <CardSkeletonGrid count={6} />
-      </Page>
-    );
+  if (loading) return <CardSkeletonGrid count={6} />;
   if (error)
     return (
-      <Page title="Browse">
-        {/* Port 8787, not 8000 — vite.config.ts proxies /api there and the
-            extension's host_permissions is pinned to it. */}
-        <Empty
-          title="The question bank is not answering."
-          hint="Start the backend, then reload: ./dev.sh — or uvicorn main:app --port 8787"
-          action={
-            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
-              Reload
-            </Button>
-          }
-        />
-      </Page>
+      // Port 8787, not 8000 — vite.config.ts proxies /api there and the
+      // extension's host_permissions is pinned to it.
+      <Empty
+        title="The question bank is not answering."
+        hint="Start the backend, then reload: ./dev.sh — or uvicorn main:app --port 8787"
+        action={
+          <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+            Reload
+          </Button>
+        }
+      />
     );
 
   const activeFilters = Boolean(topic || diff || query.trim());
 
   return (
-    <Page
-      title="Browse"
-      orient={
-        <Orient>
-          <Fact label="questions" value={questions.length.toLocaleString()} />
-          <Fact label="due for review" value={dueCount || null} emphasis={dueCount > 0} />
-          <Fact label="matching" value={activeFilters ? filtered.length : null} />
-        </Orient>
-      }
-    >
+    <>
       {dueCount > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button asChild variant="primary">
@@ -239,7 +221,7 @@ export function Browse() {
           )}
         </>
       )}
-    </Page>
+    </>
   );
 }
 

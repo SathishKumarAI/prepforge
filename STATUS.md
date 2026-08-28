@@ -3,15 +3,19 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-08-27.
-- **Where I stopped:** Mid-branch on `refactor/ui-page-contract-primitives` — a whole-app UI/UX
-  rebuild onto a three-zone page contract. Four commits, none pushed, no PR open yet. Content is
-  unchanged: still **8,330 questions**, 6,353 synthetic quizzes, 1,864 with reading links, from the
-  eight repos in `backend/content/library/`.
-- **Next action:** Push the branch and open the PR. Then the two things the branch did not verify:
-  drive a **timed quiz through a real 30s expiry**, and exercise **Reader's PDF + web-fetch** paths
-  against a real file and a real URL.
-- **Blocked on:** Nothing. Note that **Plane was down** during this work (`localhost:8080`
-  refused), so no work item was filed — file one for this branch when it is back up.
+- **Where I stopped:** Two branches of a whole-app UI/UX rebuild onto a three-zone page contract.
+  `refactor/ui-page-contract-primitives` is **PR #6, open**. `feat/ui-today-and-library` stacks on
+  it and is committed but **not pushed** — it finishes the IA, taking the nav from 11 entries to 5.
+  Content is unchanged: still **8,330 questions**, 6,353 synthetic quizzes, 1,864 with reading
+  links, from the eight repos in `backend/content/library/`.
+- **Next action:** Merge PR #6, then push `feat/ui-today-and-library` and open its PR against the
+  updated `main`. Then the three things neither branch verified: drive a **timed quiz through a
+  real 30s expiry**, exercise **Reader's PDF + web-fetch** against a real file and URL, and drive
+  **drill mode** end to end.
+- **Blocked on:** Nothing. **Plane was down** throughout (`localhost:8080` refused), so no work
+  item exists for either branch — file them when it is back up.
+- **Found, not fixed:** the question bank contains *"What's the weather like today?"* tagged
+  `Behavioral`. Ingest noise, unrelated to the UI work.
 
 ## The UI rebuild (read this before touching the frontend)
 
@@ -24,12 +28,25 @@ the change → file table, the accent rule, and the traps.
 
 | Was | Is |
 |---|---|
-| `/learn`, `/flashcards`, `/quiz` | `/study?mode=recall\|drill\|quiz` — old routes redirect |
+| `/learn`, `/flashcards`, `/quiz` | `/study?mode=recall\|drill\|quiz` |
+| `/bookmarks`, `/sources`, `/resources` | `/library?view=saved\|collections\|feed` |
+| `/dashboard` | `/progress` |
+| `/graph` | `/notes?view=graph` |
+| `/` was Browse | `/` is **Today** — a ranked next action, not a search box |
 | Three session shells | One, driven by `lib/studyModes.ts` |
 | `.glass` (blur + coloured halo) | `.panel` (flat, hairline). `.glass` is a deprecated alias |
 | Catppuccin Mocha default | **Databricks dark** default, on `:root` with no attribute |
 | Gradient `from-mauve to-blue` buttons | Solid accent fill, one primary per page |
-| 11 nav entries | 9, heading for 5 |
+| 11 nav entries | **5**: Today, Study, Library, Notes, Progress |
+
+**Every retired route redirects** (`App.tsx`, `LEGACY_VIEWS`) and merges rather
+than replaces the incoming query string. Nothing 404s; bookmarks and the browser
+extension's links keep working.
+
+**The Reader is deliberately not a Library view.** The four views are collections
+of material at different granularities and are the same kind of thing; the Reader
+is a tool that opens one file. Mixing them is the IA failure this restructure
+exists to fix. It keeps `/reader` and is linked from Library's header.
 
 **Traps:**
 

@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { QuestionCard } from "../components/QuestionCard";
-import { Page } from "../components/page/PageLayout";
-import { Orient, Fact } from "../components/page/Orient";
-import { Empty, Loader } from "../components/States";
-import { Button } from "../components/ui/button";
-import { Chip } from "../components/ui/chip";
-import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
+import { QuestionCard } from "../QuestionCard";
+import { Empty, Loader } from "../States";
+import { Button } from "../ui/button";
+import { Chip } from "../ui/chip";
+import { useProgress } from "../../hooks/useProgress";
+import { useQuestions } from "../../hooks/useQuestions";
 
 /**
  * Slot table
@@ -24,7 +22,7 @@ import { useQuestions } from "../hooks/useQuestions";
 
 type Scope = "saved" | "noted";
 
-export function Bookmarks() {
+export function SavedView() {
   const { questions, loading } = useQuestions();
   const { progress } = useProgress();
   const [scope, setScope] = useState<Scope>("saved");
@@ -43,15 +41,7 @@ export function Bookmarks() {
   const shown = scope === "saved" ? saved : noted;
 
   return (
-    <Page
-      title="Saved"
-      orient={
-        <Orient>
-          <Fact label="bookmarked" value={saved.length || null} emphasis={saved.length > 0} />
-          <Fact label="with a note" value={noted.length || null} />
-        </Orient>
-      }
-    >
+    <>
       <div className="mb-5 flex flex-wrap items-center gap-1.5">
         <Chip
           active={scope === "saved"}
@@ -87,6 +77,6 @@ export function Bookmarks() {
           ))}
         </div>
       )}
-    </Page>
+    </>
   );
 }
