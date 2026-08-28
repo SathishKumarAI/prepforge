@@ -31,7 +31,7 @@ export interface Suggestion {
  * and the ordering here is not actually contentious: overdue recall decays, and
  * everything else can wait a day.
  */
-export function suggestActions(questions: Question[], progress: Progress): Suggestion[] {
+export function suggestActions(questions: Pick<Question, "id">[], progress: Progress): Suggestion[] {
   const out: Suggestion[] = [];
 
   const due = questions.filter((q) => {

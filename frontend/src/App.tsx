@@ -7,10 +7,13 @@ import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
 import { LEGACY_ROUTES } from "./lib/studyModes";
 import { Today } from "./pages/Today";
-import { Library } from "./pages/Library";
-import { Study } from "./pages/Study";
 
-// heavy pages (recharts, pdf reader) — split out of the main bundle
+// Today stays in the main bundle: it is where the app opens, and lazy-loading
+// the first screen only moves the wait. Everything else is split — Library and
+// Study between them pull the markdown renderer, the syntax highlighter, fuse
+// and framer-motion, none of which the landing page uses.
+const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
+const Study = lazy(() => import("./pages/Study").then((m) => ({ default: m.Study })));
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Notes = lazy(() => import("./pages/Notes").then((m) => ({ default: m.Notes })));
 const Reader = lazy(() => import("./pages/Reader").then((m) => ({ default: m.Reader })));
