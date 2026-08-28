@@ -46,12 +46,14 @@ Session-end audit of PrepForge, the local-first interview-prep app (React + Vite
 - [ ] Code-split routes in `App.tsx` with `React.lazy` — all 10 pages are eagerly imported into the initial bundle.
 
 ## AI Answer Features
-- [ ] Include the persona in the DeepAnswer cache key — `generate.py` builds `cache_qid = qid + suffix` and ignores `persona`, so a personalized answer is silently served the generic cached `.md` (and never re-tailored).
-- [ ] Stream the DeepAnswer response — `client.messages.create` is a blocking call; the four lenses show only a spinner for the full latency.
+- [ ] Include the persona in the DeepAnswer cache key — `generate.py` builds `cache_qid = qid + suffix` and ignores `persona`, so a personalized answer is silently served the generic cached `.md` (and never re-tailored). Applies to the `__local` cache too.
+- [ ] Stream the DeepAnswer response — both providers are blocking calls; a lens shows only a spinner for the full latency. Now the sharper of the two, because a local 20B model is slower per answer than Opus and generation fires on hover.
 - [ ] Add a "Regenerate" / "regenerate with web search" control to `DeepAnswer.tsx` — once a lens is loaded there's no way to force a fresh answer.
 - [ ] Add a copy-to-clipboard button on each generated answer and on the STAR script — currently the only action is reading it in place.
 - [ ] Surface a running cost/token budget across the session, not just per-answer `cost_usd` — a user drilling many questions has no cumulative spend view.
-- [ ] Let the user pick the model (Opus/Sonnet/Haiku) per query — `MODEL` is hardcoded to `claude-opus-4-8` in `generate.py`, the most expensive option, for every lens.
+- [ ] Let the user pick the model (Opus/Sonnet/Haiku) per query — `MODEL` is hardcoded to `claude-opus-4-8` in `generate.py`, the most expensive option, for every lens that reaches Claude. Narrower than it was: with LM Studio running only `deep` gets there, so this now matters most as a fallback-tier choice.
+- [ ] Show which provider answered, in the UI and not only in the `model` pill — a local answer and a Claude one look identical apart from a model id most people won't recognize. `meta.provider` is already returned.
+- [ ] Cap concurrent generations — nothing serializes hover-fired requests, and LM Studio processes them one at a time, so a fast sweep across the tab row queues work whose results nobody is waiting for.
 - [ ] Add a "was this answer good?" thumbs signal on generated answers to flag slop and seed a regen prompt.
 - [ ] Expose `max_uses` for web search and show which claims each citation supports — the grounded lens caps at 4 searches with no per-claim attribution in the UI.
 - [ ] Handle the `pause_turn` server-tool loop cap gracefully — `generate.py` breaks after 4 iterations and may return a truncated grounded answer with no user-facing warning.
@@ -156,7 +158,8 @@ Session-end audit of PrepForge, the local-first interview-prep app (React + Vite
 ## Dev/Infra/Testing
 - [ ] Fix the backend port mismatch — `vite.config.ts` proxies `/api` to `127.0.0.1:8787` and the extension posts to `8787`, but `dev.sh` and README start uvicorn on `8000`; the app can't reach the backend as documented.
 - [ ] Add a frontend test suite — there are zero tests; start with `srs.ts` scheduling and `graph.ts` layout/edge logic (pure, high-value).
-- [ ] Add backend tests for `generate.py` caching, `capture._html_to_markdown`, and `ingest._split_sections`.
+- [x] Add backend tests for `generate.py` caching — `test_local_provider.py` covers provider routing and the two cache namespaces against a stub LM Studio server. The Claude path's own caching is still untested.
+- [ ] Add backend tests for `capture._html_to_markdown` and `ingest._split_sections`.
 - [ ] Add CI (lint + typecheck + test) — no workflow exists; wire GitHub Actions for both `frontend` and `backend`.
 - [ ] Add an error boundary around routes in `App.tsx` so a render error in one page doesn't blank the whole app.
 - [ ] Centralize the backend base URL/port in one config consumed by Vite proxy, extension, and docs to prevent drift.
@@ -164,7 +167,7 @@ Session-end audit of PrepForge, the local-first interview-prep app (React + Vite
 - [ ] Pin and audit dependencies (`requirements.txt` / `package.json`) and add a lockfile check to CI.
 
 ## Security & Privacy
-- [ ] Rate-limit and size-cap `/generate/answer` — an exposed backend lets anyone spend the owner's Anthropic credits with unbounded questions.
+- [ ] Rate-limit and size-cap `/generate/answer` — an exposed backend lets anyone spend the owner's Anthropic credits with unbounded questions. Raised in priority: generation now fires on hover, so there is no longer a deliberate click between a pointer and a billed call.
 - [ ] Validate and cap upload size in `/resources/upload` — `capture.upload` reads the whole file into memory with no max-bytes guard.
 - [ ] Add SSRF protection to `capture.read` / `resources/read` — it fetches arbitrary user-supplied URLs server-side with no allowlist or private-IP block.
 - [ ] Sanitize scraped/generated markdown before rendering in `Markdown.tsx` — captured HTML→markdown from untrusted pages flows into the renderer; confirm it can't inject.

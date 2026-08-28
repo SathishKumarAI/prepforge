@@ -2,7 +2,16 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-08-27.
+- **Last touched:** 2026-08-28.
+- **Newest branch:** `feat/local-lm-studio-lenses` (COD-33), stacked on
+  `feat/library-hover-lens-tabs`. Six of the seven generated lenses now run on a local model via
+  LM Studio when its server is up, for free; `deep` stays on Claude because it needs web citations.
+  **There is no confirm step on any lens** — resting on a tab for 400ms generates it, `deep`
+  included, so a sweep across the row with LM Studio off bills real Claude calls. Removed
+  deliberately; `peekTab`'s 400ms is the only brake. **Unverified against a real
+  LM Studio** — the server was not running, so the local path is proven only against the stub in
+  `backend/test_local_provider.py`. Start LM Studio (Developer → Start Server), reload Library,
+  and hover a lens: the meta row should show the local model id and `$0.0000`.
 - **Where I stopped:** Two branches of a whole-app UI/UX rebuild onto a three-zone page contract.
   `refactor/ui-page-contract-primitives` is **PR #6, open**. `feat/ui-today-and-library` stacks on
   it and is committed but **not pushed** — it finishes the IA, taking the nav from 11 entries to 5.
@@ -12,10 +21,10 @@ Update this when you STOP working, not when you start.
   updated `main`. Then the three things neither branch verified: drive a **timed quiz through a
   real 30s expiry**, exercise **Reader's PDF + web-fetch** against a real file and URL, and drive
   **drill mode** end to end.
-- **Blocked on:** Nothing. **Plane was down** throughout (`localhost:8080` refused), so no work
-  item exists for either branch — file them when it is back up.
+- **Blocked on:** Nothing. **Plane is back up.** COD-33 covers the LM Studio branch; COD-34 files
+  the ingest-noise bug below. The two UI branches still have no work item — file them.
 - **Found, not fixed:** the question bank contains *"What's the weather like today?"* tagged
-  `Behavioral`. Ingest noise, unrelated to the UI work.
+  `Behavioral`. Ingest noise, unrelated to the UI work. Now filed as **COD-34**.
 
 ## The UI rebuild (read this before touching the frontend)
 
