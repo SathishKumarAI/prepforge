@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "contrast": "node scripts/check-contrast.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "shoot": "node scripts/shoot.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.19",
