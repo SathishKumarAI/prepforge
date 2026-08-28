@@ -138,7 +138,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
     return (
       <button
         onClick={open}
-        className="mt-4 flex items-center gap-2 rounded-xl border border-lavender/40 bg-lavender/10 px-3.5 py-2 text-sm font-medium text-lavender transition-colors hover:bg-lavender/20"
+        className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg bg-surface0 px-3.5 text-small font-medium text-text transition-colors duration-100 hover:bg-surface1"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8" />
@@ -151,7 +151,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
   const slot = slots[mode];
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-4 rounded-2xl border border-lavender/20 bg-crust/50 p-4">
+    <div className="mt-4 rounded-lg border border-surface0 bg-crust p-4">
       {/* tabs (shadcn/Radix) */}
       <Tabs value={mode} onValueChange={(v) => switchTo(v as Mode)} className="mb-3">
         <TabsList>
@@ -178,7 +178,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={() => setCustom(qid, customText)}
-              className="rounded-xl bg-gradient-to-r from-mauve to-blue px-4 py-2 text-sm font-semibold text-crust"
+              className="inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-on-accent transition-colors duration-100 hover:bg-mauve/90"
             >
               Save
             </button>
@@ -187,8 +187,8 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
             )}
           </div>
           {progress.custom[qid] && (
-            <div className="mt-4 border-t border-white/[0.05] pt-3">
-              <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-lavender">✎ My content</div>
+            <div className="mt-4 border-t border-surface0 pt-3">
+              <div className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">✎ My content</div>
               <Markdown>{progress.custom[qid]}</Markdown>
             </div>
           )}
@@ -206,7 +206,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
         <div className="rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
           {slot.data.message ?? "Generation failed."}
           {slot.data.error === "no_credentials" && (
-            <div className="mt-1 font-mono text-xs text-maroon">
+            <div className="mt-1 text-micro text-red">
               Add ANTHROPIC_API_KEY to backend/.env, or run `ant auth login`, then restart the backend.
             </div>
           )}
@@ -216,7 +216,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
       {slot?.status === "done" && slot.data && !slot.data.error && (
         <AnimatePresence mode="wait">
           <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-lavender">
+            <div className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
               {MODE_TITLE[mode]}
             </div>
 
@@ -225,7 +225,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
               <span className="font-mono text-[9px] uppercase tracking-widest text-overlay0">how to approach ›</span>
               {APPROACH[mode].map((a, i) => (
                 <span key={i} className="text-[11px]">
-                  <sup className="mr-0.5 font-semibold not-italic text-lavender">{a.tag}</sup>
+                  <sup className="mr-0.5 font-semibold not-italic text-mauve">{a.tag}</sup>
                   <span className="italic text-overlay1">{a.desc}</span>
                 </span>
               ))}
@@ -234,7 +234,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
             {slot.data.answer && <Markdown>{slot.data.answer}</Markdown>}
 
             {slot.data.meta && (
-              <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/[0.05] pt-3">
+              <div className="mt-4 flex flex-wrap gap-1.5 border-t border-surface0 pt-3">
                 {slot.data.meta.model && <Meta label={slot.data.meta.model} />}
                 {typeof slot.data.meta.total_tokens === "number" && (
                   <Meta label={`${slot.data.meta.total_tokens.toLocaleString()} tok`} tip={`${slot.data.meta.input_tokens ?? 0} in · ${slot.data.meta.output_tokens ?? 0} out`} />
@@ -253,9 +253,9 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
                 <div className="flex flex-col gap-1.5">
                   {slot.data.sources.map((s, i) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="group flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-surface0/50">
-                      <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded bg-lavender/20 font-mono text-[10px] text-lavender">{i + 1}</span>
+                      <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded bg-surface0 font-mono text-micro text-subtext0">{i + 1}</span>
                       <span className="min-w-0">
-                        <span className="block truncate text-subtext1 group-hover:text-lavender">{s.title}</span>
+                        <span className="block truncate text-subtext0 group-hover:text-text">{s.title}</span>
                         <span className="block truncate font-mono text-[11px] text-overlay0">{hostname(s.url)}</span>
                       </span>
                     </a>
@@ -266,7 +266,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
           </motion.div>
         </AnimatePresence>
       )}
-    </motion.div>
+    </div>
   );
 }
 

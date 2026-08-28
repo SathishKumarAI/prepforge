@@ -1,34 +1,50 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { Page, Band } from "../components/page/PageLayout";
+import { Orient, Fact } from "../components/page/Orient";
 import { Loader } from "../components/States";
-import { SectionDivider } from "../components/SectionDivider";
+import { Button } from "../components/ui/button";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { useThemeColors } from "../hooks/useThemeColors";
-import { topicColor } from "../lib/topics";
+
+/**
+ * Slot table
+ *   route    /dashboard   (nav label: Progress)
+ *   job      show where recall is weak, then send you to fix it
+ *   orient   streak, cards known, average quiz score
+ *   act      study the weakest topic — the whole point of looking at this page
+ *   review   per-topic recall (the signature visual) and the quiz trend
+ *   accent   the primary button and the single weakest topic's bar
+ *   moved    nothing. The six coloured stat tiles and the duplicate
+ *            "Progress detail" band were deleted, not relocated: the tiles are
+ *            the orient bar now, and the band restated the chart above it
+ *
+ * The old page had nine raised cards and six stat tiles in six hues, which is
+ * one insight and five distractions competing for the same glance.
+ */
 
 function computeStreak(days: string[]): number {
   const set = new Set(days);
   let streak = 0;
   const d = new Date();
+  const todayKey = new Date().toISOString().slice(0, 10);
   for (;;) {
     const key = d.toISOString().slice(0, 10);
     if (set.has(key)) {
       streak++;
       d.setDate(d.getDate() - 1);
-    } else if (streak === 0 && key === new Date().toISOString().slice(0, 10)) {
-      d.setDate(d.getDate() - 1); // allow today not-yet-studied
+    } else if (streak === 0 && key === todayKey) {
+      d.setDate(d.getDate() - 1); // today not studied yet does not break a streak
     } else break;
   }
   return streak;
@@ -37,172 +53,224 @@ function computeStreak(days: string[]): number {
 export function Dashboard() {
   const { questions, topics, loading } = useQuestions();
   const { progress } = useProgress();
-  const CAT = useThemeColors();
-  // single source of truth: topic → accent token (lib/topics), resolved to the
-  // live theme hex. No per-page color map to drift out of sync.
-  const topicHex = (t: string): string =>
-    (CAT as Record<string, string>)[topicColor(t)] ?? CAT.mauve;
-  const tipStyle = {
-    background: CAT.mantle,
-    border: `1px solid ${CAT.surface1}`,
-    borderRadius: 12,
-    color: CAT.text,
-    fontSize: 12,
-    fontFamily: "JetBrains Mono, monospace",
-  };
+  const theme = useThemeColors();
 
   const stats = useMemo(() => {
     const known = Object.values(progress.flash).filter((s) => s === "known").length;
-    const learning = Object.values(progress.flash).filter((s) => s === "learning").length;
-    const mastery = topics.map((t) => {
-      const total = questions.filter((q) => q.topic === t).length;
-      const done = questions.filter(
-        (q) => q.topic === t && progress.flash[q.id] === "known"
-      ).length;
-      return { topic: t, total, done, pct: total ? Math.round((done / total) * 100) : 0 };
-    });
+    const seen = Object.values(progress.srs).filter((c) => c.seen).length;
+    const mastery = topics
+      .map((t) => {
+        const total = questions.filter((q) => q.topic === t).length;
+        const done = questions.filter(
+          (q) =>
+            q.topic === t &&
+            (progress.flash[q.id] === "known" || progress.srs[q.id]?.stage === "mastered"),
+        ).length;
+        return { topic: t, total, done, pct: total ? Math.round((done / total) * 100) : 0 };
+      })
+      .filter((m) => m.total > 0)
+      .sort((a, b) => a.pct - b.pct); // weakest first: that is the actionable end
     const quizSeries = progress.quizzes.map((r, i) => ({
       name: `#${i + 1}`,
       score: Math.round((r.correct / r.total) * 100),
     }));
     const avgQuiz = progress.quizzes.length
       ? Math.round(
-          progress.quizzes.reduce((a, r) => a + r.correct / r.total, 0) / progress.quizzes.length * 100
+          (progress.quizzes.reduce((a, r) => a + r.correct / r.total, 0) /
+            progress.quizzes.length) *
+            100,
         )
-      : 0;
-    return {
-      known,
-      learning,
-      streak: computeStreak(progress.studyDays),
-      mastery,
-      quizSeries,
-      avgQuiz,
-      bookmarks: progress.bookmarks.length,
-    };
+      : null;
+    return { known, seen, mastery, quizSeries, avgQuiz, streak: computeStreak(progress.studyDays) };
   }, [questions, topics, progress]);
 
-  if (loading) return <Loader label="Crunching stats" />;
+  if (loading) return <Loader label="Reading your progress" />;
+
+  const weakest = stats.mastery[0];
 
   return (
-    <div>
-      <h1 className="mb-6 font-display text-h1 font-semibold text-text">Dashboard</h1>
+    <Page
+      title="Progress"
+      orient={
+        <Orient>
+          <Fact
+            label={stats.streak === 1 ? "day streak" : "day streak"}
+            value={stats.streak || null}
+            emphasis={stats.streak > 0}
+          />
+          <Fact label="cards known" value={stats.known || null} />
+          <Fact label="seen at least once" value={stats.seen || null} />
+          <Fact label="average quiz" value={stats.avgQuiz === null ? null : `${stats.avgQuiz}%`} />
+        </Orient>
+      }
+      review={
+        <>
+          <Band
+            label="Recall by topic"
+            hint={
+              weakest
+                ? `weakest first — ${weakest.topic} is at ${weakest.pct}%`
+                : "no topics loaded"
+            }
+          >
+            <MasteryTable rows={stats.mastery} />
+          </Band>
 
-      <SectionDivider label="Overview" hint="your study at a glance" className="mb-3" />
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <Stat label="Day streak" value={stats.streak} unit="🔥" tone="peach" />
-        <Stat label="Cards known" value={stats.known} tone="green" />
-        <Stat label="Learning" value={stats.learning} tone="teal" />
-        <Stat label="Avg quiz" value={stats.avgQuiz} unit="%" tone="mauve" />
-        <Stat label="Bookmarked" value={stats.bookmarks} tone="yellow" />
-        <Stat label="Question bank" value={questions.length} tone="blue" />
+          <Band label="Quiz scores" hint={`${progress.quizzes.length} scored sessions`}>
+            <QuizTrend series={stats.quizSeries} theme={theme} />
+          </Band>
+        </>
+      }
+    >
+      {weakest ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button asChild variant="primary">
+            <Link to={`/study?mode=recall&topic=${encodeURIComponent(weakest.topic)}`}>
+              Study {weakest.topic}
+            </Link>
+          </Button>
+          <span className="max-w-prose text-small text-overlay1">
+            Your weakest topic:{" "}
+            <span className="tabular-nums text-subtext0">{weakest.done.toLocaleString()}</span> of{" "}
+            <span className="tabular-nums text-subtext0">{weakest.total.toLocaleString()}</span>{" "}
+            cards are sticking.
+          </span>
+        </div>
+      ) : (
+        <p className="text-small text-overlay1">
+          Nothing studied yet. A first session is what fills this page.
+        </p>
+      )}
+    </Page>
+  );
+}
+
+/**
+ * The signature visual. A table, not a chart: colour alone never conveys data,
+ * every cell carries its real value, and a screen reader gets row and column
+ * headers instead of an unlabelled SVG. The bar is a background on the cell,
+ * so it reads at a glance without becoming the only way to read it.
+ */
+function MasteryTable({ rows }: { rows: { topic: string; total: number; done: number; pct: number }[] }) {
+  if (rows.length === 0) {
+    return (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="h-9 rounded border border-dashed border-surface0" />
+        ))}
+        <p className="mt-1 text-small text-overlay1">
+          Topics appear here once the question bank loads.
+        </p>
       </div>
-
-      <SectionDivider label="Trends" hint="mastery & quiz history" className="mb-3" />
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* mastery */}
-        <Panel title="Mastery by topic" subtitle="Flashcards marked “known”">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={stats.mastery} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={CAT.surface0} vertical={false} />
-              <XAxis dataKey="topic" tick={{ fill: CAT.overlay0, fontSize: 10 }} tickFormatter={(t: string) => t.split(" ")[0]} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: CAT.overlay0, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <Tooltip cursor={{ fill: "rgba(255,255,255,0.03)" }} contentStyle={tipStyle} />
-              <Bar dataKey="done" radius={[6, 6, 0, 0]}>
-                {stats.mastery.map((m) => (
-                  <Cell key={m.topic} fill={topicHex(m.topic)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Panel>
-
-        {/* quiz history */}
-        <Panel title="Quiz history" subtitle={`${progress.quizzes.length} sessions`}>
-          {stats.quizSeries.length === 0 ? (
-            <div className="grid h-[220px] place-items-center font-mono text-xs text-overlay0">
-              No quizzes yet — take one to see your trend.
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={stats.quizSeries} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CAT.mauve} stopOpacity={0.5} />
-                    <stop offset="100%" stopColor={CAT.mauve} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={CAT.surface0} vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: CAT.overlay0, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: CAT.overlay0, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={tipStyle} />
-                <Area type="monotone" dataKey="score" stroke={CAT.mauve} strokeWidth={2} fill="url(#g)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </Panel>
-      </div>
-
-      {/* mastery detail bars */}
-      <SectionDivider label="Detail" hint="per-topic completion" className="mb-3 mt-6" />
-      <Panel title="Progress detail" subtitle="Per-topic completion">
-        <div className="grid gap-x-8 gap-y-4 py-2 sm:grid-cols-2">
-          {stats.mastery.map((m) => (
-            <div key={m.topic}>
-              <div className="mb-1.5 flex justify-between text-sm">
-                <span className="text-subtext1">{m.topic}</span>
-                <span className="font-mono text-xs text-overlay1">
-                  {m.done}/{m.total} · {m.pct}%
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-surface0">
+    );
+  }
+  return (
+    <table className="w-full border-collapse text-small">
+      <caption className="sr-only">Cards recalled reliably, by topic, weakest first</caption>
+      <thead className="sr-only">
+        <tr>
+          <th scope="col">Topic</th>
+          <th scope="col">Recalled</th>
+          <th scope="col">Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((m, i) => (
+          <tr key={m.topic} className="border-b border-surface0 last:border-0">
+            <th scope="row" className="w-[38%] py-2 pr-3 text-left font-normal text-subtext0">
+              {m.topic}
+            </th>
+            <td className="py-2 pr-3">
+              <div
+                className="h-2 rounded-sm bg-surface0"
+                // The weakest row is the one the act zone points at, so it is
+                // the single place the accent is spent in this table.
+                title={`${m.done} of ${m.total}`}
+              >
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${m.pct}%`, background: topicHex(m.topic) }}
+                  className={`h-full rounded-sm ${i === 0 ? "bg-mauve" : "bg-subtext0"}`}
+                  style={{ width: `${Math.max(m.pct, m.done > 0 ? 2 : 0)}%` }}
                 />
               </div>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
+            </td>
+            <td className="w-28 py-2 text-right tabular-nums text-overlay1">
+              {m.done.toLocaleString()}/{m.total.toLocaleString()}
+              <span className="ml-2 text-subtext0">{m.pct}%</span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
-
-function Stat({ label, value, unit, tone }: { label: string; value: number; unit?: string; tone: string }) {
-  const toneText: Record<string, string> = {
-    peach: "text-peach", green: "text-green", mauve: "text-mauve", yellow: "text-yellow",
-    teal: "text-teal", blue: "text-blue",
-  };
-  return (
-    <div className="glass rounded-2xl p-4 shadow-card">
-      <div className="font-mono text-[10px] uppercase tracking-widest text-overlay0">{label}</div>
-      <div className={`mt-1 font-display text-h1 font-bold tabular-nums ${toneText[tone]}`}>
-        {value}
-        {unit && <span className="ml-0.5 text-lg">{unit}</span>}
-      </div>
-    </div>
-  );
-}
-
-function Panel({
-  title,
-  subtitle,
-  children,
-  className = "",
+/** Renders its own axes at zero data — a chart that vanishes until it has
+ *  numbers is invisible to exactly the people who have not started. */
+function QuizTrend({
+  series,
+  theme,
 }: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-  className?: string;
+  series: { name: string; score: number }[];
+  theme: Record<string, string>;
 }) {
+  const empty = series.length === 0;
+  const data = empty ? [{ name: "", score: 0 }] : series;
   return (
-    <section className={`glass rounded-2xl p-5 shadow-card ${className}`}>
-      <div className="mb-4">
-        <h2 className="font-display text-h3 font-medium text-text">{title}</h2>
-        {subtitle && <div className="font-mono text-[11px] text-overlay0">{subtitle}</div>}
-      </div>
-      {children}
-    </section>
+    <div>
+      <ResponsiveContainer width="100%" height={180}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="quizfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={theme.mauve} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={theme.mauve} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={theme.surface0} vertical={false} />
+          <XAxis
+            dataKey="name"
+            tick={{ fill: theme.overlay0, fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <YAxis
+            domain={[0, 100]}
+            unit="%"
+            tick={{ fill: theme.overlay0, fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+          />
+          {!empty && (
+            <Tooltip
+              formatter={(v: number) => [`${v}%`, "Score"]}
+              contentStyle={{
+                background: theme.mantle,
+                border: `1px solid ${theme.surface1}`,
+                borderRadius: 8,
+                color: theme.text,
+                fontSize: 12,
+              }}
+            />
+          )}
+          {!empty && (
+            <Area
+              type="monotone"
+              dataKey="score"
+              stroke={theme.mauve}
+              strokeWidth={2}
+              fill="url(#quizfill)"
+            />
+          )}
+        </AreaChart>
+      </ResponsiveContainer>
+      {empty && (
+        <p className="text-small text-overlay1">
+          No scored sessions yet.{" "}
+          <Link to="/study?mode=quiz" className="text-mauve underline underline-offset-2">
+            Take a quiz
+          </Link>{" "}
+          and the trend starts here.
+        </p>
+      )}
+    </div>
   );
 }

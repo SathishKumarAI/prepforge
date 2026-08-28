@@ -1,258 +1,343 @@
-import { motion } from "framer-motion";
 import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import {
+  BarChart3,
+  BookOpen,
+  Bookmark,
+  GraduationCap,
+  Grid2x2,
+  Keyboard,
+  Layers,
+  Library,
+  Network,
+  PanelLeft,
+  Rss,
+  Settings as SettingsIcon,
+  StickyNote,
+} from "lucide-react";
 import { SettingsPanel } from "./SettingsPanel";
 import { ShortcutHelp } from "./ShortcutHelp";
+import { Button } from "./ui/button";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { useNotes } from "../hooks/useNotes";
+import { useScrollDirection } from "../hooks/useScrollDirection";
 import { isDue } from "../lib/srs";
+
+/**
+ * The app shell: a collapsible left nav, a slim app bar that survives the nav
+ * being closed, and the routed page.
+ *
+ * The app bar exists so that hiding the nav does not hide navigation itself —
+ * it always carries the toggle and the current page name. It publishes its own
+ * MEASURED height as --app-bar-h so sticky page chrome can park against it
+ * without anyone hardcoding a constant that goes stale the first time the bar
+ * gains a line.
+ */
 
 interface NavItem {
   to: string;
   label: string;
-  icon: ReactNode;
+  /** Any 24px stroke icon — lucide's, or the one local SVG that matches them. */
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
   group: "Study" | "Content" | "Insights";
 }
 
 const NAV: NavItem[] = [
-  { to: "/learn", label: "Learn", icon: <IconSpark />, group: "Study" },
-  { to: "/", label: "Browse", icon: <IconGrid />, group: "Study" },
-  { to: "/flashcards", label: "Flashcards", icon: <IconCards />, group: "Study" },
-  { to: "/quiz", label: "Quiz", icon: <IconTarget />, group: "Study" },
-  { to: "/sources", label: "Sources", icon: <IconStack />, group: "Content" },
-  { to: "/resources", label: "Resources", icon: <IconFeed />, group: "Content" },
-  { to: "/reader", label: "Reader", icon: <IconBook />, group: "Content" },
-  { to: "/notes", label: "Notes", icon: <IconNote />, group: "Content" },
-  { to: "/graph", label: "Graph", icon: <IconGraph />, group: "Content" },
-  { to: "/dashboard", label: "Dashboard", icon: <IconChart />, group: "Insights" },
-  { to: "/bookmarks", label: "Bookmarks", icon: <IconBookmark />, group: "Insights" },
+  { to: "/study", label: "Study", icon: GraduationCap, group: "Study" },
+  { to: "/", label: "Browse", icon: Grid2x2, group: "Study" },
+  { to: "/sources", label: "Sources", icon: Library, group: "Content" },
+  { to: "/resources", label: "Resources", icon: Rss, group: "Content" },
+  { to: "/reader", label: "Reader", icon: BookOpen, group: "Content" },
+  { to: "/notes", label: "Notes", icon: StickyNote, group: "Content" },
+  { to: "/graph", label: "Graph", icon: Network, group: "Content" },
+  { to: "/dashboard", label: "Progress", icon: BarChart3, group: "Insights" },
+  { to: "/bookmarks", label: "Saved", icon: Bookmark, group: "Insights" },
 ];
 
 const NAV_GROUPS: NavItem["group"][] = ["Study", "Content", "Insights"];
+const SIDEBAR_KEY = "pf-sidebar-open";
 
 export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("pf-sidebar") === "1");
-  useEffect(() => { localStorage.setItem("pf-sidebar", collapsed ? "1" : "0"); }, [collapsed]);
+  // Default open on a wide screen — a nav you have to discover is a nav you do
+  // not use — but never on a phone, where 240px is most of the viewport.
+  const [navOpen, setNavOpen] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_KEY);
+    if (saved !== null) return saved === "1" && window.matchMedia("(min-width: 768px)").matches;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
   const [focus, setFocus] = useState(false);
   const { questions } = useQuestions();
   const { progress } = useProgress();
   const { notes } = useNotes();
+  const barRef = useRef<HTMLElement>(null);
+  const { hidden: barHidden } = useScrollDirection();
 
-  // global keys: "?" toggles the cheatsheet, "f" toggles focus mode, Esc exits focus.
-  // Ignored while typing in a field.
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_KEY, navOpen ? "1" : "0");
+  }, [navOpen]);
+
+  // On a phone the nav covers the page, so following a link must close it —
+  // otherwise you tap through and land on a page you cannot see.
+  useEffect(() => {
+    if (!window.matchMedia("(min-width: 768px)").matches) setNavOpen(false);
+  }, [loc.pathname]);
+
+  // Publish the app bar's real height for sticky page chrome. Measured, not
+  // assumed — the bar wraps at narrow widths and grows by a line.
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--app-bar-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [focus]);
+
+  // Global keys. Ignored while typing so "f" in a search box is just an f.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement | null;
-      const tag = el?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || el?.isContentEditable) return;
-      if (e.key === "?") { e.preventDefault(); setHelpOpen((v) => !v); }
-      else if (e.key === "f") { e.preventDefault(); setFocus((v) => !v); }
-      else if (e.key === "Escape") setFocus(false);
+      const typing =
+        el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable;
+      // Cmd/Ctrl+B toggles the nav even from inside a field — it is a window
+      // command, not a text command, and nothing in a text field claims it.
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setNavOpen((v) => !v);
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey || typing) return;
+      if (e.key === "?") {
+        e.preventDefault();
+        setHelpOpen((v) => !v);
+      } else if (e.key === "f") {
+        e.preventDefault();
+        setFocus((v) => !v);
+      } else if (e.key === "Escape") {
+        setFocus(false);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // cards due today for spaced repetition — surfaced as a nav badge
   const dueCount = useMemo(
-    () => questions.filter((q) => { const c = progress.srs[q.id]; return c && c.seen && isDue(c); }).length,
-    [questions, progress.srs]
+    () =>
+      questions.filter((q) => {
+        const c = progress.srs[q.id];
+        return c && c.seen && isDue(c);
+      }).length,
+    [questions, progress.srs],
   );
 
   function navBadge(to: string): number | null {
-    if (to === "/learn") return dueCount || null;
+    if (to === "/study") return dueCount || null;
     if (to === "/bookmarks") return progress.bookmarks.length || null;
     if (to === "/notes") return notes.length || null;
     return null;
   }
+
+  const current = NAV.find((n) => (n.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(n.to)));
+
   return (
-    <div className="relative z-10 flex min-h-screen">
+    <div className="relative flex min-h-screen">
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
-      {/* sidebar */}
-      {focus && (
-        <button
-          onClick={() => setFocus(false)}
-          className="fixed right-4 top-4 z-30 rounded-full border border-white/10 bg-crust/90 px-3 py-1.5 font-mono text-[11px] text-subtext0 backdrop-blur-xl transition-colors hover:text-text"
-        >
-          Exit focus · Esc
-        </button>
-      )}
-      <aside
-        className={`sticky top-0 h-screen shrink-0 flex-col justify-between border-r border-white/[0.05] py-7 transition-[width] duration-300 ${
-          focus ? "hidden" : "hidden md:flex"
-        } ${collapsed ? "w-[4.75rem] px-3" : "w-64 px-5"}`}
-      >
-        <div>
-          <div className={`mb-10 flex items-center px-1 ${collapsed ? "justify-center" : "gap-2.5"}`}>
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-mauve to-blue font-display text-lg font-black text-crust shadow-glow">
-              P
-            </div>
-            {!collapsed && (
-              <div className="leading-none">
-                <div className="font-display text-xl font-semibold tracking-tight text-text">
-                  PrepForge
-                </div>
-                <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.2em] text-overlay0">
-                  interview&nbsp;forge
-                </div>
-              </div>
-            )}
-          </div>
 
-          <nav className="flex flex-col gap-4">
+      {/* ---- side nav ---------------------------------------------------- */}
+      {/* Below md the nav overlays the page, so it needs a scrim to dismiss.
+          Above md it is a real column and the scrim must not exist. */}
+      {navOpen && !focus && (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setNavOpen(false)}
+          className="fixed inset-0 z-30 bg-crust/60 md:hidden"
+        />
+      )}
+
+      <nav
+        aria-label="Main"
+        // Animating width (not display) is what lets the content column glide
+        // into the reclaimed space instead of snapping. Collapsed is width 0 and
+        // `invisible`, so nothing inside stays in the tab order.
+        className={`fixed inset-y-0 left-0 z-40 h-screen shrink-0 overflow-hidden border-r border-surface0 bg-mantle transition-[width,visibility] duration-200 md:sticky md:top-0 md:z-30 ${
+          focus ? "invisible w-0 border-r-0" : navOpen ? "w-60 visible" : "invisible w-0 border-r-0"
+        }`}
+      >
+        <div className="flex h-full w-60 flex-col justify-between px-3 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="mb-5 flex items-center gap-2 px-2 py-1">
+              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-mauve text-micro font-bold text-on-accent">
+                P
+              </span>
+              <span className="text-small font-semibold tracking-tight text-text">PrepForge</span>
+            </div>
+
             {NAV_GROUPS.map((group) => (
-              <div key={group}>
-                {!collapsed && (
-                  <div className="mb-1 px-3 font-mono text-[9px] uppercase tracking-[0.2em] text-overlay0">{group}</div>
-                )}
-                <div className="flex flex-col gap-0.5">
-                  {NAV.filter((item) => item.group === group).map((item) => (
-                    <NavLink key={item.to} to={item.to} end={item.to === "/"} title={collapsed ? item.label : undefined}>
-                      {({ isActive }) => (
-                        <div className={`group relative flex items-center rounded-xl py-2.5 text-sm transition-colors ${collapsed ? "justify-center px-2" : "gap-3 px-3"}`}>
-                    {isActive && (
-                      <motion.div
-                        layoutId="nav-active"
-                        className="absolute inset-0 rounded-xl border border-white/[0.06] bg-surface0/60"
-                        transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      />
-                    )}
-                    <span
-                      className={`relative z-10 transition-colors ${
-                        isActive ? "text-mauve" : "text-overlay1 group-hover:text-subtext1"
-                      }`}
-                    >
-                      {item.icon}
-                    </span>
-                    {!collapsed && (
-                      <span
-                        className={`relative z-10 font-medium transition-colors ${
-                          isActive ? "text-text" : "text-subtext0 group-hover:text-subtext1"
-                        }`}
-                      >
-                        {item.label}
-                      </span>
-                    )}
-                    {navBadge(item.to) !== null && (
-                      <span className={`relative z-10 rounded-full bg-mauve/20 font-mono font-semibold text-mauve ${collapsed ? "absolute -right-0.5 -top-0.5 px-1 text-[8px]" : "ml-auto px-2 py-0.5 text-[10px]"}`}>
-                        {navBadge(item.to)}
-                      </span>
-                    )}
-                        </div>
-                      )}
-                    </NavLink>
-                  ))}
-                </div>
+              <div key={group} className="mb-5">
+                <h2 className="mb-1 px-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay0">
+                  {group}
+                </h2>
+                <ul className="flex flex-col gap-0.5">
+                  {NAV.filter((i) => i.group === group).map((item) => {
+                    const badge = navBadge(item.to);
+                    const Icon = item.icon;
+                    return (
+                      <li key={item.to}>
+                        <NavLink
+                          to={item.to}
+                          end={item.to === "/"}
+                          className={({ isActive }) =>
+                            `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-100 ${
+                              isActive
+                                ? "bg-surface0 font-medium text-text"
+                                : "text-subtext0 hover:bg-surface0/60 hover:text-text"
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <Icon
+                                aria-hidden="true"
+                                className={`size-4 shrink-0 ${isActive ? "text-mauve" : "text-overlay1"}`}
+                              />
+                              <span className="truncate">{item.label}</span>
+                              {badge !== null && (
+                                <span className="ml-auto tabular-nums text-micro text-overlay0">
+                                  {badge}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </NavLink>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             ))}
-          </nav>
-        </div>
+          </div>
 
-        <div>
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={`mb-2 flex w-full items-center rounded-xl py-2.5 text-sm text-overlay1 transition-colors hover:bg-surface0/60 hover:text-text ${collapsed ? "justify-center px-2" : "gap-3 px-3"}`}
-          >
-            <span className={`transition-transform duration-300 ${collapsed ? "rotate-180" : ""}`}><IconCollapse /></span>
-            {!collapsed && <span className="font-medium">Collapse</span>}
-          </button>
-          <button
-            onClick={() => setSettingsOpen(true)}
-            title={collapsed ? "Settings" : undefined}
-            className={`mb-3 flex w-full items-center rounded-xl py-2.5 text-sm text-subtext0 transition-colors hover:bg-surface0/60 hover:text-text ${collapsed ? "justify-center px-2" : "gap-3 px-3"}`}
-          >
-            <IconGear />
-            {!collapsed && <span className="font-medium">Settings</span>}
-          </button>
-          {!collapsed && (
-            <div className="px-2 font-mono text-[10px] leading-relaxed text-overlay0">
-              <div className="mb-1 h-px w-full bg-white/[0.05]" />
-              local-first · no login
-              <br />
-              progress saved in browser
-            </div>
-          )}
+          <div className="shrink-0 border-t border-surface0 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setSettingsOpen(true)}
+            >
+              <SettingsIcon aria-hidden="true" />
+              Settings
+            </Button>
+            <p className="mt-2 px-2 text-micro leading-relaxed text-overlay0">
+              Local-first. Progress stays in this browser.
+            </p>
+          </div>
         </div>
-      </aside>
+      </nav>
 
-      {/* main */}
+      {/* ---- main -------------------------------------------------------- */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* mobile top nav */}
-        <div className={`no-scrollbar sticky top-0 z-20 items-center gap-1 overflow-x-auto border-b border-white/[0.05] bg-base/80 px-2 py-1.5 backdrop-blur-xl ${focus ? "hidden" : "flex md:hidden"}`}>
-          {NAV.map((item) => {
-            const badge = navBadge(item.to);
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/"}
-                className={({ isActive }) =>
-                  `relative flex shrink-0 flex-col items-center gap-0.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[10px] font-medium ${
-                    isActive ? "bg-surface0 text-text" : "text-subtext0"
-                  }`
-                }
-              >
-                <span className="[&_svg]:h-[18px] [&_svg]:w-[18px]">{item.icon}</span>
-                {item.label}
-                {badge !== null && (
-                  <span className="absolute right-1 top-0.5 rounded-full bg-mauve/30 px-1 font-mono text-[8px] font-bold text-mauve">
-                    {badge}
-                  </span>
-                )}
-              </NavLink>
-            );
-          })}
-        </div>
+        <header
+          ref={barRef}
+          style={{ transitionProperty: "transform, visibility" }}
+          className={`sticky top-0 z-30 flex items-center gap-2 border-b border-surface0 bg-base/95 px-3 py-2 backdrop-blur-sm duration-200 ${
+            focus ? "hidden" : ""
+          } ${barHidden ? "invisible -translate-y-full" : "visible translate-y-0"}`}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setNavOpen((v) => !v)}
+            aria-expanded={navOpen}
+            aria-label={navOpen ? "Hide navigation" : "Show navigation"}
+            title={`${navOpen ? "Hide" : "Show"} navigation  (Ctrl+B)`}
+          >
+            <PanelLeft aria-hidden="true" />
+          </Button>
+          {/* Only when the nav is closed. With it open the active nav item
+              already says where you are, and printing the page name twice on
+              one screen reads as a bug. */}
+          {!navOpen && (
+            <span className="truncate text-small font-medium text-subtext1">
+              {current?.label ?? "PrepForge"}
+            </span>
+          )}
+          <div className="ml-auto flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setHelpOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts  (?)"
+            >
+              <Keyboard aria-hidden="true" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Settings"
+              title="Settings"
+            >
+              <SettingsIcon aria-hidden="true" />
+            </Button>
+          </div>
+        </header>
 
-        <motion.main
-          key={loc.pathname}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className={`w-full flex-1 px-5 py-8 sm:px-8 sm:py-10 lg:px-12 ${focus ? "mx-auto max-w-3xl" : "max-w-[92rem]"}`}
+        {focus && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFocus(false)}
+            className="fixed right-4 top-4 z-40"
+          >
+            Exit focus · Esc
+          </Button>
+        )}
+
+        <main
+          className={`w-full flex-1 px-4 py-6 sm:px-6 lg:px-10 ${
+            focus ? "mx-auto max-w-3xl" : "max-w-[84rem]"
+          }`}
         >
           {children}
-          <footer className={`mt-12 flex-wrap items-center justify-between gap-3 border-t border-white/[0.05] pt-5 font-mono text-[11px] text-overlay0 ${focus ? "hidden" : "flex"}`}>
-            <span>PrepForge · local-first · your answers stay on your machine</span>
-            <span className="flex items-center gap-3">
-              <NavLink to="/learn" className="hover:text-subtext1">Review due</NavLink>
-              <NavLink to="/graph" className="hover:text-subtext1">Memory graph</NavLink>
-              <button onClick={() => setFocus(true)} className="hover:text-subtext1">Focus (f)</button>
-              <button onClick={() => setHelpOpen(true)} className="hover:text-subtext1">Shortcuts (?)</button>
-              <button onClick={() => setSettingsOpen(true)} className="hover:text-subtext1">Settings</button>
-            </span>
-          </footer>
-        </motion.main>
+        </main>
       </div>
     </div>
   );
 }
 
-/* ---- inline icons (stroke, 18px) ---- */
-function base(props: { children: ReactNode }) {
+/** lucide has no plain concentric-circle target at this weight; this matches
+ *  the set's 1.5px stroke and 24px box so it sits with the others. */
+function Target({ className, ...props }: { className?: string } & Record<string, unknown>) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {props.children}
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
-function IconGrid() { return base({ children: (<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>) }); }
-function IconCards() { return base({ children: (<><rect x="3" y="5" width="14" height="16" rx="2" /><path d="M7 3h10a2 2 0 0 1 2 2v12" /></>) }); }
-function IconTarget() { return base({ children: (<><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></>) }); }
-function IconStack() { return base({ children: (<><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" /><path d="M3 12l9 4.5L21 12" /><path d="M3 16.5L12 21l9-4.5" /></>) }); }
-function IconFeed() { return base({ children: (<><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></>) }); }
-function IconChart() { return base({ children: (<><path d="M3 3v18h18" /><path d="M7 15l3-4 3 2 4-6" /></>) }); }
-function IconBookmark() { return base({ children: (<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />) }); }
-function IconSpark() { return base({ children: (<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />) }); }
-function IconNote() { return base({ children: (<><path d="M4 4h16v12l-4 4H4z" /><path d="M16 20v-4h4" /></>) }); }
-function IconGraph() { return base({ children: (<><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="8" r="2.5" /><circle cx="9" cy="18" r="2.5" /><path d="M8 7l8 1M8 8l1 8" /></>) }); }
-function IconGear() { return base({ children: (<><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" /></>) }); }
-function IconBook() { return base({ children: (<><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z" /><path d="M4 19a2 2 0 0 0 2 2h13" /></>) }); }
-function IconCollapse() { return base({ children: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16" /><path d="M15 9l-2 3 2 3" /></>) }); }

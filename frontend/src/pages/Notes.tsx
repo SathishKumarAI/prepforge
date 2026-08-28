@@ -1,29 +1,46 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { Mic, Play, Plus, Trash2 } from "lucide-react";
 import { VoiceRecorder } from "../components/VoiceRecorder";
+import { Page } from "../components/page/PageLayout";
+import { Orient, Fact } from "../components/page/Orient";
 import { Empty } from "../components/States";
+import { Button } from "../components/ui/button";
 import { useNotes } from "../hooks/useNotes";
 import { deleteClip, getClip, putClip } from "../lib/audio";
 import type { Note } from "../lib/notes";
-import { ACCENT_BORDER, ACCENT_DOT } from "../lib/topics";
 
-const COLORS = ["yellow", "green", "sky", "mauve", "peach", "teal", "pink"];
+/**
+ * Slot table
+ *   route    /notes
+ *   job      capture a thought now, and link it to the others
+ *   orient   notes, voice memos, linked
+ *   act      write one — the new-note button and the recorder
+ *   review   the notes themselves
+ *   accent   the primary "New note" button only
+ *
+ * The seven-swatch colour picker on every card is gone. It coloured a 2px
+ * border and nothing read it — not search, not the graph, not any filter — so
+ * it was seven decisions per note that changed nothing.
+ */
 
 export function Notes() {
   const { notes, create, update, remove } = useNotes();
   const [recording, setRecording] = useState(false);
 
-  function addNote() {
-    create({ kind: "note", color: "yellow" });
-  }
+  const voice = notes.filter((n) => n.kind === "voice").length;
+  const linked = notes.filter((n) => /\[\[[^\]]+\]\]/.test(n.body) || n.tags.length > 0).length;
 
   async function saveVoice(transcript: string, blob: Blob | null) {
     let audioId: string | undefined;
     if (blob) {
       audioId = `clip_${notes.length}_${transcript.length}`;
-      try { await putClip(audioId, blob); } catch { audioId = undefined; }
+      try {
+        await putClip(audioId, blob);
+      } catch {
+        audioId = undefined;
+      }
     }
-    create({ kind: "voice", color: "sky", body: transcript, audioId });
+    create({ kind: "voice", body: transcript, audioId });
     setRecording(false);
   }
 
@@ -33,47 +50,61 @@ export function Notes() {
   }
 
   return (
-    <div>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-h1 font-semibold text-text">Notes</h1>
-          <p className="mt-1 text-sm text-subtext0">
-            Sticky notes &amp; voice memos. Use <code className="rounded bg-crust px-1 font-mono text-xs text-peach">[[Title]]</code> to link notes and <code className="rounded bg-crust px-1 font-mono text-xs text-peach">#tags</code> — they wire up the Graph.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={addNote} className="rounded-xl border border-yellow/40 bg-yellow/10 px-4 py-2 text-sm font-medium text-yellow hover:bg-yellow/20">
-            + Note
-          </button>
-          <button onClick={() => setRecording((r) => !r)} className="rounded-xl border border-sky/40 bg-sky/10 px-4 py-2 text-sm font-medium text-sky hover:bg-sky/20">
-            ● Voice
-          </button>
-        </div>
-      </header>
+    <Page
+      title="Notes"
+      orient={
+        <Orient>
+          <Fact label="notes" value={notes.length || null} emphasis={notes.length > 0} />
+          <Fact label="voice memos" value={voice || null} />
+          <Fact label="linked or tagged" value={linked || null} />
+        </Orient>
+      }
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <Button variant="primary" onClick={() => create({ kind: "note" })}>
+          <Plus aria-hidden="true" />
+          New note
+        </Button>
+        <Button variant="secondary" onClick={() => setRecording((r) => !r)} aria-expanded={recording}>
+          <Mic aria-hidden="true" />
+          {recording ? "Cancel recording" : "Record a memo"}
+        </Button>
+      </div>
+      <p className="mb-6 max-w-prose text-small text-overlay1">
+        Write <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">[[Title]]</code>{" "}
+        to link one note to another, and{" "}
+        <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">#tags</code>{" "}
+        to group them. Both show up in the graph.
+      </p>
 
-      <AnimatePresence>
-        {recording && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mb-6 overflow-hidden">
-            <VoiceRecorder onSave={saveVoice} onCancel={() => setRecording(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {recording && (
+        <div className="mb-6">
+          <VoiceRecorder onSave={saveVoice} onCancel={() => setRecording(false)} />
+        </div>
+      )}
 
       {notes.length === 0 && !recording ? (
-        <Empty title="No notes yet" hint="Add a sticky note or record a voice memo to start building your graph." />
+        <Empty title="No notes yet. The first one is usually the thing you just got wrong." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {notes.map((n) => (
             <NoteCard key={n.id} note={n} onChange={(p) => update(n.id, p)} onDelete={() => del(n)} />
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 
-function NoteCard({ note, onChange, onDelete }: { note: Note; onChange: (p: Partial<Note>) => void; onDelete: () => void }) {
-  const accent = note.color ?? "yellow";
+function NoteCard({
+  note,
+  onChange,
+  onDelete,
+}: {
+  note: Note;
+  onChange: (p: Partial<Note>) => void;
+  onDelete: () => void;
+}) {
   const [playing, setPlaying] = useState(false);
 
   async function play() {
@@ -83,59 +114,62 @@ function NoteCard({ note, onChange, onDelete }: { note: Note; onChange: (p: Part
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     setPlaying(true);
-    audio.onended = () => { setPlaying(false); URL.revokeObjectURL(url); };
+    audio.onended = () => {
+      setPlaying(false);
+      URL.revokeObjectURL(url);
+    };
     audio.play().catch(() => setPlaying(false));
   }
 
+  /** A note left completely empty deletes itself — sticky-note behaviour. */
   function onBlur() {
-    // auto-delete a note left completely empty (sticky behavior)
     if (!note.title.trim() && !note.body.trim() && !note.audioId) onDelete();
   }
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.96 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={`glass flex flex-col rounded-2xl border-l-2 ${ACCENT_BORDER[accent]} p-4 shadow-card`}
-    >
-      <div className="mb-2 flex items-center gap-1.5">
-        {COLORS.map((c) => (
-          <button
-            key={c}
-            onClick={() => onChange({ color: c })}
-            aria-label={c}
-            className={`h-3.5 w-3.5 rounded-full ${ACCENT_DOT[c]} ${c === accent ? "ring-2 ring-white/50" : ""}`}
-          />
-        ))}
-        {note.kind === "voice" && (
-          <button onClick={play} className="ml-1 text-sky" title="Play recording">
-            {playing ? "▶…" : "▶"}
-          </button>
-        )}
-        <button onClick={onDelete} className="ml-auto text-overlay1 hover:text-red" title="Delete">✕</button>
-      </div>
-
+    <article className="panel flex flex-col p-3.5">
       <input
         value={note.title}
         onChange={(e) => onChange({ title: e.target.value })}
         onBlur={onBlur}
         placeholder="Title"
-        className="mb-1 w-full bg-transparent font-display text-base font-medium text-text outline-none placeholder:text-overlay0"
+        aria-label="Note title"
+        className="w-full bg-transparent text-small font-medium text-text outline-none placeholder:text-overlay0"
       />
       <textarea
         value={note.body}
         onChange={(e) => onChange({ body: e.target.value })}
         onBlur={onBlur}
-        placeholder="Write… use [[links]] and #tags"
-        className="min-h-[5rem] w-full resize-none bg-transparent font-mono text-sm text-subtext1 outline-none placeholder:text-overlay0"
+        placeholder="Use [[links]] and #tags"
+        aria-label="Note body"
+        className="mt-1.5 min-h-[6rem] w-full resize-y bg-transparent text-small text-subtext0 outline-none placeholder:text-overlay0"
       />
       <input
         value={note.tags.join(", ")}
-        onChange={(e) => onChange({ tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean) })}
-        placeholder="tags, comma, separated"
-        className="mt-2 w-full bg-transparent font-mono text-[11px] text-overlay1 outline-none placeholder:text-overlay0"
+        onChange={(e) =>
+          onChange({ tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean) })
+        }
+        placeholder="tags, comma separated"
+        aria-label="Note tags"
+        className="mt-2 w-full border-t border-surface0 bg-transparent pt-2 text-micro text-overlay1 outline-none placeholder:text-overlay0"
       />
-    </motion.div>
+      <div className="mt-1.5 flex items-center gap-1">
+        {note.kind === "voice" && (
+          <Button variant="ghost" size="sm" onClick={play} aria-label="Play recording">
+            <Play aria-hidden="true" />
+            {playing ? "Playing" : "Play"}
+          </Button>
+        )}
+        <Button
+          variant="danger"
+          size="sm"
+          className="ml-auto"
+          onClick={onDelete}
+          aria-label="Delete note"
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </div>
+    </article>
   );
 }

@@ -1,26 +1,44 @@
+import { EmptyFrame, EmptyRows } from "./page/EmptyFrame";
+
+/**
+ * Loading, skeleton and empty surfaces.
+ *
+ * Loading is a content-shaped skeleton, not a spinner parked in the middle of
+ * the page — a spinner tells you nothing about what is arriving.
+ */
+
 export function Loader({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16 text-subtext0">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />
-      <span className="font-mono text-sm">{label}…</span>
+    <div className="py-6" role="status" aria-live="polite">
+      <span className="sr-only">{label}</span>
+      <SkeletonRows rows={4} />
     </div>
   );
 }
 
-// Shimmer placeholder — a calmer perceived-load than a spinner (content-shaped).
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-surface0/60 ${className}`} />;
+  return <div className={`animate-pulse rounded bg-surface0 ${className}`} />;
 }
 
-// A card-shaped skeleton row for the Browse deck while questions load.
+export function SkeletonRows({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="flex flex-col gap-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-16" />
+      ))}
+    </div>
+  );
+}
+
+/** A card-shaped skeleton row for the question deck while it loads. */
 export function CardSkeleton() {
   return (
-    <div className="glass rounded-2xl border-l-2 border-surface1 px-5 py-4">
-      <div className="mb-2 flex gap-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-4 w-14" />
+    <div className="panel px-4 py-3.5">
+      <div className="mb-2.5 flex gap-2">
+        <Skeleton className="h-3 w-20" />
+        <Skeleton className="h-3 w-12" />
       </div>
-      <Skeleton className="h-5 w-3/4" />
+      <Skeleton className="h-4 w-3/4" />
       <Skeleton className="mt-2 h-3 w-full" />
       <Skeleton className="mt-1.5 h-3 w-5/6" />
     </div>
@@ -37,11 +55,25 @@ export function CardSkeletonGrid({ count = 6 }: { count?: number }) {
   );
 }
 
-export function Empty({ title, hint }: { title: string; hint?: string }) {
+/**
+ * Empty state. Renders the zeroed structure plus one line naming the action —
+ * an empty screen is an invitation to act, not a shrug in a box.
+ */
+export function Empty({
+  title,
+  hint,
+  action,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+  /** The zeroed structure. Defaults to hairline list rows. */
+  children?: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-      <div className="font-display text-h2 text-subtext1">{title}</div>
-      {hint && <div className="max-w-sm text-sm text-subtext0">{hint}</div>}
-    </div>
+    <EmptyFrame label={hint ? `${title} — ${hint}` : title} action={action}>
+      {children ?? <EmptyRows />}
+    </EmptyFrame>
   );
 }
