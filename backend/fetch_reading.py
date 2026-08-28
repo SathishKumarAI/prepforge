@@ -21,8 +21,12 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import os
+import re
 import socket
+import subprocess
 import sys
+import tempfile
 import time
 from collections import Counter
 from pathlib import Path
@@ -48,6 +52,60 @@ HOST_DELAY = 2.0
 BLOCKED_HOSTS = {
     "leetcode.com": "403s every scraper; the link IS the content for a problem page",
 }
+
+
+CHROME_CANDIDATES = (
+    os.environ.get("CHROME", ""),
+    rf"{os.environ.get('ProgramFiles', '')}\Google\Chrome\Application\chrome.exe",
+    rf"{os.environ.get('ProgramFiles(x86)', '')}\Google\Chrome\Application\chrome.exe",
+    rf"{os.environ.get('LOCALAPPDATA', '')}\Google\Chrome\Application\chrome.exe",
+    "/usr/bin/google-chrome-stable",
+    "/usr/bin/google-chrome",
+    "/usr/bin/chromium",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+)
+
+
+def chrome_path() -> str | None:
+    """The installed Chrome, or None. Not a dependency — a thing that is either
+    already here or not, and the render pass simply does not run without it."""
+    for candidate in CHROME_CANDIDATES:
+        if candidate and Path(candidate).exists():
+            return candidate
+    return None
+
+
+def render(url: str, timeout: float = 45.0) -> str:
+    """The page as the browser sees it, after its JavaScript has run.
+
+    143 cited pages extracted empty and a further 246 refused a plain client;
+    a large share of both are documentation sites that build their body in the
+    browser. `--dump-dom` is Chrome printing the DOM it ended up with, which is
+    what a reader would have seen. Its own profile directory, so it never
+    contends with a Chrome the user has open.
+    """
+    exe = chrome_path()
+    if not exe:
+        raise RuntimeError("no Chrome found; set CHROME=/path/to/chrome")
+    with tempfile.TemporaryDirectory(prefix="prepforge-render-") as profile:
+        out = subprocess.run(
+            [
+                exe,
+                "--headless=new",
+                "--disable-gpu",
+                "--hide-scrollbars",
+                "--virtual-time-budget=8000",
+                f"--user-data-dir={profile}",
+                "--dump-dom",
+                url,
+            ],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout,
+        )
+    return out.stdout or ""
 
 
 def _read_bank(path: Path) -> list[dict]:
@@ -140,6 +198,90 @@ def pending(index: dict[str, dict], retry_failed: bool) -> list[tuple[str, str, 
     return out
 
 
+# A browser renders an error page as happily as an article, and it comes back
+# with a title and a body like anything else. Without this the first render pass
+# "succeeded" on "Error 404", "Access Denied" and "Attention Required! |
+# Cloudflare" — pages that would then have been ingested as flashcards.
+WALL_TITLE = re.compile(
+    r"\b(404|403|not found|access denied|forbidden|attention required|just a moment|"
+    r"are you a robot|captcha|verify you are human|page not found|error)\b",
+    re.I,
+)
+# Shorter than this and there is nothing to study even if the page is genuine.
+MIN_RENDERED_CHARS = 800
+
+
+def looks_like_a_wall(title: str, markdown: str) -> bool:
+    return bool(WALL_TITLE.search(title or "")) or len(markdown or "") < MIN_RENDERED_CHARS
+
+
+def failed_urls(index: dict[str, dict]) -> list[tuple[str, str, int]]:
+    """What a render pass should try: pages that answered with nothing readable,
+    or refused a plain client. Not `not_public` (refused on purpose) and not
+    `blocked_host` (a wall a browser does not get through either)."""
+    retryable = {"empty", "fetch_failed", "crashed", "failed"}
+    by_url = {u: (t, c) for u, t, c in collect_urls()}
+    return [
+        (url, *by_url.get(url, ("AI", 0)))
+        for url, row in index.items()
+        if row.get("status") in retryable and url in by_url
+    ]
+
+
+def run_render(limit: int, host_delay: float) -> dict:
+    """Second pass: re-fetch the failures through a real browser."""
+    index = load_index()
+    todo = failed_urls(index)
+    if limit > 0:
+        todo = todo[:limit]
+    print(f"{len(todo)} failures to re-try through Chrome ({chrome_path() or 'NO CHROME FOUND'})")
+
+    last_hit: dict[str, float] = {}
+    stats: Counter[str] = Counter()
+
+    for i, (url, topic, count) in enumerate(todo, 1):
+        host = urlparse(url).hostname or "?"
+        wait = host_delay - (time.monotonic() - last_hit.get(host, 0.0))
+        if wait > 0:
+            time.sleep(wait)
+        last_hit[host] = time.monotonic()
+        try:
+            html = render(url)
+            res = capture_mod.read_html(url, html, topic) if html else {"error": "empty"}
+        except Exception as exc:
+            res = {"error": "render_failed", "message": str(exc)}
+
+        # The gate runs after the write rather than before it, because the write
+        # is where the extraction happens. A wall that got saved is deleted
+        # again — the library must not gain a card that says "Access Denied".
+        if res.get("ok") and looks_like_a_wall(res.get("title", ""), res.get("markdown", "")):
+            saved = res.get("saved", "")
+            if saved:
+                (BASE / saved).unlink(missing_ok=True)
+            res = {"error": "wall", "message": f"rendered page was {res.get('title', '')!r}"}
+
+        if res.get("ok"):
+            index[url] = {
+                "status": "ok",
+                "via": "render",
+                "file": res.get("saved", ""),
+                "title": res.get("title", ""),
+                "citations": count,
+            }
+            stats["ok"] += 1
+            print(f"[{i}/{len(todo)}] ok   {res.get('title', '')[:60]}  <- {host}")
+        else:
+            # Keep the ORIGINAL status and record that rendering did not help,
+            # so a third pass does not treat this as untried.
+            index[url] = {**index.get(url, {}), "render": res.get("error", "failed")}
+            stats[f"render:{res.get('error')}"] += 1
+            print(f"[{i}/{len(todo)}] fail {res.get('error')}  <- {host}")
+        save_index(index)
+
+    print("\n" + "  ".join(f"{k}={v}" for k, v in stats.most_common()))
+    return {"stats": dict(stats)}
+
+
 def run(limit: int, sleep: float, host_delay: float, retry_failed: bool, dry_run: bool) -> dict:
     index = load_index()
     todo = pending(index, retry_failed)
@@ -222,9 +364,14 @@ def main() -> None:
     ap.add_argument("--sleep", type=float, default=0.5, help="pause after every fetch, seconds")
     ap.add_argument("--host-delay", type=float, default=HOST_DELAY, help="min seconds between hits on one host")
     ap.add_argument("--retry-failed", action="store_true", help="also retry URLs that failed before")
+    ap.add_argument("--render", action="store_true", help="re-try the failures through headless Chrome")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, fetch nothing")
     args = ap.parse_args()
-    run(0 if args.all else args.limit, args.sleep, args.host_delay, args.retry_failed, args.dry_run)
+    limit = 0 if args.all else args.limit
+    if args.render:
+        run_render(limit, args.host_delay)
+    else:
+        run(limit, args.sleep, args.host_delay, args.retry_failed, args.dry_run)
 
 
 if __name__ == "__main__":

@@ -51,6 +51,38 @@ def test_collect_urls_dedupes_and_ranks_by_citations(monkeypatch):
     ], rows
 
 
+def test_a_rendered_error_page_is_not_content():
+    """A browser renders a 403 as happily as an article. Without this gate the
+    first render pass saved "Access Denied" and "Attention Required |
+    Cloudflare" as study material."""
+    body = "word " * 400  # long enough that only the title decides
+    assert fr.looks_like_a_wall("Error 404 | Page not found", body)
+    assert fr.looks_like_a_wall("Attention Required! | Cloudflare", body)
+    assert fr.looks_like_a_wall("Access Denied", body)
+    assert fr.looks_like_a_wall("Just a moment...", body)
+    # Genuine pages, one of which merely has too little on it to study
+    assert not fr.looks_like_a_wall("Consistent Hashing Explained", body)
+    assert fr.looks_like_a_wall("Consistent Hashing Explained", "too short")
+
+
+def test_render_saves_through_the_same_shape_as_a_plain_fetch():
+    import capture
+
+    html = "<html><head><title>Vector Clocks</title></head><body><article><p>"
+    html += "A vector clock is a data structure. " * 40
+    html += "</p></article></body></html>"
+    res = capture.read_html("https://example.com/vector-clocks", html, "AI")
+    saved = capture.BASE / res["saved"]
+    try:
+        assert res.get("ok"), res
+        text = saved.read_text(encoding="utf-8")
+        assert "source: web-render" in text, "a rendered capture must be distinguishable"
+        assert "url: https://example.com/vector-clocks" in text
+        assert "vector clock" in text.lower()
+    finally:
+        saved.unlink(missing_ok=True)
+
+
 def test_pending_skips_what_already_succeeded(monkeypatch):
     monkeypatch(
         fr,
@@ -89,5 +121,6 @@ if __name__ == "__main__":
         finally:
             for obj, attr, old in reversed(undo):
                 setattr(obj, attr, old)
-    print(f"\n{passed}/4 pass")
-    raise SystemExit(0 if passed == 4 else 1)
+    total = len([k for k in vars().copy() if k.startswith("test_")])
+    print(f"\n{passed}/{total} pass")
+    raise SystemExit(0 if passed == total else 1)
