@@ -7,7 +7,7 @@ on every batch. Any future UI work: add new tickets below rather than reopening 
 
 ## Layout & space utilization
 - [x] Widen the main container (`max-w-5xl` → `max-w-6xl`) so content uses the screen.
-- [x] Two-pane reading layout: content column at a comfortable measure + a right rail (metadata, related, sources) using the extra width.
+- [x] Two-pane reading layout for long docs (`ReadingPane`: TOC rail + content). Question cards went the other way — one column that fills its grid cell, because a 68ch answer in a full-width card is a gutter, not a layout.
 - [x] Left-aligned content (no mx-auto) — killed the sidebar↔content gap; widened to 92rem.
 - [x] Collapsible sidebar (icon-rail) to reclaim reading width on demand.
 - [x] Content-aware widths — cards/lists go wide (2-col), prose capped at 68ch.
@@ -39,7 +39,7 @@ on every batch. Any future UI work: add new tickets below rather than reopening 
 - [x] Collapse long answers with "show more"; expand-in-place.
 - [x] Persist scroll position when reopening a source/answer — `ReadingPane` saves/restores `scrollTop` per doc in sessionStorage (rAF-throttled).
 - [x] Code blocks styled + copy button **+ syntax highlighting** — custom lightweight lowlight plugin (`rehype-highlight-lite`, curated grammars) with a theme-aware hljs palette.
-- [x] Related-questions rail (from the new memory index) beside each question.
+- [x] Related questions (from the new memory index) on each expanded question — links behind a `Related N` disclosure under the answer, not a rail. The rail cost a fixed 15rem of every card and the open list cost ~200px of height; collapsed it costs 17px. The links jump to the card when it is on the page and navigate to `/library?q=…` when it is not.
 - [x] Progress indicator / reading time on long content.
 
 ## Visual hierarchy & rhythm
@@ -67,7 +67,7 @@ on every batch. Any future UI work: add new tickets below rather than reopening 
 ## Space audit — kill empty space, deliver content (user psychology)
 - [x] Enrich collapsed question cards with an answer **preview** + related/source meta — rows were empty voids; now they deliver content + spark curiosity.
 - [x] Tighten oversized empty/loading states (py-24 → py-16).
-- [x] Browse: responsive 2-col card grid on xl (expanded cards span full width for the two-pane).
+- [x] Browse: responsive 2-col card grid on xl. Expanded cards stay in their column — spanning both was there to feed the related rail, and once that went the width showed up as a gutter beside a 68ch answer, not as content.
 - [x] Wider page (max-w-7xl) — reduces dead side-margins; prose still capped at 68ch.
 - [x] Dashboard: 6-stat grid + 2-col progress bars — denser, less scroll.
 - [x] Compact heroes across all pages — single scale-driven h1 + one-line subtitle; no oversized decorative hero remains.
