@@ -13,6 +13,7 @@ import { Bookmarks } from "./pages/Bookmarks";
 
 // heavy pages (recharts, force-graph, pdf reader) — split out of the main bundle
 const Resources = lazy(() => import("./pages/Resources").then((m) => ({ default: m.Resources })));
+const Sources = lazy(() => import("./pages/Sources").then((m) => ({ default: m.Sources })));
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Notes = lazy(() => import("./pages/Notes").then((m) => ({ default: m.Notes })));
 const Graph = lazy(() => import("./pages/Graph").then((m) => ({ default: m.Graph })));
@@ -57,6 +58,7 @@ function LayoutRoutes() {
         <Route path="/learn" element={<Learn />} />
         <Route path="/flashcards" element={<Flashcards />} />
         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/sources" element={<Sources />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/reader" element={<Reader />} />
         <Route path="/notes" element={<Notes />} />

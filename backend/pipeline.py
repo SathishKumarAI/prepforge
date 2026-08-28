@@ -44,15 +44,107 @@ def _all_questions() -> list[dict]:
     return out
 
 
+# Tags that describe a document's *shape*, not its subject. Weighting these like
+# topical tags married "AI vs ML vs deep learning" to "Database Fundamentals" —
+# both tagged #fundamentals, nothing else in common.
+_WEAK_TAGS = {
+    "fundamentals", "basics", "basic", "overview", "introduction", "intro", "concepts",
+    "concept", "questions", "question", "interview", "interviews", "guide", "guides",
+    "summary", "notes", "note", "cheatsheet", "reference", "advanced", "general", "topics",
+}
+
+
 def _tokens(q: dict) -> list[str]:
     text = (q.get("question", "") + " ").lower()
     toks = [t for t in _TOKEN.findall(text) if t not in _STOP and len(t) > 2]
-    # tags carry strong topical signal — weight them by repeating
+    # tags carry strong topical signal — weight them by repeating, unless the tag is
+    # structural, in which case it counts once like any other word
     for tag in q.get("tags", []) or []:
         t = str(tag).lower()
         if len(t) > 2:
-            toks += [t, t, t]
+            toks += [t] if t in _WEAK_TAGS else [t, t, t]
     return toks
+
+
+ANSWERS = CONTENT / "answers"
+_FM = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+MAX_READING = 5
+BORROW_SCORE = 0.30  # relatedness a neighbour needs before its links are offered
+
+
+def _authored_reading() -> dict[str, list[dict]]:
+    """Citations the pre-authored answers carry in their YAML frontmatter.
+
+    The curated bank has no source document to open — these citations are the only
+    real reading it ships with, and they are what a curated card should point at.
+    """
+    import yaml
+
+    out: dict[str, list[dict]] = {}
+    if not ANSWERS.exists():
+        return out
+    for f in sorted(ANSWERS.glob("*.md")):
+        qid = f.stem.split("__")[0]  # q042__star.md and q042.md are the same question
+        m = _FM.match(f.read_text(encoding="utf-8", errors="ignore"))
+        if not m:
+            continue
+        try:
+            meta = yaml.safe_load(m.group(1)) or {}
+        except yaml.YAMLError:
+            continue
+        for s in meta.get("sources") or []:
+            url = (s or {}).get("url")
+            if not url:
+                continue
+            seen = out.setdefault(qid, [])
+            if not any(e["url"] == url for e in seen):
+                seen.append({"title": (s.get("title") or url)[:90], "url": url})
+    return out
+
+
+def build_reading(questions: list[dict], related: dict[str, list[dict]]) -> dict[str, list[dict]]:
+    """Reading links for *every* question, not just the ones that shipped with links.
+
+    Three tiers, best first: the question's own links, the citations its authored
+    answer carries, then — for the many cards that have neither — links borrowed from
+    its nearest neighbours in the related index, labelled with where they came from so
+    the borrowing is visible rather than implied.
+    """
+    authored = _authored_reading()
+    by_id = {q.get("id"): q for q in questions if q.get("id")}
+    own: dict[str, list[dict]] = {}
+    for qid, q in by_id.items():
+        links = [dict(l) for l in (q.get("links") or [])][:MAX_READING]
+        for extra in authored.get(qid, []):
+            if len(links) < MAX_READING and not any(l["url"] == extra["url"] for l in links):
+                links.append(dict(extra))
+        if links:
+            own[qid] = links
+
+    reading = dict(own)
+    borrowed = 0
+    for qid in by_id:
+        if qid in reading:
+            continue
+        picked: list[dict] = []
+        for rel in related.get(qid, []):
+            # A loose neighbour is worse than no suggestion: at the 0.12 relatedness
+            # floor, "AI vs ML vs deep learning" was being offered ACID transactions.
+            if rel.get("score", 0) < BORROW_SCORE:
+                continue
+            src = by_id.get(rel["id"])
+            for link in own.get(rel["id"], []):
+                if len(picked) >= 3:
+                    break
+                if not any(p["url"] == link["url"] for p in picked):
+                    picked.append({**link, "via": (src or {}).get("question", "")[:70]})
+            if len(picked) >= 3:
+                break
+        if picked:
+            reading[qid] = picked
+            borrowed += 1
+    log.info("reading index: %d own, %d borrowed from related", len(own), borrowed)
+    return reading
 
 
 def build_related(k: int = 6, min_score: float = 0.12) -> dict:
@@ -112,16 +204,29 @@ def build_related(k: int = 6, min_score: float = 0.12) -> dict:
             related[qid] = top
             with_related += 1
 
+    reading = build_reading(qs, related)
+
     CONTENT.mkdir(parents=True, exist_ok=True)
-    RELATED_OUT.write_text(json.dumps({"related": related}, indent=2, ensure_ascii=False), encoding="utf-8")
+    RELATED_OUT.write_text(
+        json.dumps({"related": related, "reading": reading}, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
     log.info("related index: %d questions, %d with related links", n, with_related)
-    return {"questions": n, "with_related": with_related}
+    return {"questions": n, "with_related": with_related, "with_reading": len(reading)}
 
 
-def load_related() -> dict:
+def _load_index() -> dict:
     if not RELATED_OUT.exists():
         return {}
     try:
-        return json.loads(RELATED_OUT.read_text(encoding="utf-8")).get("related", {})
+        return json.loads(RELATED_OUT.read_text(encoding="utf-8"))
     except Exception:
         return {}
+
+
+def load_related() -> dict:
+    return _load_index().get("related", {})
+
+
+def load_reading() -> dict:
+    return _load_index().get("reading", {})

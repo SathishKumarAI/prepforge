@@ -13,8 +13,10 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import os
 import re
+from collections import Counter
 from pathlib import Path
 
 import httpx
@@ -27,6 +29,28 @@ OUT = BASE / "content" / "generated.json"
 
 TOPICS = ["AI", "Machine Learning", "Data Science", "Data Analytics"]
 _HEADING = re.compile(r"^(#{1,3})\s+(.*)$", re.MULTILINE)
+_WORD = re.compile(r"[a-zA-Z][a-zA-Z0-9-]{2,}")
+MAX_TAGS = 6
+
+# One stop list for the whole module — keywords, quiz distractors and cloze blanks
+# all need the same "this word is not a subject" judgement. Kept wide on purpose:
+# question-bank prose is full of second-person instruction ("you would", "they say").
+STOPWORDS = {
+    "a", "an", "the", "and", "or", "but", "if", "then", "than", "that", "this", "these", "those",
+    "for", "with", "without", "from", "into", "onto", "over", "under", "about", "across", "of",
+    "to", "in", "on", "at", "by", "as", "is", "are", "was", "were", "be", "been", "being",
+    "do", "does", "did", "done", "doing", "can", "could", "will", "would", "should", "shall",
+    "may", "might", "must", "have", "has", "had", "you", "your", "yours", "they", "them", "their",
+    "we", "our", "it", "its", "he", "she", "his", "her", "who", "whom", "whose",
+    "what", "which", "when", "where", "why", "how", "here", "there", "some", "any", "all", "each",
+    "both", "other", "others", "such", "only", "also", "more", "most", "much", "many", "very",
+    "explain", "describe", "difference", "between", "using", "use", "used", "make", "makes",
+    "need", "needs", "want", "get", "gets", "give", "given", "take", "like", "just", "one", "two",
+    "notes", "note", "example", "examples", "way", "ways", "thing", "things", "good", "bad",
+    "new", "old", "same", "different", "first", "second", "next", "last", "see", "know", "think",
+    # difficulty labels: every DSA table repeats them, they say nothing about the subject
+    "easy", "medium", "hard",
+}
 
 # Public question banks (the GitHub repos people clone into the library) hide answers
 # behind `<details><summary>Answer</summary>…</details>` and number their headings.
@@ -43,6 +67,89 @@ _SKIP_HEADINGS = {
     "table of contents", "contents", "toc", "references", "further reading", "license",
     "contributing", "acknowledgements", "acknowledgments", "star history", "index",
 }
+# Whole files that ship with every repo and teach nothing. Cloning a repo used to
+# put "Explain: Reporting a bug" in the quiz rotation.
+_SKIP_FILES = {
+    "license", "license_mit", "license_apache", "code_of_conduct", "contributing",
+    "changelog", "security", "pull_request_template", "issue_template", "bug_report",
+    "feature_request", "notice", "authors", "codeowners",
+}
+_SKIP_DIRS = {".github", ".git", "node_modules", ".venv"}
+
+
+# Answers are shown in full on the card. 6000 chars covers ~99% of sections whole;
+# anything longer is still readable end-to-end by opening its source document.
+ANSWER_CHARS = 6000
+
+# "Go deeper" links: the outbound URLs an author already curated in the section.
+# Markdown links only — bare URLs in these repos are mostly badges and images.
+_MD_LINK = re.compile(r"(?<!!)\[([^\]\n]{2,90})\]\((https?://[^\s)]+)\)")
+_LINK_NOISE = ("shields.io", "badge", "githubusercontent.com", "/stargazers", "/fork",
+               "twitter.com/intent", "buymeacoffee", "patreon.com")
+MAX_LINKS = 8
+
+
+_PROFILE_HOSTS = {"github.com", "www.github.com", "gitlab.com", "linkedin.com",
+                  "www.linkedin.com", "x.com", "twitter.com", "www.twitter.com"}
+
+
+def _is_profile_link(url: str) -> bool:
+    """A bare profile/org page (github.com/someone) — an author credit, not reading."""
+    from urllib.parse import urlparse
+
+    p = urlparse(url)
+    if p.hostname not in _PROFILE_HOSTS:
+        return False
+    return len([seg for seg in p.path.split("/") if seg]) <= 1
+
+
+# Link text that names nothing: "[Answer](url)", "[here](url)". Common in question
+# banks, and useless as a reading-list label — those get a title built from the URL.
+_GENERIC_LINK_TEXT = {
+    "answer", "answers", "solution", "solutions", "here", "link", "links", "this", "that",
+    "read", "read more", "more", "source", "sources", "ref", "reference", "click", "click here",
+    "doc", "docs", "documentation", "video", "watch", "see", "see here", "detail", "details",
+}
+
+
+def _title_from_url(url: str) -> str:
+    """Readable label from a URL: its last path segment, else the host."""
+    from urllib.parse import urlparse
+
+    p = urlparse(url)
+    host = (p.hostname or url).removeprefix("www.")
+    segments = [s for s in p.path.split("/") if s]
+    if segments:
+        last = re.sub(r"\.(html?|md|pdf|php)$", "", segments[-1]).replace("-", " ").replace("_", " ").strip()
+        if len(last) > 2 and not last.isdigit():
+            return f"{last[:60]} · {host}"
+    return host
+
+
+def _links(body: str) -> list[dict]:
+    """Outbound reading links from a section, deduped, in document order."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for text, url in _MD_LINK.findall(body):
+        url = url.rstrip(".,;")
+        if url in seen or any(n in url.lower() for n in _LINK_NOISE):
+            continue
+        if _is_profile_link(url):  # "follow me on GitHub" is not study material
+            continue
+        seen.add(url)
+        title = " ".join(text.split())
+        if title.lower().strip(" :→-") in _GENERIC_LINK_TEXT or len(title) < 3:
+            title = _title_from_url(url)
+        out.append({"title": title[:90], "url": url})
+        if len(out) == MAX_LINKS:
+            break
+    return out
+
+
+def _is_boilerplate(rel: Path) -> bool:
+    if any(part in _SKIP_DIRS for part in rel.parts):
+        return True
+    return rel.stem.lower().replace("-", "_") in _SKIP_FILES
 
 
 def _frontmatter_title(md: str, fallback: str) -> str:
@@ -93,10 +200,34 @@ def _split_sections(md: str) -> list[tuple[str, str]]:
     return sections
 
 
-def _tags(heading: str) -> list[str]:
-    words = re.findall(r"[a-zA-Z][a-zA-Z0-9-]{2,}", heading.lower())
-    stop = {"the", "and", "for", "with", "how", "what", "why", "does", "are", "into"}
-    return [w for w in words if w not in stop][:4] or ["notes"]
+_URL = re.compile(r"https?://\S+|\b[\w-]+\.(?:com|org|net|io|dev|ai|co)\b")
+
+
+def tag_text(body: str) -> str:
+    """Body prose with URLs and code fences removed — a link's hostname is not a keyword."""
+    return _URL.sub(" ", _FENCE.sub(" ", body))
+
+
+def _tags(heading: str, body: str = "", idf: dict[str, float] | None = None) -> list[str]:
+    """Keywords for a card: the heading's own words first (precise, human-chosen),
+    then the body's most distinctive terms by TF-IDF. Heading-only tagging produced
+    `#you`, `#would`, `#they` — words that say nothing about the subject."""
+    tags = [w for w in _WORD.findall(heading.lower()) if w not in STOPWORDS and len(w) > 2][:3]
+    if idf:
+        counts = Counter(
+            t.strip(".-#+") for t in _QTOKEN.findall(tag_text(body).lower())
+            if t not in STOPWORDS and len(t) > 3 and not t.isdigit()
+        )
+        # A word used once is usually incidental ("homework", "surprisingly"). Require a
+        # repeat, and only fall back to single mentions if the section is too short to repeat.
+        repeated = {t: c for t, c in counts.items() if c > 1 and t not in STOPWORDS and len(t) > 3}
+        pool = repeated or counts
+        for term, _score in sorted(pool.items(), key=lambda kv: -(kv[1] * idf.get(kv[0], 1.0))):
+            if term and term not in tags:
+                tags.append(term)
+            if len(tags) >= MAX_TAGS:
+                break
+    return tags[:MAX_TAGS] or ["notes"]
 
 
 def _card_id(source: str, heading: str) -> str:
@@ -104,22 +235,30 @@ def _card_id(source: str, heading: str) -> str:
     return f"ing_{h}"
 
 
-def _deterministic_card(source: str, topic: str, heading: str, body: str, doc_title: str = "") -> dict:
+def _deterministic_card(
+    source: str, topic: str, heading: str, body: str, doc_title: str = "",
+    idf: dict[str, float] | None = None,
+) -> dict:
     q = heading if heading.endswith("?") else f"Explain: {heading}"
     # "Problem statement" or "Iteration plan" means nothing on a flashcard, and nothing
     # in a quiz stem. Short headings borrow their document's title for context.
     if doc_title and len(heading) < 40 and doc_title.lower() not in heading.lower():
         q += f" — {doc_title}"
-    return {
+    card = {
         "id": _card_id(source, heading),
         "topic": topic,
         "difficulty": "medium",
-        "tags": _tags(heading),
+        "tags": _tags(heading, body, idf),
         "question": q,
-        "answer": body[:1600],
+        "answer": body[:ANSWER_CHARS],
+        "truncated": len(body) > ANSWER_CHARS,  # the card says "open the source" when true
         "source_file": source,
         # no quiz for deterministic cards; Quiz mode simply skips them
     }
+    links = _links(body)
+    if links:
+        card["links"] = links
+    return card
 
 
 def _llm_card(client: httpx.Client, key: str, source: str, topic: str, heading: str, body: str) -> dict | None:
@@ -203,18 +342,13 @@ def _first_sentence(text: str, cap: int = 160) -> str:
     return (s[: cap - 1] + "…") if len(s) > cap else s
 
 
-# ---- lightweight TF-IDF over the card set, for *near-miss* distractors ----
+# ---- lightweight TF-IDF over the card set: near-miss distractors *and* keywords ----
 _QTOKEN = re.compile(r"[a-z0-9][a-z0-9+#.-]{1,}")
-_QSTOP = {
-    "the", "and", "for", "with", "what", "which", "when", "does", "your", "have", "this", "that",
-    "how", "why", "are", "is", "an", "of", "to", "in", "on", "explain", "describe", "between",
-    "difference", "you", "would", "should", "about", "can", "using", "use", "from", "or", "it", "a",
-}
 
 
 def _card_tokens(card: dict) -> list[str]:
     text = (card.get("question", "") + " " + _first_sentence(card.get("answer", ""), 200)).lower()
-    toks = [t for t in _QTOKEN.findall(text) if t not in _QSTOP and len(t) > 2]
+    toks = [t for t in _QTOKEN.findall(text) if t not in STOPWORDS and len(t) > 2]
     for tag in card.get("tags", []) or []:
         t = str(tag).lower()
         if len(t) > 2:
@@ -260,7 +394,7 @@ def _cloze(card: dict, h: int) -> tuple[str, str] | None:
     gloss = _first_sentence(card.get("answer", ""))
     words = re.findall(r"[A-Za-z][A-Za-z0-9+#.-]{2,}", gloss)
     tagset = {str(t).lower() for t in card.get("tags", []) or []}
-    cands = [w for w in words if w.lower() not in _QSTOP and len(w) > 3]
+    cands = [w for w in words if w.lower() not in STOPWORDS and len(w) > 3]
     if not cands:
         return None
     # prefer a word that is also a tag (topical), else the longest word — stable pick
@@ -437,26 +571,40 @@ def ingest(mode: str = "deterministic") -> dict:
     use_ollama = mode == "ollama"
     client = httpx.Client() if (use_claude or use_ollama) else None
 
+    # Pass 1 — read every section. Keywords need to know what is *distinctive*, and
+    # that is only knowable once the whole corpus has been seen.
+    titles: dict[str, str] = {}  # source_file → readable title (for the source picker)
+    sections: list[tuple[str, str, str, str]] = []  # (source, topic, heading, body)
+    df: Counter = Counter()
+    for f in files:
+        if _is_boilerplate(f.relative_to(LIBRARY)):
+            continue
+        source = str(f.relative_to(LIBRARY))
+        topic = _infer_topic(f.relative_to(LIBRARY))
+        md = f.read_text(encoding="utf-8", errors="ignore")
+        titles[source] = _frontmatter_title(md, source)
+        for heading, body in _split_sections(md):
+            sections.append((source, topic, heading, body))
+            df.update({t for t in _QTOKEN.findall(tag_text(body).lower()) if t not in STOPWORDS and len(t) > 3})
+
+    n_sections = max(len(sections), 1)
+    idf = {term: math.log(n_sections / (1 + freq)) + 1.0 for term, freq in df.items()}
+
+    # Pass 2 — build the cards.
     cards: list[dict] = []
     model_cards = 0
-    titles: dict[str, str] = {}  # source_file → readable title (for the source picker)
     try:
-        for f in files:
-            source = str(f.relative_to(LIBRARY))
-            topic = _infer_topic(f.relative_to(LIBRARY))
-            md = f.read_text(encoding="utf-8", errors="ignore")
-            titles[source] = _frontmatter_title(md, source)
-            for heading, body in _split_sections(md):
-                card = None
-                if use_claude:
-                    card = _llm_card(client, key, source, topic, heading, body)
-                elif use_ollama:
-                    card = _ollama_card(client, ollama_model, source, topic, heading, body)
-                if card is None:
-                    card = _deterministic_card(source, topic, heading, body, titles[source])
-                else:
-                    model_cards += 1
-                cards.append(card)
+        for source, topic, heading, body in sections:
+            card = None
+            if use_claude:
+                card = _llm_card(client, key, source, topic, heading, body)
+            elif use_ollama:
+                card = _ollama_card(client, ollama_model, source, topic, heading, body)
+            if card is None:
+                card = _deterministic_card(source, topic, heading, body, titles[source], idf)
+            else:
+                model_cards += 1
+            cards.append(card)
     finally:
         if client:
             client.close()

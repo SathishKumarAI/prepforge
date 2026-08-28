@@ -18,6 +18,19 @@ export interface AltAnswer {
   source: VaultSource;
 }
 
+// An outbound reading link the source author curated — surfaced for deeper study.
+export interface DeepLink {
+  title: string;
+  url: string;
+  via?: string; // set when borrowed from a related question, never presented as this card's own
+}
+
+// Where a question came from — set on every question, curated ones included.
+export interface Origin {
+  kind: "curated" | "library" | "vault";
+  label: string;
+}
+
 export interface Question {
   id: string;
   topic: string;
@@ -26,6 +39,10 @@ export interface Question {
   question: string;
   answer: string;
   quiz?: Quiz;
+  links?: DeepLink[];
+  reading?: DeepLink[]; // authored citations, or links borrowed from close relatives
+  origin?: Origin;
+  truncated?: boolean; // answer was cut — the full text is in the source document
   // present on questions ingested from the Obsidian vault
   sources?: VaultSource[];
   alt_answers?: AltAnswer[];

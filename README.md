@@ -16,7 +16,9 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **100 curated questions** | `backend/content/questions.json`, tagged by topic / difficulty |
 | **+ any question bank you clone** | e.g. three public GitHub repos → ~5,400 more cards, see [seeding](#seeding-from-public-question-banks) |
 | **700 pre-authored answers** | 7 variants per question, as readable `.md` — see [Answer variants](#answer-variants) |
-| **10 pages** | Learn · Browse · Flashcards · Quiz · Resources · Reader · Notes · Graph · Dashboard · Bookmarks |
+| **11 pages** | Learn · Browse · Flashcards · Quiz · **Sources** · Resources · Reader · Notes · Graph · Dashboard · Bookmarks |
+| **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
+| **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
@@ -87,20 +89,29 @@ endpoint returns a message saying so, and everything cached still works.
 
 ### Seeding from public question banks
 
-`content/library/` is git-ignored, so the material below is *not* in this repo — clone it back with:
+Open the **Sources** tab, paste a GitHub URL, hit **Add source**. The repo is shallow-cloned into
+`content/library/` and ingested into cards — no API key, no restart. Any other URL is fetched as an
+article instead. Adding a repo twice is a no-op, so it is safe to retry.
+
+`content/library/` is git-ignored, so none of that material is in this repo. The banks currently
+seeded (853 documents → ~6,700 cards) can be restored from the Sources tab or the command line:
 
 ```bash
 cd backend/content/library
-git clone --depth 1 https://github.com/ombharatiya/AI-Engineer-Interview-Questions.git
-git clone --depth 1 https://github.com/ombharatiya/ai-system-design-guide.git
-git clone --depth 1 https://github.com/ombharatiya/FAANG-Coding-Interview-Questions.git
+for r in ombharatiya/AI-Engineer-Interview-Questions ombharatiya/ai-system-design-guide \
+         ombharatiya/FAANG-Coding-Interview-Questions ByteByteGoHq/system-design-101 \
+         Anshul619/HLD-System-Designs ashishps1/awesome-system-design-resources \
+         systemdesign42/system-design-academy InterviewReady/system-design-resources; do
+  git clone --depth 1 "https://github.com/$r.git"
+done
 cd ../.. && ./.venv/bin/python -c "import ingest,pipeline; print(ingest.ingest()); print(pipeline.build_related())"
 ```
 
-That yields ~5,400 cards on top of the curated 100. Any repo of Markdown works the same way —
-`ingest` strips the `<details><summary>Answer</summary>` wrapper those banks use, skips
-tables-of-contents and diagram-only sections, and gives context-free headings ("Problem statement")
-their document's title.
+Any repo of Markdown works. `ingest` earns its keep on the messy parts: it strips the
+`<details><summary>Answer</summary>` wrapper these banks use, skips tables-of-contents,
+diagram-only sections and repo boilerplate (LICENSE, CONTRIBUTING, `.github/`), gives context-free
+headings ("Problem statement") their document's title, and pulls each section's outbound links out
+as **Go deeper** reading.
 
 Ingest has three tiers: `deterministic` (default, zero-token), `ollama` (a local model on
 `localhost:11434`, `OLLAMA_MODEL` to pick it), `claude`. The default
@@ -131,6 +142,8 @@ POST /resources/add           one URL → feed (used by the extension)
 POST /resources/read          URL → readable Markdown → library
 POST /resources/upload        PDF/.md/.txt → library
 POST /sources/feed            append an RSS feed to sources.yaml
+GET  /sources                 library as collections (repo/captured) with doc + card counts
+POST /sources/github          clone a public Markdown repo → library → cards
 GET  /library                 list ingestable files
 POST /library/read            read one library doc
 POST /ingest?mode=            library Markdown → cards
@@ -147,11 +160,12 @@ POST /vault/read              read one vault doc
 backend/
   main.py                FastAPI app + routes
   generate.py            the 7 answer modes, cache-first
-  ingest.py              library Markdown → cards + zero-token MCQ synthesis
+  ingest.py              library Markdown → cards + zero-token MCQ synthesis + deep links
+  sources.py             clone a repo into the library; summarise it as collections
   capture.py             URL/upload → readable Markdown
   transcript.py          YouTube captions → chunked Markdown
   vault.py               Obsidian vault scan → deduped questions
-  pipeline.py            TF-IDF related-questions index
+  pipeline.py            TF-IDF related-questions index + the "more to read" index
   scrapers/              rss.py · html.py · youtube.py
   content/questions.json curated bank (committed)
   content/answers/       700 answer .md files (committed)
@@ -160,7 +174,7 @@ backend/
   config/vault.yaml      vault path + include rules
   data/resources.json    scraper output (git-ignored)
 frontend/src/
-  pages/       the 10 pages
+  pages/       the 11 pages (Sources.tsx = the library + "add a source" box)
   components/  Layout · QuestionCard · DeepAnswer · ReadingPane · ArticleReader · SourceDoc ·
                VoiceRecorder · SettingsPanel · ui/ (Radix wrappers)
   hooks/       useQuestions · useProgress · useNotes · useSettings · useHotkeys · theme hooks

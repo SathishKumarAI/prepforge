@@ -304,13 +304,8 @@ export function Quiz() {
           )}
 
           {quizSources.length > 0 && (
-            <Section label="Quiz from a specific source" hint="a doc / video you ingested">
-              <div className="flex flex-wrap gap-2">
-                <Chip active={!source} onClick={() => setSource(null)} label="Any source" />
-                {quizSources.map((s) => (
-                  <Chip key={s.path} active={source === s.path} onClick={() => setSource(s.path)} label={`⛁ ${s.title} · ${s.count}`} />
-                ))}
-              </div>
+            <Section label="Quiz from a specific source" hint={`${quizSources.length} docs / videos you ingested`}>
+              <SourcePicker sources={quizSources} value={source} onChange={setSource} />
             </Section>
           )}
 
@@ -549,6 +544,122 @@ function glossOf(md: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 280);
+}
+
+interface QuizSource {
+  path: string;
+  title: string;
+  count: number;
+}
+
+/** The collection a doc came from — its top-level library folder, i.e. the repo. */
+function collectionOf(path: string): string {
+  const parts = path.split(/[\\/]/);
+  return parts.length > 1 ? parts[0] : "Captured pages";
+}
+
+const SOURCE_ROWS = 8;
+
+// 850 ingested docs cannot be a wall of chips: doc titles repeat across repos
+// ("Questions" appears a dozen times), so each row is qualified by its collection,
+// the list is filtered by collection + free text, and only the top rows render.
+function SourcePicker({
+  sources,
+  value,
+  onChange,
+}: {
+  sources: QuizSource[];
+  value: string | null;
+  onChange: (path: string | null) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [collection, setCollection] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  const collections = useMemo(() => {
+    const m = new Map<string, number>();
+    sources.forEach((s) => m.set(collectionOf(s.path), (m.get(collectionOf(s.path)) ?? 0) + 1));
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [sources]);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return sources.filter(
+      (s) =>
+        (!collection || collectionOf(s.path) === collection) &&
+        (!q || s.title.toLowerCase().includes(q) || s.path.toLowerCase().includes(q))
+    );
+  }, [sources, collection, query]);
+
+  const selected = value ? sources.find((s) => s.path === value) : null;
+  const rows = showAll ? matches.slice(0, 200) : matches.slice(0, SOURCE_ROWS);
+
+  return (
+    <div>
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <Chip active={!value} onClick={() => onChange(null)} label="Any source" />
+        {selected && (
+          <span className="flex items-center gap-1.5 rounded-full border border-mauve/40 bg-mauve/10 px-3 py-1.5 font-mono text-[11px] text-mauve">
+            ⛁ {selected.title} · {selected.count}
+            <button onClick={() => onChange(null)} className="text-mauve/70 hover:text-text" title="Clear source">
+              ✕
+            </button>
+          </span>
+        )}
+      </div>
+
+      {collections.length > 1 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          <Chip active={!collection} onClick={() => setCollection(null)} label={`All · ${sources.length}`} />
+          {collections.map(([name, n]) => (
+            <Chip
+              key={name}
+              active={collection === name}
+              onClick={() => setCollection(collection === name ? null : name)}
+              label={`${name} · ${n}`}
+            />
+          ))}
+        </div>
+      )}
+
+      <input
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setShowAll(false); }}
+        placeholder="Filter documents…"
+        className="input mb-2 w-full font-mono text-xs"
+      />
+
+      {matches.length === 0 ? (
+        <div className="py-3 font-mono text-[11px] text-overlay0">No document matches that filter.</div>
+      ) : (
+        <div className={`flex flex-col gap-0.5 ${showAll ? "max-h-72 overflow-y-auto pr-1" : ""}`}>
+          {rows.map((s) => (
+            <button
+              key={s.path}
+              onClick={() => onChange(s.path === value ? null : s.path)}
+              title={s.path}
+              className={`flex items-center gap-3 rounded-lg px-2.5 py-1.5 text-left transition-colors ${
+                s.path === value ? "bg-mauve/15 text-text" : "text-subtext0 hover:bg-surface0/60 hover:text-text"
+              }`}
+            >
+              <span className="min-w-0 flex-1 truncate text-sm">{s.title}</span>
+              <span className="shrink-0 truncate font-mono text-[10px] text-overlay0">{collectionOf(s.path)}</span>
+              <span className="shrink-0 font-mono text-[10px] text-mauve">{s.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {matches.length > SOURCE_ROWS && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-1.5 font-mono text-[11px] text-sapphire hover:underline"
+        >
+          {showAll ? "show fewer" : `+ ${matches.length - SOURCE_ROWS} more — or type to filter`}
+        </button>
+      )}
+    </div>
+  );
 }
 
 function Section({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {

@@ -8,6 +8,7 @@ import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { isDue } from "../lib/srs";
 import { ACCENT_DOT, topicColor } from "../lib/topics";
+import type { Question } from "../lib/types";
 
 const DIFFS = ["easy", "medium", "hard"];
 
@@ -171,6 +172,8 @@ export function Browse() {
         )}
       </div>
 
+      <DeepStudyLinks questions={filtered} label={topic ?? (query.trim() ? "these results" : "everything")} />
+
       {filtered.length === 0 ? (
         <Empty title="No matches" hint="Try a different search or clear the filters." />
       ) : (
@@ -187,6 +190,60 @@ export function Browse() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// Every "go deeper" link the current filter's questions carry, deduped and ranked by
+// how many questions cite it — the reading list for whatever you are looking at.
+function DeepStudyLinks({ questions, label }: { questions: Question[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  const links = useMemo(() => {
+    const seen = new Map<string, { title: string; url: string; count: number }>();
+    for (const q of questions) {
+      // own links + authored citations; borrowed ones (`via`) are already counted
+      // under the question they came from, so counting them again would inflate
+      const cited = [...(q.links ?? []), ...(q.reading ?? []).filter((l) => !l.via)];
+      for (const l of cited) {
+        const hit = seen.get(l.url);
+        if (hit) hit.count += 1;
+        else seen.set(l.url, { ...l, count: 1 });
+      }
+    }
+    return [...seen.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
+  }, [questions]);
+
+  if (links.length === 0) return null;
+  const shown = open ? links.slice(0, 200) : links.slice(0, 8);
+
+  return (
+    <div className="mb-5 rounded-2xl border border-white/[0.05] bg-surface0/20 p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-sapphire">Go deeper</span>
+        <span className="font-mono text-[11px] text-overlay0">
+          {links.length} link{links.length !== 1 ? "s" : ""} the sources cite for {label}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {shown.map((l) => (
+          <a
+            key={l.url}
+            href={l.url}
+            target="_blank"
+            rel="noreferrer"
+            title={`${l.url}${l.count > 1 ? ` · cited by ${l.count} questions` : ""}`}
+            className="pill border-sapphire/25 text-sapphire hover:bg-sapphire/10"
+          >
+            ↗ {l.title.length > 44 ? l.title.slice(0, 42) + "…" : l.title}
+            {l.count > 1 && <span className="ml-1 text-overlay1">×{l.count}</span>}
+          </a>
+        ))}
+        {links.length > 8 && (
+          <button onClick={() => setOpen((v) => !v)} className="pill text-subtext0 hover:text-text">
+            {open ? "show less" : `+ ${links.length - 8} more`}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

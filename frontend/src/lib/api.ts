@@ -130,6 +130,45 @@ export async function quizFromResource(url: string, topic = "AI"): Promise<Video
   return res.json();
 }
 
+export interface LibraryCollection {
+  name: string;
+  kind: "repo" | "folder" | "captured";
+  url: string;
+  docs: number;
+  cards: number;
+  files: string[];
+}
+
+export async function fetchSources(): Promise<{
+  collections: LibraryCollection[];
+  docs: number;
+  cards: number;
+}> {
+  return get("/sources");
+}
+
+export interface AddRepoResult {
+  ok?: boolean;
+  name?: string;
+  docs?: number;
+  cards?: number;
+  existing?: boolean;
+  error?: string;
+  message?: string;
+}
+
+// Clone a public Markdown repo (github/gitlab/codeberg/bitbucket) into the library
+// and ingest it. Already-cloned repos come back with existing: true, not an error.
+export async function addGithubSource(url: string): Promise<AddRepoResult> {
+  const res = await fetch(`${BASE}/sources/github`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url }),
+  });
+  if (!res.ok) throw new Error(`sources/github → ${res.status}`);
+  return res.json();
+}
+
 export async function uploadResource(file: File, topic = "AI"): Promise<ReadResult> {
   const fd = new FormData();
   fd.append("file", file);

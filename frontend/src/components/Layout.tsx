@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { to: "/", label: "Browse", icon: <IconGrid />, group: "Study" },
   { to: "/flashcards", label: "Flashcards", icon: <IconCards />, group: "Study" },
   { to: "/quiz", label: "Quiz", icon: <IconTarget />, group: "Study" },
+  { to: "/sources", label: "Sources", icon: <IconStack />, group: "Content" },
   { to: "/resources", label: "Resources", icon: <IconFeed />, group: "Content" },
   { to: "/reader", label: "Reader", icon: <IconBook />, group: "Content" },
   { to: "/notes", label: "Notes", icon: <IconNote />, group: "Content" },
@@ -245,6 +246,7 @@ function base(props: { children: ReactNode }) {
 function IconGrid() { return base({ children: (<><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>) }); }
 function IconCards() { return base({ children: (<><rect x="3" y="5" width="14" height="16" rx="2" /><path d="M7 3h10a2 2 0 0 1 2 2v12" /></>) }); }
 function IconTarget() { return base({ children: (<><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /></>) }); }
+function IconStack() { return base({ children: (<><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" /><path d="M3 12l9 4.5L21 12" /><path d="M3 16.5L12 21l9-4.5" /></>) }); }
 function IconFeed() { return base({ children: (<><path d="M4 11a9 9 0 0 1 9 9" /><path d="M4 4a16 16 0 0 1 16 16" /><circle cx="5" cy="19" r="1" /></>) }); }
 function IconChart() { return base({ children: (<><path d="M3 3v18h18" /><path d="M7 15l3-4 3 2 4-6" /></>) }); }
 function IconBookmark() { return base({ children: (<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z" />) }); }

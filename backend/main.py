@@ -19,6 +19,7 @@ import capture as capture_mod
 import generate as generate_mod
 import ingest as ingest_mod
 import pipeline as pipeline_mod
+import sources as sources_mod
 import vault as vault_mod
 from scrapers import html as html_scraper
 from scrapers import rss as rss_scraper
@@ -49,19 +50,39 @@ def _read_bank(path: Path) -> list[dict]:
     return data.get("questions", data if isinstance(data, list) else [])
 
 
+def _origin(q: dict, kind: str) -> dict:
+    """Where this question came from, for every question — the curated bank, a cloned
+    repo, an uploaded doc, or the vault. Shown on the card so provenance is never a guess."""
+    if kind == "curated":
+        return {"kind": "curated", "label": "PrepForge bank"}
+    if kind == "vault":
+        return {"kind": "vault", "label": "Obsidian vault"}
+    src = (q.get("source_file") or "").replace("\\", "/")
+    collection = src.split("/")[0] if "/" in src else ""
+    return {"kind": "library", "label": collection or "Captured pages"}
+
+
 def _load_questions() -> list[dict]:
     # curated bank + ingested markdown + source-tagged vault questions
-    curated = _read_bank(CONTENT / "questions.json")
-    generated = _read_bank(CONTENT / "generated.json")
-    vault_q = _read_bank(CONTENT / "vault_questions.json")
-    qs = curated + generated + vault_q
-    # attach the zero-token related-questions memory index, if built
+    banks = (
+        ("curated", _read_bank(CONTENT / "questions.json")),
+        ("library", _read_bank(CONTENT / "generated.json")),
+        ("vault", _read_bank(CONTENT / "vault_questions.json")),
+    )
+    qs: list[dict] = []
+    for kind, bank in banks:
+        for q in bank:
+            q["origin"] = _origin(q, kind)
+            qs.append(q)
+    # attach the zero-token related + reading indexes, if built
     related = pipeline_mod.load_related()
-    if related:
-        for q in qs:
-            rel = related.get(q.get("id", ""))
-            if rel:
-                q["related"] = rel
+    reading = pipeline_mod.load_reading()
+    for q in qs:
+        qid = q.get("id", "")
+        if related.get(qid):
+            q["related"] = related[qid]
+        if reading.get(qid):
+            q["reading"] = reading[qid]
     return qs
 
 
@@ -186,6 +207,36 @@ def library():
     files = [str(p.relative_to(lib)) for p in sorted(lib.rglob("*.md"))]
     generated = _read_bank(CONTENT / "generated.json")
     return {"files": files, "ingested_cards": len(generated)}
+
+
+@app.get("/sources")
+def list_sources():
+    """The library as collections — each cloned repo plus captured pages, with counts."""
+    return sources_mod.collections()
+
+
+class GithubSourceReq(BaseModel):
+    url: str
+
+
+@app.post("/sources/github")
+def add_github_source(req: GithubSourceReq):
+    """Clone a public Markdown repo into the library and ingest it into cards.
+
+    Zero-token: the deterministic tier does the parsing. An already-cloned repo is
+    reported, not re-cloned, so this is safe to hit twice.
+    """
+    result = sources_mod.clone(req.url)
+    if result.get("error"):
+        return result
+    ingested = ingest_mod.ingest("deterministic")
+    try:
+        pipeline_mod.build_related()
+    except Exception as exc:
+        log.warning("related build after repo ingest failed: %s", exc)
+    # ingest rebuilds the whole library, so report *this repo's* share, not the total
+    mine = next((c for c in sources_mod.collections()["collections"] if c["name"] == result["name"]), {})
+    return {**result, "cards": mine.get("cards", 0), "library_cards": ingested.get("cards")}
 
 
 @app.post("/ingest")
