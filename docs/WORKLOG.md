@@ -37,3 +37,45 @@ frontend 5173.
 - [ ] Optional Ollama/Claude ingest tier (would enable richer, model-written quizzes).
 - [ ] `src/hooks/useEscapeKey.ts` is now an orphan (readers moved to Radix Dialog) — delete pending OK.
 - [ ] Author the remaining cached answer lenses (~1651 vault Qs, ~100 curated).
+
+## 2026-08-28 — Local model for six of the seven lenses; the generate gate comes off
+
+**Summary:** Pointed the generated answer lenses at a local model served by LM Studio, then removed
+the press-to-generate confirmation the tab row had gained the same day. The two are one change:
+the gate existed only because every lens was a billed Anthropic call, and six of them no longer are.
+Verified with a stub LM Studio server (`test_local_provider.py`, 5/5), `tsc --noEmit` exit 0 and
+`vite build`. The real LM Studio path is **not** verified — its server was not running on this
+machine.
+
+**Changes:**
+- `backend/generate.py` — provider routing. `deep` stays on Claude with `web_search`; the other six
+  modes go to LM Studio's OpenAI-compatible server when it answers, and fall back to Claude when it
+  does not. `local_model()` probes `/v1/models` on a 10s TTL; `_strip_reasoning()` drops the
+  `<think>` blocks Qwen3/gpt-oss emit inline. `LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT`.
+- `backend/main.py` — `GET /generate/providers`: which modes are free right now, and the local
+  model's id.
+- `backend/test_local_provider.py` — new. Stub HTTP server, not a mock, because the thing under test
+  is an HTTP shape a mocked client would pass with the wrong JSON keys.
+- `frontend` — `DeepAnswer` loses `mayGenerate`; `QuestionDetail` loses `pressed`; the "Generate it"
+  empty state becomes the spinner the fetch shows anyway. `useFreeModes` and `fetchProviders`
+  deleted with them.
+- `docs`, `README`, `.env.example`, `STATUS.md` — the provider split, the missing confirm step, and
+  what is still unverified.
+
+**Decisions:**
+- **Local answers cache under a further `__local` suffix.** Sharing the slot would let a cheap local
+  answer permanently shadow a Claude one for the same question and lens, with nothing in the UI to
+  say which you were reading.
+- **The model id is probed, not configured.** It is changed from LM Studio's own UI, and a stale
+  `LMSTUDIO_MODEL` fails with a 404 that reads exactly like the server being down.
+- **`deep` never routes local.** Its value is real citations; a local model producing them
+  unsourced would be the worst version of this feature.
+- **The gate came off knowingly.** With LM Studio off, all seven lenses are Claude calls again and a
+  slow sweep across the tab row bills several. `peekTab`'s 400ms hover-intent delay is now the only
+  brake, which is why it is documented in three places rather than left as UI polish.
+
+**Follow-ups:**
+- [ ] Verify the local path against a real LM Studio — start the server, hover a lens, confirm the
+      meta row shows the local model id and `$0.0000`.
+- [ ] Cap concurrent generations; LM Studio serializes them and a fast sweep queues dead work.
+- [ ] Show the provider in the UI — `meta.provider` is returned but only the model id is displayed.
