@@ -1,4 +1,6 @@
-// Topic → Catppuccin accent mapping. Keeps color usage consistent app-wide.
+// Topic → palette colour. A topic dot is DATA, which is the one exception to
+// "one accent": it identifies a thing rather than decorating one. Everything
+// here resolves to a CSS variable, so it follows the theme.
 export const TOPIC_COLOR: Record<string, string> = {
   AI: "mauve",
   "Machine Learning": "blue",
@@ -61,18 +63,4 @@ export const ACCENT_DOT: Record<string, string> = {
   sky: "bg-sky",
   pink: "bg-pink",
   subtext0: "bg-subtext0",
-};
-
-export const ACCENT_HEX: Record<string, string> = {
-  mauve: "#cba6f7",
-  blue: "#89b4fa",
-  teal: "#94e2d5",
-  peach: "#fab387",
-  green: "#a6e3a1",
-  yellow: "#f9e2af",
-  red: "#f38ba8",
-  lavender: "#b4befe",
-  sky: "#89dceb",
-  pink: "#f5c2e7",
-  subtext0: "#a6adc8",
 };

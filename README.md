@@ -48,7 +48,7 @@ Or `./dev.sh` from the repo root, which starts both. It resolves `.venv/bin` vs 
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (Catppuccin Mocha), Radix primitives, framer-motion, Recharts, react-markdown, fuse.js |
+| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes — see `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, Recharts, react-markdown, fuse.js |
 | Backend | Python + FastAPI + uvicorn; httpx, BeautifulSoup, feedparser, pypdf, youtube-transcript-api |
 | Storage | Flat JSON + Markdown on disk. Progress/notes in `localStorage`; voice-note audio in IndexedDB |
 | Optional | Anthropic SDK — only for generating *new* answers; unused when the cache hits |
