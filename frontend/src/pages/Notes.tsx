@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Mic, Play, Plus, Trash2 } from "lucide-react";
+import { GraphView } from "../components/notes/GraphView";
 import { VoiceRecorder } from "../components/VoiceRecorder";
 import { Page } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
@@ -24,6 +26,11 @@ import type { Note } from "../lib/notes";
  */
 
 export function Notes() {
+  const [params, setParams] = useSearchParams();
+  // The graph is a VIEW of these notes, not a separate destination — it renders
+  // the same objects, laid out by their links instead of in a grid. Making it a
+  // peer nav entry implied it held different content.
+  const asGraph = params.get("view") === "graph";
   const { notes, create, update, remove } = useNotes();
   const [recording, setRecording] = useState(false);
 
@@ -60,7 +67,37 @@ export function Notes() {
         </Orient>
       }
     >
-      <div className="mb-2 flex flex-wrap items-center gap-2">
+      <div
+        role="tablist"
+        aria-label="Notes view"
+        className="mb-5 inline-flex rounded-lg border border-surface0 bg-mantle p-0.5"
+      >
+        {[
+          { key: "list", label: "Notes" },
+          { key: "graph", label: "Graph" },
+        ].map((v) => {
+          const active = (v.key === "graph") === asGraph;
+          return (
+            <button
+              key={v.key}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setParams(v.key === "graph" ? { view: "graph" } : {}, { replace: true })}
+              className={`rounded-md px-3.5 py-1.5 text-small transition-colors duration-100 ${
+                active
+                  ? "bg-mauve font-medium text-on-accent"
+                  : "text-subtext0 hover:bg-surface0 hover:text-text"
+              }`}
+            >
+              {v.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {asGraph && <GraphView />}
+
+      <div className={`mb-2 flex flex-wrap items-center gap-2 ${asGraph ? "hidden" : ""}`}>
         <Button variant="primary" onClick={() => create({ kind: "note" })}>
           <Plus aria-hidden="true" />
           New note
@@ -70,7 +107,7 @@ export function Notes() {
           {recording ? "Cancel recording" : "Record a memo"}
         </Button>
       </div>
-      <p className="mb-6 max-w-prose text-small text-overlay1">
+      <p className={`mb-6 max-w-prose text-small text-overlay1 ${asGraph ? "hidden" : ""}`}>
         Write <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">[[Title]]</code>{" "}
         to link one note to another, and{" "}
         <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">#tags</code>{" "}
@@ -83,7 +120,7 @@ export function Notes() {
         </div>
       )}
 
-      {notes.length === 0 && !recording ? (
+      {asGraph ? null : notes.length === 0 && !recording ? (
         <Empty title="No notes yet. The first one is usually the thing you just got wrong." />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

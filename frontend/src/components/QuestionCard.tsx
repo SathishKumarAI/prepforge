@@ -17,6 +17,7 @@ import { DeepAnswer } from "./DeepAnswer";
 import { Markdown } from "./Markdown";
 import { SourceDoc } from "./SourceDoc";
 import { Button } from "./ui/button";
+import { scrollToElement } from "../lib/scroll";
 
 /**
  * A question in a list: collapsed it is a scannable row, expanded it is the
@@ -37,7 +38,7 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
   const note = progress.notes[q.id] ?? "";
 
   function jumpTo(id: string) {
-    document.getElementById(`q-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollToElement(document.getElementById(`q-${id}`), "center");
   }
 
   return (

@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronRight, ExternalLink, Plus, RotateCw } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
-import { ArticleReader } from "../components/ArticleReader";
-import { TopicBadge } from "../components/Badge";
-import { Page } from "../components/page/PageLayout";
-import { Orient, Fact } from "../components/page/Orient";
-import { Empty, Loader } from "../components/States";
-import { Button } from "../components/ui/button";
-import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, quizFromResource, refreshResources } from "../lib/api";
-import { reloadQuestions } from "../hooks/useQuestions";
-import { toast } from "../components/ui/sonner";
-import type { Resource } from "../lib/types";
+import { ArticleReader } from "../ArticleReader";
+import { TopicBadge } from "../Badge";
+import { Empty, Loader } from "../States";
+import { Button } from "../ui/button";
+import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, quizFromResource, refreshResources } from "../../lib/api";
+import { reloadQuestions } from "../../hooks/useQuestions";
+import { toast } from "../ui/sonner";
+import type { Resource } from "../../lib/types";
 
-export function Resources() {
+/**
+ * `onCounts` exists so the Library shell can put real numbers in the orient bar
+ * without fetching the feed a second time. The alternative was a bar showing an
+ * em dash on a view that has the data three lines away.
+ */
+export function FeedView({ onCounts }: { onCounts?: (c: { total: number; videos: number }) => void }) {
   const [items, setItems] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,23 +132,20 @@ export function Resources() {
 
   const videos = items.filter((i) => i.kind === "video").length;
 
+  // Report upward whenever the list changes, not just on first load — refresh
+  // and add both mutate it.
+  useEffect(() => {
+    onCounts?.({ total: items.length, videos });
+  }, [items.length, videos, onCounts]);
+
   return (
-    <Page
-      title="Resources"
-      orient={
-        <Orient>
-          <Fact label="saved" value={items.length || null} emphasis={items.length > 0} />
-          <Fact label="videos" value={videos || null} />
-          <Fact label="articles" value={items.length - videos || null} />
-        </Orient>
-      }
-      actions={
+    <>
+      <div className="mb-4 flex justify-end">
         <Button variant="ghost" size="sm" onClick={refresh} disabled={refreshing}>
           <RotateCw aria-hidden="true" className={refreshing ? "animate-spin" : ""} />
           {refreshing ? "Pulling" : "Refresh"}
         </Button>
-      }
-    >
+      </div>
       <ArticleReader resource={reading} onClose={() => setReading(null)} />
 
       <div className="mb-2 flex flex-wrap items-end gap-2">
@@ -290,7 +290,7 @@ export function Resources() {
           ))}
         </div>
       )}
-    </Page>
+    </>
   );
 }
 

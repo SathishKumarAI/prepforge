@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import GithubSlugger from "github-slugger";
 import { Markdown } from "./Markdown";
+import { scrollToElement } from "../lib/scroll";
 
 type Head = { depth: number; text: string; id: string };
 
@@ -58,8 +59,7 @@ export function ReadingPane({
   }, [key]);
 
   function jump(id: string) {
-    const el = scrollRef.current?.querySelector(`#${CSS.escape(id)}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToElement(scrollRef.current?.querySelector(`#${CSS.escape(id)}`), "start");
   }
 
   const hasToc = heads.length >= 3;
@@ -68,7 +68,10 @@ export function ReadingPane({
     <div className={hasToc ? "grid gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]" : ""}>
       {hasToc && (
         <nav className="hidden lg:block">
-          <div className="sticky top-4">
+          <div
+            className="sticky"
+            style={{ top: maxHeight ? "1rem" : "calc(var(--app-bar-h, 0px) + 1rem)" }}
+          >
             <div className="mb-2 font-mono text-micro uppercase tracking-[0.14em] text-overlay1">
               On this page
             </div>
