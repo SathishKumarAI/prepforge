@@ -2,10 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Catppuccin Mocha (default / dark). RGB channels for rgb(var / alpha) in Tailwind. */
+/* ---------------------------------------------------------------------------
+   Themes. Channel triples so Tailwind can do rgb(var(--x) / <alpha-value>).
+
+   Databricks dark is the DEFAULT and lives on :root with no attribute, so the
+   first paint before React mounts is already the right theme. Every other
+   theme is a [data-theme] block. lib/theme.ts must agree with that: it removes
+   the attribute for databricks-dark and sets it for everything else.
+
+   One accent per theme: --ctp-mauve. It is the only hue allowed on chrome
+   (primary button, active nav, active segment, spine fill). Everything else is
+   neutral. --ctp-red/green/yellow are for status and difficulty only, never
+   for decoration, and they must stay distinguishable from the accent.
+--------------------------------------------------------------------------- */
+
+/* Databricks — dark (default) */
 :root {
   color-scheme: dark;
-  --radius: 0.75rem;
+  --radius: 0.625rem;
+  --ctp-base: 15 18 23;
+  --ctp-mantle: 22 27 34;
+  --ctp-crust: 10 13 17;
+  --ctp-surface0: 38 45 54;
+  --ctp-surface1: 51 59 69;
+  --ctp-surface2: 67 76 87;
+  --ctp-overlay0: 122 132 144;
+  --ctp-overlay1: 145 155 167;
+  --ctp-subtext0: 178 186 196;
+  --ctp-subtext1: 203 210 218;
+  --ctp-text: 232 236 239;
+  --ctp-rosewater: 255 140 120;
+  --ctp-flamingo: 255 120 104;
+  --ctp-pink: 236 110 180;
+  --ctp-mauve: 255 90 68; /* the accent */
+  --ctp-red: 251 113 133; /* distinct from the accent, or "delete" reads as "primary" */
+  --ctp-maroon: 235 120 120;
+  --ctp-peach: 245 170 70;
+  --ctp-yellow: 240 200 90;
+  --ctp-green: 52 211 153;
+  --ctp-teal: 45 200 200;
+  --ctp-sky: 90 190 240;
+  --ctp-sapphire: 74 158 235;
+  --ctp-blue: 74 158 235;
+  --ctp-lavender: 150 150 240;
+}
+
+/* Databricks — light */
+:root[data-theme="databricks-light"] {
+  color-scheme: light;
+  --ctp-base: 255 255 255;
+  --ctp-mantle: 248 249 250;
+  --ctp-crust: 241 243 245;
+  --ctp-surface0: 226 230 234;
+  --ctp-surface1: 208 213 219;
+  --ctp-surface2: 185 191 199;
+  --ctp-overlay0: 111 116 121;
+  --ctp-overlay1: 100 107 114;
+  --ctp-subtext0: 74 82 90;
+  --ctp-subtext1: 45 52 60;
+  --ctp-text: 17 23 28;
+  --ctp-rosewater: 255 108 92;
+  --ctp-flamingo: 255 90 74;
+  --ctp-pink: 214 51 132;
+  /* The accent. Darkened until its own button label clears AA: crust-on-mauve
+     is 5.1:1 here, where the brighter Databricks red measured 4.42:1. */
+  --ctp-mauve: 196 40 20;
+  --ctp-red: 190 18 60;
+  --ctp-maroon: 200 40 40;
+  --ctp-peach: 180 83 9;
+  --ctp-yellow: 161 98 7;
+  --ctp-green: 21 128 61;
+  --ctp-teal: 13 148 148;
+  --ctp-sky: 14 116 178;
+  --ctp-sapphire: 32 114 180;
+  --ctp-blue: 34 114 180;
+  --ctp-lavender: 90 90 220;
+}
+
+/* Catppuccin Mocha */
+:root[data-theme="mocha"] {
+  color-scheme: dark;
   --ctp-base: 30 30 46;
   --ctp-mantle: 24 24 37;
   --ctp-crust: 17 17 27;
@@ -33,7 +109,7 @@
   --ctp-lavender: 180 190 254;
 }
 
-/* Catppuccin Latte (light) */
+/* Catppuccin Latte */
 :root[data-theme="latte"] {
   color-scheme: light;
   --ctp-base: 239 241 245;
@@ -42,9 +118,9 @@
   --ctp-surface0: 204 208 218;
   --ctp-surface1: 188 192 204;
   --ctp-surface2: 172 176 190;
-  --ctp-overlay0: 105 107 118; /* darkened for WCAG AA metadata text on light base */
+  --ctp-overlay0: 105 107 118;
   --ctp-overlay1: 105 107 121;
-  --ctp-subtext0: 104 107 128; /* AA-normal (was 108/111/133 → 4.37) */
+  --ctp-subtext0: 104 107 128;
   --ctp-subtext1: 92 95 119;
   --ctp-text: 76 79 105;
   --ctp-rosewater: 220 138 120;
@@ -63,67 +139,7 @@
   --ctp-lavender: 114 135 253;
 }
 
-/* Databricks — light (clean data-tool look, brand red accent) */
-:root[data-theme="databricks-light"] {
-  color-scheme: light;
-  --ctp-base: 255 255 255;
-  --ctp-mantle: 247 248 249;
-  --ctp-crust: 240 242 244;
-  --ctp-surface0: 231 234 237;
-  --ctp-surface1: 214 218 222;
-  --ctp-surface2: 196 201 206;
-  --ctp-overlay0: 111 116 121; /* AA metadata text on white */
-  --ctp-overlay1: 107 114 122;
-  --ctp-subtext0: 74 82 90;
-  --ctp-subtext1: 45 52 60;
-  --ctp-text: 17 23 28;
-  --ctp-rosewater: 255 108 92;
-  --ctp-flamingo: 255 90 74;
-  --ctp-pink: 214 51 132;
-  --ctp-mauve: 255 54 33;
-  --ctp-red: 225 29 72;
-  --ctp-maroon: 200 40 40;
-  --ctp-peach: 245 158 11;
-  --ctp-yellow: 217 145 20;
-  --ctp-green: 22 150 96;
-  --ctp-teal: 13 148 148;
-  --ctp-sky: 14 130 200;
-  --ctp-sapphire: 32 114 180;
-  --ctp-blue: 34 114 180;
-  --ctp-lavender: 90 90 220;
-}
-
-/* Databricks — dark */
-:root[data-theme="databricks-dark"] {
-  color-scheme: dark;
-  --ctp-base: 15 18 23;
-  --ctp-mantle: 27 32 39;
-  --ctp-crust: 10 13 17;
-  --ctp-surface0: 38 45 54;
-  --ctp-surface1: 51 59 69;
-  --ctp-surface2: 67 76 87;
-  --ctp-overlay0: 107 117 128;
-  --ctp-overlay1: 139 149 161;
-  --ctp-subtext0: 174 182 192;
-  --ctp-subtext1: 201 208 216;
-  --ctp-text: 232 236 239;
-  --ctp-rosewater: 255 140 120;
-  --ctp-flamingo: 255 120 104;
-  --ctp-pink: 236 110 180;
-  --ctp-mauve: 255 90 68;
-  --ctp-red: 255 90 68;
-  --ctp-maroon: 235 120 120;
-  --ctp-peach: 245 170 70;
-  --ctp-yellow: 240 200 90;
-  --ctp-green: 52 211 153;
-  --ctp-teal: 45 200 200;
-  --ctp-sky: 90 190 240;
-  --ctp-sapphire: 74 158 235;
-  --ctp-blue: 74 158 235;
-  --ctp-lavender: 150 150 240;
-}
-
-/* Sepia — warm, low-blue reading theme (easy on the eyes for long night study) */
+/* Sepia — warm, low-blue, for long night reading */
 :root[data-theme="sepia"] {
   color-scheme: light;
   --ctp-base: 244 236 216;
@@ -132,7 +148,7 @@
   --ctp-surface0: 220 208 182;
   --ctp-surface1: 205 191 162;
   --ctp-surface2: 190 175 145;
-  --ctp-overlay0: 115 104 83; /* AA metadata text on sepia base */
+  --ctp-overlay0: 115 104 83;
   --ctp-overlay1: 118 103 80;
   --ctp-subtext0: 92 78 58;
   --ctp-subtext1: 74 62 46;
@@ -153,33 +169,15 @@
   --ctp-lavender: 130 100 140;
 }
 
-/* density — applied on <html data-density>; compact tightens deck spacing for scanning */
+/* density — <html data-density>; compact tightens lists for scanning */
 :root[data-density="compact"] .pf-deck { gap: 0.5rem; }
 :root[data-density="compact"] .pf-card { padding-top: 0.6rem; padding-bottom: 0.6rem; }
 :root[data-density="compact"] .prose-answer { line-height: 1.6; }
 
-/* text scaling — applied on <html data-textsize> */
+/* text scaling — <html data-textsize> */
 :root[data-textsize="sm"] { font-size: 15px; }
 :root[data-textsize="lg"] { font-size: 17.5px; }
 :root[data-textsize="xl"] { font-size: 19px; }
-
-/* light-mode rendering fixes — glass borders + backdrop are tuned for dark;
-   on any light theme, white borders vanish and the dark grain/glows clash. */
-:root[data-mode="light"] body {
-  background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgb(var(--ctp-mauve) / 0.06), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 20%, rgb(var(--ctp-blue) / 0.05), transparent 55%);
-}
-:root[data-mode="light"] body::before {
-  opacity: 0.02;
-}
-:root[data-mode="light"] .glass {
-  border-color: rgba(0, 0, 0, 0.08);
-  background-color: rgb(var(--ctp-base) / 0.7);
-}
-:root[data-mode="light"] .input {
-  border-color: rgba(0, 0, 0, 0.12);
-}
 
 html,
 body,
@@ -187,91 +185,102 @@ body,
   height: 100%;
 }
 
-/* prevent stray horizontal scroll on mobile (clip is sticky-safe, unlike hidden) */
+/* clip is sticky-safe, unlike hidden */
 html {
   overflow-x: clip;
-  font-size: 16.5px; /* comfortable base; data-textsize overrides below */
+  font-size: 16.5px;
 }
 
-/* comfortable touch targets on touch devices */
-@media (pointer: coarse) {
-  .pill {
-    min-height: 34px;
-  }
-}
-
-/* hide scrollbar on horizontal nav strips */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
+/* A study surface is a page of work, not a control panel: no grain, no ambient
+   gradient glows. Anything that moves or shimmers behind body copy costs
+   attention on every card, for a whole session. */
 body {
   @apply bg-base text-text font-sans antialiased;
-  background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgba(203, 166, 247, 0.10), transparent 60%),
-    radial-gradient(50rem 50rem at -10% 20%, rgba(137, 180, 250, 0.08), transparent 55%),
-    radial-gradient(40rem 40rem at 50% 120%, rgba(148, 226, 213, 0.06), transparent 60%);
-  background-attachment: fixed;
-}
-
-/* film grain overlay for depth */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-::selection {
-  background: rgba(203, 166, 247, 0.3);
-  color: #fff;
-}
-
-/* global typography & reading comfort */
-body {
   line-height: 1.6;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
-h1, h2, h3, h4,
-.font-display {
+
+h1, h2, h3, h4 {
   text-wrap: balance;
 }
 p {
   text-wrap: pretty;
 }
-.font-mono {
+
+/* Numerals that line up column to column. Mono is for code, paths and keys —
+   it is not a costume for "technical", so counts use the sans with tnum. */
+.font-mono,
+.num,
+[class*="tabular"] {
   font-variant-numeric: tabular-nums;
 }
 
-/* disabled controls — readable, not near-invisible (opacity-40 was too faint) */
-button:disabled,
-[aria-disabled="true"],
-input:disabled,
-textarea:disabled,
-select:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+/* ---- browser surfaces: theme what we did not draw ---- */
+
+::selection {
+  background: rgb(var(--ctp-mauve) / 0.22);
+  color: rgb(var(--ctp-text));
 }
 
-/* keyboard focus visibility — visible ring for keyboard users, none on mouse click */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--ctp-base));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--ctp-surface1));
+  border-radius: 999px;
+  border: 2px solid rgb(var(--ctp-base));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--ctp-surface2));
+}
+* {
+  scrollbar-color: rgb(var(--ctp-surface1)) rgb(var(--ctp-base));
+}
+
 :focus-visible {
-  outline: 2px solid #cba6f7;
+  outline: 2px solid rgb(var(--ctp-mauve));
   outline-offset: 2px;
-  border-radius: 8px;
+  border-radius: var(--radius);
 }
 :focus:not(:focus-visible) {
   outline: none;
 }
 
-/* respect users who prefer reduced motion */
+::placeholder {
+  color: rgb(var(--ctp-overlay0));
+  opacity: 1;
+}
+
+button:disabled,
+[aria-disabled="true"],
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* hide scrollbar on horizontal nav strips */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Touch: every control clears 44px without inflating the pointer layout. */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  .pill,
+  [role="tab"] {
+    min-height: 44px;
+  }
+}
+
+/* Motion conveys state, nothing else. No entrance choreography — the page
+   loads into a task. Reduced motion removes what is left. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -281,90 +290,99 @@ select:disabled {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
-  body::before {
-    display: none;
-  }
-}
-
-/* scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: #181825;
-}
-::-webkit-scrollbar-thumb {
-  background: #45475a;
-  border-radius: 999px;
-  border: 2px solid #181825;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #585b70;
 }
 
 @layer components {
+  /* The one raised surface. Flat, hairline, no blur, no glow — a card wraps a
+     thing with its own actions; a region of a page gets a heading and a rule. */
+  .panel {
+    @apply rounded-xl border border-surface0 bg-mantle;
+  }
+  /* Deprecated alias kept so existing call sites render correctly; being
+     removed page by page. New code uses .panel. */
   .glass {
-    @apply border border-white/[0.06] bg-mantle/60 backdrop-blur-xl;
+    @apply panel;
   }
+
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-white/[0.07] px-2.5 py-1 text-xs font-mono tracking-tight;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-surface0 px-2.5 py-1 text-micro font-medium;
+    font-variant-numeric: tabular-nums;
   }
+
   .input {
-    @apply w-full rounded-xl border border-white/[0.07] bg-crust/60 px-3 py-2.5 text-sm text-text outline-none placeholder:text-overlay0 focus:border-mauve/40;
+    @apply w-full rounded-lg border border-surface0 bg-base px-3 py-2 text-small text-text outline-none transition-colors;
   }
+  .input:focus {
+    @apply border-mauve;
+    box-shadow: 0 0 0 3px rgb(var(--ctp-mauve) / 0.16);
+  }
+  /* A stretched input is a stranded input — the eye travels the full width to
+     find the caret. Opt a field out with .input-wide only for real reasons. */
+  .field {
+    @apply w-full max-w-[24rem];
+  }
+
+  /* Container query, not a viewport one: the sidebar collapses, so viewport
+     width does not answer "how much room does this page have". */
+  .page {
+    container-type: inline-size;
+  }
+  .page-split {
+    @apply grid gap-8;
+  }
+  @container (min-width: 62rem) {
+    .page-split {
+      grid-template-columns: minmax(0, 1fr) 19rem;
+    }
+    /* Sticky only while it fits — a column taller than the scrollport would
+       pin its top and never reach its own bottom. Scrolling it is the fix CSS
+       can express; max-height keeps it from becoming a trap. */
+    .page-aside {
+      position: sticky;
+      top: 1.5rem;
+      align-self: start;
+      max-height: calc(100vh - 3rem);
+      overflow-y: auto;
+    }
+  }
+
+  /* ---- long-form reading ---- */
   .prose-answer {
     @apply text-subtext1;
     line-height: 1.75;
-    max-width: 68ch; /* comfortable reading measure even in a wide layout */
+    max-width: 68ch;
   }
-  .prose-answer strong {
-    @apply text-text font-semibold;
-  }
-  /* calmer, larger "reading mode" for the Reader / long source docs */
+  .prose-answer strong { @apply font-semibold text-text; }
   .reading-lg .prose-answer {
     font-size: 1.075rem;
     line-height: 1.85;
     max-width: 72ch;
   }
-  .reading-lg .prose-answer p {
-    @apply my-4;
-  }
-  /* offset anchored headings so smooth-scroll jumps aren't hidden under the top */
-  .prose-answer :is(h1, h2, h3, h4)[id] {
-    scroll-margin-top: 1rem;
-  }
+  .reading-lg .prose-answer p { @apply my-4; }
+  .prose-answer :is(h1, h2, h3, h4)[id] { scroll-margin-top: 1rem; }
   .prose-answer code {
-    @apply rounded bg-crust px-1.5 py-0.5 font-mono text-[0.85em] text-peach;
+    @apply rounded border border-surface0 bg-crust px-1.5 py-0.5 font-mono text-[0.85em] text-subtext0;
   }
-  .prose-answer ul {
-    @apply my-2 list-disc space-y-1 pl-5;
-  }
-  .prose-answer ol {
-    @apply my-2 list-decimal space-y-1 pl-5;
-  }
-  .prose-answer p {
-    @apply my-3;
-  }
-  .prose-answer li {
-    @apply leading-relaxed;
-  }
+  .prose-answer ul { @apply my-2 list-disc space-y-1 pl-5; }
+  .prose-answer ol { @apply my-2 list-decimal space-y-1 pl-5; }
+  .prose-answer p { @apply my-3; }
+  .prose-answer li { @apply leading-relaxed; }
   .prose-answer h1,
-  .prose-answer h2 {
-    @apply mb-2 mt-5 font-display text-lg font-semibold text-text;
-  }
+  .prose-answer h2 { @apply mb-2 mt-6 text-h3 font-semibold text-text; }
   .prose-answer h3,
-  .prose-answer h4 {
-    @apply mb-1.5 mt-4 font-display text-base font-medium text-text;
-  }
+  .prose-answer h4 { @apply mb-1.5 mt-5 font-medium text-text; }
   .prose-answer pre {
-    @apply my-3 overflow-x-auto rounded-xl border border-white/[0.06] bg-crust p-3 text-[0.85em] leading-relaxed;
+    @apply my-3 overflow-x-auto rounded-lg border border-surface0 bg-crust p-3 text-[0.85em] leading-relaxed;
   }
-  .prose-answer pre code {
-    @apply bg-transparent p-0 text-subtext1;
+  .prose-answer pre code { @apply border-0 bg-transparent p-0 text-subtext1; }
+  .prose-answer blockquote {
+    @apply my-3 border-l border-surface1 pl-3 text-subtext0;
   }
-  /* highlight.js token colors — mapped to the live theme palette so code
-     highlighting follows Mocha / Latte / Databricks / Sepia automatically. */
+  .prose-answer a {
+    @apply text-mauve underline decoration-mauve/40 underline-offset-2 hover:decoration-mauve;
+  }
+
+  /* highlight.js tokens, mapped to the live theme so code follows the palette */
   .prose-answer .hljs-comment,
   .prose-answer .hljs-quote { @apply italic text-overlay0; }
   .prose-answer .hljs-keyword,
@@ -394,10 +412,4 @@ select:disabled {
   .prose-answer .hljs-deletion { @apply text-red; }
   .prose-answer .hljs-emphasis { @apply italic; }
   .prose-answer .hljs-strong { @apply font-semibold; }
-  .prose-answer blockquote {
-    @apply my-3 border-l-2 border-mauve/40 pl-3 italic text-subtext0;
-  }
-  .prose-answer a {
-    @apply text-blue underline underline-offset-2 hover:text-lavender;
-  }
 }

@@ -4,16 +4,19 @@ export type ThemeMode =
 export type TextSize = "sm" | "base" | "lg" | "xl";
 export type Density = "comfortable" | "compact";
 
-// which themes are light (for data-mode) — drives the light-render fixes in CSS
+// which themes are light — kept for callers that need to branch on it
 const LIGHT_THEMES = new Set(["latte", "databricks-light", "sepia"]);
 
+/** The theme that lives on :root with no attribute, so first paint is correct. */
+export const DEFAULT_THEME: ThemeMode = "databricks-dark";
+
 export const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: "databricks-dark", label: "Dark" },
+  { value: "databricks-light", label: "Light" },
+  { value: "system", label: "System" },
+  { value: "sepia", label: "Sepia" },
   { value: "mocha", label: "Catppuccin dark" },
   { value: "latte", label: "Catppuccin light" },
-  { value: "databricks-dark", label: "Databricks dark" },
-  { value: "databricks-light", label: "Databricks light" },
-  { value: "sepia", label: "Sepia (low-blue)" },
-  { value: "system", label: "System" },
 ];
 
 export const TEXT_SIZES: { value: TextSize; label: string }[] = [
@@ -34,10 +37,9 @@ function prefersLight(): boolean {
 
 export function applyTheme(mode: ThemeMode): void {
   const root = document.documentElement;
-  // resolve "system" to a concrete Catppuccin theme
-  const theme = mode === "system" ? (prefersLight() ? "latte" : "mocha") : mode;
-  // mocha is the default palette on :root — no attribute needed
-  if (theme === "mocha") root.removeAttribute("data-theme");
+  const theme = mode === "system" ? (prefersLight() ? "databricks-light" : DEFAULT_THEME) : mode;
+  // databricks-dark is the palette on :root — no attribute needed
+  if (theme === DEFAULT_THEME) root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
   root.setAttribute("data-mode", LIGHT_THEMES.has(theme) ? "light" : "dark");
 }

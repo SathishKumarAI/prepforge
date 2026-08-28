@@ -71,33 +71,24 @@ export default {
         sans: ['"Public Sans"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
       },
-      // one type scale, used everywhere — no ad-hoc text-3xl/4xl per page.
-      // display/h1 fluidly scale with the viewport; the rest are fixed steps.
+      // One type scale, used everywhere. Fixed rem steps at a ~1.18 ratio, not
+      // clamp(): product UI is viewed at a consistent DPI, and a heading that
+      // shrinks when the sidebar opens looks broken rather than responsive.
       fontSize: {
-        display: ["clamp(2rem, 1.2rem + 3.2vw, 3rem)", { lineHeight: "1.05", letterSpacing: "-0.022em" }],
-        h1: ["clamp(1.55rem, 1.1rem + 1.8vw, 2.1rem)", { lineHeight: "1.15", letterSpacing: "-0.018em" }],
-        h2: ["1.35rem", { lineHeight: "1.25", letterSpacing: "-0.012em" }],
-        h3: ["1.1rem", { lineHeight: "1.35", letterSpacing: "-0.006em" }],
-        body: ["1rem", { lineHeight: "1.7" }],
-        small: ["0.85rem", { lineHeight: "1.5" }],
-        micro: ["0.72rem", { lineHeight: "1.4", letterSpacing: "0.02em" }],
+        display: ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.018em" }],
+        h1: ["1.5rem", { lineHeight: "1.25", letterSpacing: "-0.016em" }],
+        h2: ["1.25rem", { lineHeight: "1.3", letterSpacing: "-0.012em" }],
+        h3: ["1.0625rem", { lineHeight: "1.4", letterSpacing: "-0.006em" }],
+        body: ["1rem", { lineHeight: "1.65" }],
+        small: ["0.875rem", { lineHeight: "1.5" }],
+        micro: ["0.75rem", { lineHeight: "1.4", letterSpacing: "0.01em" }],
       },
+      // Two levels, both with a real offset and blur. A zero-offset coloured
+      // halo is decoration, not depth — the old `glow` was exactly that.
       boxShadow: {
-        glow: "0 0 0 1px rgba(203,166,247,0.15), 0 8px 40px -12px rgba(203,166,247,0.35)",
-        card: "0 1px 0 0 rgba(205,214,244,0.04) inset, 0 20px 40px -24px rgba(0,0,0,0.8)",
-      },
-      keyframes: {
-        "fade-up": {
-          "0%": { opacity: "0", transform: "translateY(14px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "grain": {
-          "0%,100%": { transform: "translate(0,0)" },
-          "50%": { transform: "translate(-2%,1%)" },
-        },
-      },
-      animation: {
-        "fade-up": "fade-up 0.6s cubic-bezier(0.16,1,0.3,1) both",
+        card: "0 1px 2px 0 rgb(0 0 0 / 0.16)",
+        pop: "0 8px 24px -8px rgb(0 0 0 / 0.32), 0 2px 6px -2px rgb(0 0 0 / 0.2)",
+        glow: "0 1px 2px 0 rgb(0 0 0 / 0.16)", // deprecated alias, being swept
       },
     },
   },
