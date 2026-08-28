@@ -63,6 +63,33 @@ personal prep tool, not a bloated product.
 
 ---
 
+## Phase 5 — after the 2026-08-28 UI pass
+
+Filed because they were deliberately NOT done, with what would have to be true to
+do them. See `docs/WORKLOG.md` 2026-08-28 for why each was left.
+
+- [ ] `P1` **See the UI pass in a browser.** The lens `$` markers, the Ctrl+K
+      palette's keyboard path, and both themes are verified by build output and
+      contrast numbers, not by looking. Needs a session where Chrome automation
+      works (the devtools profile was held by a running Chrome; the extension was
+      not connected).
+- [ ] `P1` **Turn the fetched pages into cards** — `POST /ingest` then
+      `POST /pipeline/build` after `fetch_reading.py --all` finishes, and record
+      the new card count. Until then the pages are readable but not quizzable.
+- [ ] `P2` **A retry path for JS-only and 403 hosts** (Medium, Stack Overflow,
+      some vendor docs). A headless fetch or a reader service — not a bigger
+      `User-Agent` lie, which is both rude and fragile.
+- [ ] `P2` **Make the `$` markers exact.** A cached lens costs nothing, and the
+      tab row cannot know which are cached, so it marks by provider and is
+      conservative. Needs a cache-state endpoint (`qid` -> which lens files exist).
+- [ ] `P2` **Slim the questions payload.** `GET /questions` is 15 MB and both
+      Library and the palette hold it in memory; an index endpoint (id, title,
+      topic, difficulty) would cut the palette's cost to almost nothing.
+- [ ] `P3` **Code-split the main chunk** — 753 kB minified, warned about on every
+      build. Library and Study are the obvious split points.
+- [ ] `P3` **Recent questions in the empty palette**, instead of the first six
+      destinations. Needs a small recently-viewed list in progress storage.
+
 ## Cross-cutting engineering rules (apply to every item)
 
 - **Accuracy first, no bugs:** each feature ships with its edge-case list handled, not deferred.

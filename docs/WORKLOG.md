@@ -79,3 +79,84 @@ machine.
       meta row shows the local model id and `$0.0000`.
 - [ ] Cap concurrent generations; LM Studio serializes them and a fast sweep queues dead work.
 - [ ] Show the provider in the UI — `meta.provider` is returned but only the model id is displayed.
+
+## 2026-08-28 21:10 — A UI pass: cost-aware lenses, Ctrl+K, two themes, and the cited web pulled local
+
+**Summary:** Six PRs (#18, #19, #20, #21, #22, #23, #24). The lens tab row stopped
+being able to spend money by accident, the whole bank became searchable from
+anywhere, five palettes became two built for long reading, and the 1,842 web pages
+the bank cites started being fetched into the library. Every claim below is a
+command's output; the one thing not verified is how any of it *looks*, because
+Chrome automation was unavailable in this session.
+
+**Changes:**
+
+- `frontend/src/components/library/QuestionDetail.tsx`, `hooks/useProviders.ts` (new),
+  `lib/api.ts` — hover reaches only the lenses that are free right now. `GET
+  /generate/providers` has existed since #14 and its docstring described exactly
+  this UI; nothing had ever called it. A `$` marks the billed tabs and one line
+  under the row names the local model or says LM Studio is off.
+- `frontend/src/components/CommandPalette.tsx` (new), `Layout.tsx`,
+  `ShortcutHelp.tsx` — Ctrl/Cmd+K over all 8,330 question titles plus twelve
+  destinations, and a Search control in the app bar carrying the same key.
+- `frontend/src/styles/index.css`, `lib/theme.ts`, `lib/settings.ts`,
+  `scripts/check-contrast.mjs` (new), `docs/DESIGN-THEMES.md` (new) — two themes,
+  dark and light, tuned for an hour of reading; `npm run contrast` measures every
+  text pairing and fails below its floor.
+- `backend/fetch_reading.py`, `test_fetch_reading.py` (both new),
+  `docs/CONTENT-PIPELINE.md` — the cited URLs become library Markdown, most-cited
+  first, resumably, politely, and refusing anything not on the public internet.
+- `frontend/vite.config.ts`, `dev.sh` — `PF_API_PORT`, because a dead listener on
+  8787 had made the app unrunnable on this machine.
+- `frontend/src/components/library/QuestionsView.tsx`, `FeedView.tsx` — two links
+  that still pointed at routes retired in #6.
+- `frontend/src/lib/topics.ts`, `components/notes/GraphView.tsx`, `ui/tabs.tsx`,
+  `DeepAnswer.tsx` — `ACCENT_HEX` deleted (a frozen hex table that painted graph
+  nodes in dark-theme pastels *in the light theme*), and the two places that
+  accented chrome with `lavender` moved to the accent.
+
+**Decisions:**
+
+- **Gate on provider, not on a confirm step.** #14 deliberately removed the
+  press-to-confirm gate and that stays removed: with LM Studio running the row
+  behaves exactly as it did. The gate is now "is this lens free right now", which
+  is the question the user actually has, and the backend was already answering it.
+- **Not "disable the billed tabs".** They work; they cost. A disabled control that
+  is neither broken nor forbidden is a lie about what the app can do.
+- **`useProviders` is shared module state.** A 400ms hover sweep across eight tabs
+  must not become eight probes. It re-probes on window focus, because alt-tabbing
+  away to start LM Studio is the case that must not need a reload.
+- **Two themes, because five could not be maintained honestly.** A palette is ~25
+  values that each have to clear a contrast floor; four of the five were
+  maintained by eye. Cutting to two paid for the checker, and the checker is what
+  keeps them true.
+- **The accent is a desaturated blue** so green can keep meaning *correct* and red
+  *wrong* — on a surface where you grade yourself every few seconds those two
+  meanings must never be ambiguous. The old accent was a saturated red-orange.
+- **The palette searches titles only.** Library's box also reads answers and tags;
+  that is right where it is and wrong in a jump box, and an index over 8,330
+  answer bodies at app start is not free.
+- **The fetched pages stay git-ignored.** They are third-party content that
+  happens to live on your disk. The repo keeps the fetcher, not the copies.
+- **`leetcode.com` is skipped by policy**, measured not assumed: 403 on all 14
+  attempts in the first run, and the most-cited host in the bank by 2×. For a
+  problem page the link *is* the content.
+
+**Found on the way:**
+
+- A `UnicodeEncodeError` on a page title containing `τ` killed a full fetch run at
+  URL 137 of 1,445 — fixed in #23 (stdout/stderr forced to UTF-8 with `replace`).
+  Nothing had to be re-fetched, which is what the write-after-every-fetch index is
+  for.
+- Port 8787 is held by a listener whose owning process no longer exists (pid 7768,
+  gone). Fixed around, in #20, rather than waiting for a reboot.
+
+**Follow-ups:**
+- [ ] Look at all of it in a browser — the palette's keyboard path, the two
+      themes, the `$` markers. Nothing here has been *seen*.
+- [ ] `POST /ingest` after the fetch finishes, then `POST /pipeline/build`, so the
+      fetched pages become cards and citations.
+- [ ] A retry pass for the JS-only and 403 hosts (Medium, Stack Overflow) — a
+      headless fetch or a reader service, not a bigger `User-Agent` lie.
+- [ ] Cached lenses are free too, and the tab row cannot know it. A cache-state
+      endpoint would make the `$` markers exact rather than conservative.
