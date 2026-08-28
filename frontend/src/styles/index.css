@@ -35,6 +35,7 @@
   --ctp-flamingo: 255 120 104;
   --ctp-pink: 236 110 180;
   --ctp-mauve: 255 90 68; /* the accent */
+  --ctp-on-accent: 10 13 17; /* label on an accent fill — measured 6.30:1 */
   --ctp-red: 251 113 133; /* distinct from the accent, or "delete" reads as "primary" */
   --ctp-maroon: 235 120 120;
   --ctp-peach: 245 170 70;
@@ -64,9 +65,10 @@
   --ctp-rosewater: 255 108 92;
   --ctp-flamingo: 255 90 74;
   --ctp-pink: 214 51 132;
-  /* The accent. Darkened until its own button label clears AA: crust-on-mauve
-     is 5.1:1 here, where the brighter Databricks red measured 4.42:1. */
+  /* The accent. Darkened until its own button label clears AA: on-accent
+     measures 5.16:1 here, where the brighter Databricks red gave 4.42:1. */
   --ctp-mauve: 196 40 20;
+  --ctp-on-accent: 255 255 255;
   --ctp-red: 190 18 60;
   --ctp-maroon: 200 40 40;
   --ctp-peach: 180 83 9;
@@ -89,7 +91,9 @@
   --ctp-surface1: 69 71 90;
   --ctp-surface2: 88 91 112;
   --ctp-overlay0: 108 112 134;
-  --ctp-overlay1: 127 132 156;
+  /* Lightened from 127/132/156, which measured 4.44:1 on this base — under AA
+     for the label text it carries. 4.78:1 now. */
+  --ctp-overlay1: 133 138 162;
   --ctp-subtext0: 166 173 200;
   --ctp-subtext1: 186 194 222;
   --ctp-text: 205 214 244;
@@ -97,6 +101,7 @@
   --ctp-flamingo: 242 205 205;
   --ctp-pink: 245 194 231;
   --ctp-mauve: 203 166 247;
+  --ctp-on-accent: 17 17 27; /* 9.23:1 */
   --ctp-red: 243 139 168;
   --ctp-maroon: 235 160 172;
   --ctp-peach: 250 179 135;
@@ -127,6 +132,7 @@
   --ctp-flamingo: 221 120 120;
   --ctp-pink: 234 118 203;
   --ctp-mauve: 136 57 239;
+  --ctp-on-accent: 255 255 255; /* crust here measured 4.09:1 — under AA */
   --ctp-red: 210 15 57;
   --ctp-maroon: 230 69 83;
   --ctp-peach: 254 100 11;
@@ -157,6 +163,7 @@
   --ctp-flamingo: 185 110 90;
   --ctp-pink: 180 100 120;
   --ctp-mauve: 150 88 44;
+  --ctp-on-accent: 255 255 255; /* crust here measured 4.05:1 — under AA */
   --ctp-red: 168 60 50;
   --ctp-maroon: 150 70 60;
   --ctp-peach: 190 110 50;

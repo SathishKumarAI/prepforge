@@ -182,7 +182,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="flex h-full w-60 flex-col justify-between px-3 py-3">
           <div className="min-h-0 flex-1 overflow-y-auto">
             <div className="mb-5 flex items-center gap-2 px-2 py-1">
-              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-mauve text-micro font-bold text-crust">
+              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-mauve text-micro font-bold text-on-accent">
                 P
               </span>
               <span className="text-small font-semibold tracking-tight text-text">PrepForge</span>

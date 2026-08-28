@@ -178,7 +178,7 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
           <div className="mt-2 flex items-center gap-2">
             <button
               onClick={() => setCustom(qid, customText)}
-              className="inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-crust transition-colors duration-100 hover:bg-mauve/90"
+              className="inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-on-accent transition-colors duration-100 hover:bg-mauve/90"
             >
               Save
             </button>

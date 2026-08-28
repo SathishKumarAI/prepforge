@@ -23,6 +23,11 @@ export default {
         flamingo: "rgb(var(--ctp-flamingo) / <alpha-value>)",
         pink: "rgb(var(--ctp-pink) / <alpha-value>)",
         mauve: "rgb(var(--ctp-mauve) / <alpha-value>)",
+        // Foreground for anything sitting ON the accent fill. Branch the pair
+        // together: a colour chosen as the readable half of one theme's accent
+        // is the unreadable half of another's, and it is always the primary
+        // button's own label that pays.
+        "on-accent": "rgb(var(--ctp-on-accent) / <alpha-value>)",
         red: "rgb(var(--ctp-red) / <alpha-value>)",
         maroon: "rgb(var(--ctp-maroon) / <alpha-value>)",
         peach: "rgb(var(--ctp-peach) / <alpha-value>)",

@@ -337,7 +337,7 @@ export function Study() {
             onClick={() => setParams({ mode: m }, { replace: true })}
             className={`rounded-md px-3.5 py-1.5 text-small transition-colors duration-100 ${
               m === mode
-                ? "bg-mauve font-medium text-crust"
+                ? "bg-mauve font-medium text-on-accent"
                 : "text-subtext0 hover:bg-surface0 hover:text-text"
             }`}
           >

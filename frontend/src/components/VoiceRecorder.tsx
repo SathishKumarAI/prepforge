@@ -106,7 +106,7 @@ export function VoiceRecorder({
         <button
           onClick={save}
           disabled={!transcript.trim() && !chunksRef.current.length}
-          className="ml-auto inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-crust transition-colors duration-100 hover:bg-mauve/90 disabled:opacity-50"
+          className="ml-auto inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-on-accent transition-colors duration-100 hover:bg-mauve/90 disabled:opacity-50"
         >
           Save note
         </button>

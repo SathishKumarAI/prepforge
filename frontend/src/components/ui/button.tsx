@@ -17,9 +17,11 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // text-crust, not text-base: `base` is both a colour token and a
-        // Tailwind font-size, so `text-base` would emit a size rule too.
-        primary: "bg-mauve text-crust hover:bg-mauve/90 active:bg-mauve/80",
+        // text-on-accent, not text-crust: crust is the readable half of the
+        // accent in three themes and fails AA in the other two. Not text-base
+        // either — `base` is both a colour and a Tailwind font-size, so
+        // `text-base` would emit a size rule too.
+        primary: "bg-mauve text-on-accent hover:bg-mauve/90 active:bg-mauve/80",
         secondary: "bg-surface0 text-text hover:bg-surface1",
         ghost: "text-subtext0 hover:bg-surface0 hover:text-text",
         outline: "border border-surface1 text-subtext1 hover:bg-surface0 hover:text-text",
