@@ -323,6 +323,7 @@ export function Study() {
         </Orient>
       }
       review={<RecentSessions />}
+      aside
     >
       <div
         role="tablist"

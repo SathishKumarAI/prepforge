@@ -26,6 +26,7 @@ import { useQuestions } from "../hooks/useQuestions";
 import { useNotes } from "../hooks/useNotes";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import { isDue } from "../lib/srs";
+import { lockBodyScroll } from "../lib/scroll";
 
 /**
  * The app shell: a collapsible left nav, a slim app bar that survives the nav
@@ -82,6 +83,15 @@ export function Layout({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!window.matchMedia("(min-width: 768px)").matches) setNavOpen(false);
   }, [loc.pathname]);
+
+  // ...and while it covers the page, the page must not scroll under it. Only
+  // below md, where the nav is an overlay; above it the nav is a real column
+  // and locking the body would freeze the whole app.
+  useEffect(() => {
+    if (!navOpen || focus) return;
+    if (window.matchMedia("(min-width: 768px)").matches) return;
+    return lockBodyScroll();
+  }, [navOpen, focus]);
 
   // Publish the app bar's real height for sticky page chrome. Measured, not
   // assumed — the bar wraps at narrow widths and grows by a line.

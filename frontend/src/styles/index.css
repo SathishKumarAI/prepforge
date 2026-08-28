@@ -343,12 +343,16 @@ select:disabled {
     }
     /* Sticky only while it fits — a column taller than the scrollport would
        pin its top and never reach its own bottom. Scrolling it is the fix CSS
-       can express; max-height keeps it from becoming a trap. */
+       can express; max-height keeps it from becoming a trap.
+
+       Parks below the app bar, not at a bare 1.5rem: the bar is sticky at the
+       top of the same scrollport, so a smaller offset pins this column behind
+       it and hides its first rows. */
     .page-aside {
       position: sticky;
-      top: 1.5rem;
+      top: calc(var(--app-bar-h, 0px) + 1rem);
       align-self: start;
-      max-height: calc(100vh - 3rem);
+      max-height: calc(100vh - var(--app-bar-h, 0px) - 2rem);
       overflow-y: auto;
     }
   }

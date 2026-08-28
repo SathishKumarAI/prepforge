@@ -48,6 +48,10 @@ export function Today() {
   return (
     <Page
       title="Today"
+      // The review zone goes beside the act zone once the CONTAINER is wide
+      // enough. Stacked, "also worth doing" and the study strip sat below the
+      // fold on a 1440px screen with empty space to their right.
+      aside
       orient={
         <Orient>
           <Fact label="due now" value={due || null} emphasis={due > 0} />
