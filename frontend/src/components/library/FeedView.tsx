@@ -314,7 +314,7 @@ function ResourceCard({ r, onOpen }: { r: Resource; onOpen: () => void }) {
         id: t,
         description: "Opening the quiz, scoped to this resource.",
       });
-      navigate("/quiz");
+      navigate("/study?mode=quiz");
     } catch {
       toast.error("Failed — is the backend running?", { id: t });
     } finally {
