@@ -39,12 +39,17 @@ export function QuestionDetail({
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
-  const { local_model: localModel, free_modes: freeModes } = useProviders();
+  const { local_model: localModel, free_modes: freeModes, loaded: providersKnown } = useProviders();
   // The bank's own answer and your own content are files, not generations. Every
   // other lens is free only while LM Studio is serving one — `deep` never is,
   // because web search is the whole point of it and that runs on Claude.
   const isFree = (v: "answer" | Mode) =>
     v === "answer" || v === "custom" || freeModes.includes(v);
+  // Until the probe answers, a generated lens is neither free nor known to bill.
+  // Hover stays closed (the safe half of the unknown) but the row says nothing:
+  // for the first second of every page load the honest answer is silence, and
+  // "LM Studio is off" printed on a machine where it is running is just wrong.
+  const isBilled = (v: "answer" | Mode) => providersKnown && !isFree(v);
   const bookmarked = progress.bookmarks.includes(q.id);
   const note = progress.notes[q.id] ?? "";
   const map = questionMap();
@@ -110,14 +115,14 @@ export function QuestionDetail({
               key={t.mode}
               value={t.mode}
               onMouseEnter={() => peekTab(t.mode)}
-              title={isFree(t.mode) ? undefined : "Billed to Claude — press to generate"}
+              title={isBilled(t.mode) ? "Billed to Claude — press to generate" : undefined}
             >
               {t.label}
               {/* The marker is what makes the two kinds of tab tell themselves
                   apart before you commit to one. Text, not colour: a hue would
                   be a second accent, and it would say nothing to a screen
                   reader. */}
-              {!isFree(t.mode) && (
+              {isBilled(t.mode) && (
                 <span className="text-overlay0">
                   <span aria-hidden="true">$</span>
                   <span className="sr-only">, billed</span>
@@ -130,8 +135,8 @@ export function QuestionDetail({
 
       {/* One line, under the row it explains, because the answer to "did that
           hover just cost me money" is worthless anywhere else on the page. */}
-      <p className="mb-4 text-micro text-overlay1">
-        {localModel ? (
+      <p className="mb-4 min-h-[1.1rem] text-micro text-overlay1">
+        {!providersKnown ? null : localModel ? (
           <>
             Local model · <span className="font-mono">{localModel}</span> — {freeModes.length} lens
             {freeModes.length === 1 ? "" : "es"} generate free on hover.

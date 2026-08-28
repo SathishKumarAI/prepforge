@@ -14,11 +14,19 @@ import { fetchProviders, type Providers } from "../lib/api";
  * exactly the thing you alt-tab away to do.
  */
 
+/** What we know before the probe answers. `loaded: false` is the difference
+ *  between "LM Studio is off" and "nobody has asked yet" — the first is a claim
+ *  and the second is the truth for the first second of every page load. */
+export interface ProviderState extends Providers {
+  loaded: boolean;
+}
+
+const UNKNOWN: ProviderState = { local_model: null, free_modes: [], loaded: false };
 const NOTHING_FREE: Providers = { local_model: null, free_modes: [] };
 
-let cache: Providers | null = null;
+let cache: ProviderState | null = null;
 let inflight: Promise<void> | null = null;
-const listeners = new Set<(p: Providers) => void>();
+const listeners = new Set<(p: ProviderState) => void>();
 
 function load(): Promise<void> {
   if (inflight) return inflight;
@@ -27,8 +35,8 @@ function load(): Promise<void> {
     // already on the page — so fail to "nothing is free", never to "all free".
     .catch(() => NOTHING_FREE)
     .then((p) => {
-      cache = p;
-      listeners.forEach((fn) => fn(p));
+      cache = { ...p, loaded: true };
+      listeners.forEach((fn) => fn(cache!));
     })
     .finally(() => {
       inflight = null;
@@ -36,13 +44,13 @@ function load(): Promise<void> {
   return inflight;
 }
 
-export function useProviders(): Providers {
-  const [providers, setProviders] = useState<Providers>(cache ?? NOTHING_FREE);
+export function useProviders(): ProviderState {
+  const [providers, setProviders] = useState<ProviderState>(cache ?? UNKNOWN);
 
   useEffect(() => {
     listeners.add(setProviders);
     if (cache) setProviders(cache);
-    else load();
+    else void load();
     const refresh = () => load();
     window.addEventListener("focus", refresh);
     return () => {
