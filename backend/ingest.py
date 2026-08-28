@@ -28,6 +28,22 @@ OUT = BASE / "content" / "generated.json"
 TOPICS = ["AI", "Machine Learning", "Data Science", "Data Analytics"]
 _HEADING = re.compile(r"^(#{1,3})\s+(.*)$", re.MULTILINE)
 
+# Public question banks (the GitHub repos people clone into the library) hide answers
+# behind `<details><summary>Answer</summary>…</details>` and number their headings.
+# Left in, the wrapper becomes the first sentence of the card — which is also the quiz
+# gloss — so every generated quiz would read "detailssummary Answer". Strip at the split,
+# the one point every ingest mode goes through.
+_HTML_WRAPPER = re.compile(r"</?(?:details|summary|b|i|em|strong|div|p|br|img|kbd)\b[^>]*>", re.I)
+_ANSWER_LEAD = re.compile(r"^\s*(?:answer|solution)\s*:?\s*\n+", re.I)
+_LEAD_NUM = re.compile(r"^\d+[.)]\s+")
+_LEAD_NUM_DASH = re.compile(r"^\d+[-_. ]+")
+_FENCE = re.compile(r"```.*?```", re.DOTALL)
+# Navigation and legal sections — real headings, but nothing to recall.
+_SKIP_HEADINGS = {
+    "table of contents", "contents", "toc", "references", "further reading", "license",
+    "contributing", "acknowledgements", "acknowledgments", "star history", "index",
+}
+
 
 def _frontmatter_title(md: str, fallback: str) -> str:
     """Pull `title:` from YAML frontmatter (as written by capture/upload), else
@@ -37,7 +53,10 @@ def _frontmatter_title(md: str, fallback: str) -> str:
         t = re.search(r'^title:\s*"?(.+?)"?\s*$', m.group(1), re.MULTILINE)
         if t:
             return t.group(1).strip().strip('"')
-    stem = Path(fallback).stem.replace("-", " ").replace("_", " ").strip()
+    p = Path(fallback)
+    # "docs/04-rag-and-retrieval/README.md" is titled by its folder, not "Readme".
+    stem = p.parent.name if p.stem.lower() in {"readme", "index"} and p.parent.name else p.stem
+    stem = _LEAD_NUM_DASH.sub("", stem).replace("-", " ").replace("_", " ").strip()
     return stem.title() or fallback
 
 
@@ -61,11 +80,15 @@ def _split_sections(md: str) -> list[tuple[str, str]]:
     matches = list(_HEADING.finditer(md))
     sections: list[tuple[str, str]] = []
     for i, m in enumerate(matches):
-        heading = m.group(2).strip()
+        heading = _LEAD_NUM.sub("", m.group(2).strip().strip("*_` ")).strip()
         start = m.end()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(md)
-        body = md[start:end].strip()
-        if heading and len(body) > 40:
+        body = _ANSWER_LEAD.sub("", _HTML_WRAPPER.sub("", md[start:end]).strip()).strip()
+        if heading.lower() in _SKIP_HEADINGS:
+            continue
+        # Measure the *prose*, not the fences — a section that is only a mermaid or
+        # code block has nothing to recall, and made 436 unusable cards on first run.
+        if heading and len(_FENCE.sub("", body).strip()) > 40:
             sections.append((heading, body))
     return sections
 
@@ -81,8 +104,12 @@ def _card_id(source: str, heading: str) -> str:
     return f"ing_{h}"
 
 
-def _deterministic_card(source: str, topic: str, heading: str, body: str) -> dict:
+def _deterministic_card(source: str, topic: str, heading: str, body: str, doc_title: str = "") -> dict:
     q = heading if heading.endswith("?") else f"Explain: {heading}"
+    # "Problem statement" or "Iteration plan" means nothing on a flashcard, and nothing
+    # in a quiz stem. Short headings borrow their document's title for context.
+    if doc_title and len(heading) < 40 and doc_title.lower() not in heading.lower():
+        q += f" — {doc_title}"
     return {
         "id": _card_id(source, heading),
         "topic": topic,
@@ -426,7 +453,7 @@ def ingest(mode: str = "deterministic") -> dict:
                 elif use_ollama:
                     card = _ollama_card(client, ollama_model, source, topic, heading, body)
                 if card is None:
-                    card = _deterministic_card(source, topic, heading, body)
+                    card = _deterministic_card(source, topic, heading, body, titles[source])
                 else:
                     model_cards += 1
                 cards.append(card)

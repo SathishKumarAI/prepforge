@@ -5,7 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 cd "$ROOT/backend"
 [ -d .venv ] || { python3 -m venv .venv && ./.venv/bin/pip install -r requirements.txt; }
-./.venv/bin/uvicorn main:app --reload --port 8000 &
+# 8787, not 8000 — frontend/vite.config.ts proxies /api to 127.0.0.1:8787.
+./.venv/bin/uvicorn main:app --reload --port 8787 &
 BACK=$!
 
 cd "$ROOT/frontend"
