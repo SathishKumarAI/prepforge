@@ -112,35 +112,39 @@ function StudyStrip({ days }: { days: string[] }) {
     return { key, studied: set.has(key), isToday: i === 13 };
   });
 
+  // Fourteen fixed cells are wider than a phone, so the strip scrolls inside
+  // its own container rather than pushing the page sideways.
   return (
-    <table className="border-collapse">
-      <caption className="sr-only">Days studied over the last fortnight</caption>
-      <thead className="sr-only">
-        <tr>
-          {cells.map((c) => (
-            <th key={c.key} scope="col">
-              {c.key}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          {cells.map((c) => (
-            <td key={c.key} className="p-0 pr-1">
-              <span
-                className={`block size-6 rounded-sm border ${
-                  c.isToday ? "border-mauve" : "border-transparent"
-                } ${c.studied ? "bg-subtext0" : "bg-surface0"}`}
-              >
-                <span className="sr-only">
-                  {c.key}: {c.studied ? "studied" : "not studied"}
+    <div className="overflow-x-auto">
+      <table className="border-collapse">
+        <caption className="sr-only">Days studied over the last fortnight</caption>
+        <thead className="sr-only">
+          <tr>
+            {cells.map((c) => (
+              <th key={c.key} scope="col">
+                {c.key}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            {cells.map((c) => (
+              <td key={c.key} className="p-0 pr-1">
+                <span
+                  className={`block size-5 rounded-sm border ${
+                    c.isToday ? "border-mauve" : "border-transparent"
+                  } ${c.studied ? "bg-subtext0" : "bg-surface0"}`}
+                >
+                  <span className="sr-only">
+                    {c.key}: {c.studied ? "studied" : "not studied"}
+                  </span>
                 </span>
-              </span>
-            </td>
-          ))}
-        </tr>
-      </tbody>
-    </table>
+              </td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }

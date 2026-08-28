@@ -171,8 +171,8 @@ function CollectionCard({
   // A genuine raised card: a collection is a thing with its own actions and its
   // own state, which is exactly what a card is for.
   return (
-    <article className="panel flex flex-col p-4">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <article className="panel flex min-w-0 flex-col p-4">
+      <div className="mb-3 flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-small font-medium text-text">{c.name}</h3>
           <p className="mt-0.5 text-micro text-overlay1">
@@ -194,7 +194,7 @@ function CollectionCard({
           <li key={f}>
             <button
               onClick={() => onOpenDoc(f, f.split("/").pop() ?? f)}
-              className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-micro text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+              className="flex w-full min-w-0 items-center gap-2 rounded px-1.5 py-1 text-left text-micro text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
               title={f}
             >
               <FileText aria-hidden="true" className="size-3 shrink-0 text-overlay0" />
