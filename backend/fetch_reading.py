@@ -22,6 +22,7 @@ import argparse
 import ipaddress
 import json
 import socket
+import sys
 import time
 from collections import Counter
 from pathlib import Path
@@ -207,6 +208,14 @@ def run(limit: int, sleep: float, host_delay: float, retry_failed: bool, dry_run
 
 
 def main() -> None:
+    # A Windows console is cp1252, and page titles are not. Printing "τ" killed
+    # a full run at URL 137 of 1,445 — the fetches were safe (the index is
+    # written after each one) but the run was over. Replace rather than raise:
+    # a mangled character in a progress line must never end a job.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=50, help="how many URLs this run (0 = no cap)")
     ap.add_argument("--all", action="store_true", help="no cap — same as --limit 0")
