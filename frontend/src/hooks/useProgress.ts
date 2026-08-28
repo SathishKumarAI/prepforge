@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   EMPTY_PROGRESS,
   loadProgress,
+  RECENT_CAP,
   saveProgress,
   todayStr,
   type FlashState,
@@ -50,6 +51,14 @@ export function useProgress() {
       ...shared,
       bookmarks: has ? shared.bookmarks.filter((x) => x !== id) : [...shared.bookmarks, id],
     });
+  }, []);
+
+  // Newest first, no duplicates, capped. Writing through `set` means the
+  // palette updates while it is open, which is what makes it feel like a list
+  // of what you were just doing rather than a snapshot from page load.
+  const markRecent = useCallback((id: string) => {
+    if (shared.recent[0] === id) return; // reopening the same card is not news
+    set({ ...shared, recent: [id, ...shared.recent.filter((x) => x !== id)].slice(0, RECENT_CAP) });
   }, []);
 
   const setNote = useCallback((id: string, text: string) => {
@@ -103,6 +112,7 @@ export function useProgress() {
     setCustom,
     addQuiz,
     markStudied,
+    markRecent,
     getCard,
     markSeen,
     rateCard,

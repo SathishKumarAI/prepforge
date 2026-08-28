@@ -39,7 +39,10 @@ export function QuestionDetail({
   const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
-  const { progress, toggleBookmark, setNote } = useProgress();
+  const { progress, toggleBookmark, setNote, markRecent } = useProgress();
+  // Reading a question here is what "recent" means; the palette offers these
+  // before you have typed. Hovering the list does not count — that is a glance.
+  useEffect(() => markRecent(q.id), [q.id, markRecent]);
   const { local_model: localModel, free_modes: freeModes, loaded: providersKnown } = useProviders();
   // Which lenses this question already has on disk. Asked per question, because
   // that is what it depends on; the answer is four fields of JSON.

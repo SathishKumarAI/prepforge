@@ -1,9 +1,11 @@
 import Fuse from "fuse.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
+import type { QuestionLite } from "../lib/api";
 import { DifficultyBadge, TopicBadge } from "./Badge";
 
 /**
@@ -50,6 +52,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Fetched on the first open, not on app start: a palette nobody opens should
   // cost nothing, and this is the titles-only projection, not the 15 MB bank.
   const { rows: questions, loading: indexLoading } = useQuestionIndex(open);
+  const { progress } = useProgress();
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
@@ -77,9 +80,16 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
   const questionHits = useMemo(() => {
     const q = query.trim();
-    if (!q || !fuse) return [];
+    // Empty box: what you were just reading, which is the likeliest thing you
+    // opened this to get back to. Ids only are stored, so they are resolved
+    // against the index — one that no longer exists simply drops out.
+    if (!q) {
+      const byId = new Map(questions.map((row) => [row.id, row]));
+      return progress.recent.map((id) => byId.get(id)).filter(Boolean).slice(0, 5) as QuestionLite[];
+    }
+    if (!fuse) return [];
     return fuse.search(q, { limit: LIMIT }).map((r) => r.item);
-  }, [fuse, query]);
+  }, [fuse, query, questions, progress.recent]);
 
   const rows = useMemo(
     () => [
@@ -160,7 +170,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             </li>
           )}
           {rows.map((row, i) => (
-            <li key={`${row.kind}-${row.key}`}>
+            <Fragment key={`${row.kind}-${row.key}`}>
+            {/* With an empty box the question rows are your recent reading, and
+                without a word saying so they read as an unexplained second list. */}
+            {i === commandHits.length && !query.trim() && (
+              <li
+                aria-hidden="true"
+                className="px-3 pb-1 pt-3 text-micro font-semibold uppercase tracking-[0.14em] text-overlay0"
+              >
+                Recently read
+              </li>
+            )}
+            <li>
               <button
                 type="button"
                 role="option"
@@ -189,6 +210,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                 )}
               </button>
             </li>
+            </Fragment>
           ))}
         </ul>
 

@@ -50,6 +50,16 @@ const SHOTS = [
   // Typed, because an empty palette proves the dialog opens and nothing else.
   // This one proves the index loaded and the search matches.
   { name: "palette-search", path: "/", theme: "dark", keys: [{ key: "k", ctrl: true }], type: "kafka", settle: 4000 },
+  // Opens a question first, so the palette has something recent to offer.
+  {
+    name: "palette-recent",
+    path: "/library?view=questions&id=q005",
+    theme: "dark",
+    // Longer than the others: the detail pane has to mount before there IS a
+    // recent question, and Library waits on the full 17 MB bank to render it.
+    settle: 16000,
+    keys: [{ key: "k", ctrl: true }],
+  },
   { name: "today-light", path: "/", theme: "light" },
   { name: "library-light", path: "/library?view=questions", theme: "light", settle: 9000 },
   { name: "settings-light", path: "/", theme: "light", keys: [{ key: "k", ctrl: true }], settle: 1200 },
