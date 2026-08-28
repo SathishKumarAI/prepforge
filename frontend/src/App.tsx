@@ -6,30 +6,52 @@ import { Loader } from "./components/States";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
 import { LEGACY_ROUTES } from "./lib/studyModes";
-import { Browse } from "./pages/Browse";
+import { Today } from "./pages/Today";
+import { Library } from "./pages/Library";
 import { Study } from "./pages/Study";
-import { Bookmarks } from "./pages/Bookmarks";
 
-// heavy pages (recharts, force layout, pdf reader) — split out of the main bundle
-const Resources = lazy(() => import("./pages/Resources").then((m) => ({ default: m.Resources })));
-const Sources = lazy(() => import("./pages/Sources").then((m) => ({ default: m.Sources })));
+// heavy pages (recharts, pdf reader) — split out of the main bundle
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Notes = lazy(() => import("./pages/Notes").then((m) => ({ default: m.Notes })));
-const Graph = lazy(() => import("./pages/Graph").then((m) => ({ default: m.Graph })));
 const Reader = lazy(() => import("./pages/Reader").then((m) => ({ default: m.Reader })));
 
 /**
- * /learn, /flashcards and /quiz are retired destinations, not retired features
- * — each is now a mode of /study. Redirecting rather than deleting keeps every
- * existing bookmark, the browser extension's links and the in-app deep links
- * working, and carries the intent across instead of dumping you on a default.
+ * Retired destinations, not retired features. Every one of these is now a mode
+ * or a view of a surface doing the same job, so they redirect carrying their
+ * intent rather than 404ing or dumping you on a default. Existing bookmarks,
+ * the browser extension's links and in-app deep links all keep working.
  */
-function LegacyStudyRedirect() {
+const LEGACY_VIEWS: Record<string, string> = {
+  "/bookmarks": "/library?view=saved",
+  "/sources": "/library?view=collections",
+  "/resources": "/library?view=feed",
+  "/dashboard": "/progress",
+  "/graph": "/notes?view=graph",
+};
+
+function LegacyRedirect() {
   const { pathname, search } = useLocation();
+
+  // Study's three old routes each carry a mode.
   const mode = LEGACY_ROUTES[pathname];
-  const params = new URLSearchParams(search);
-  if (mode) params.set("mode", mode);
-  return <Navigate to={`/study?${params.toString()}`} replace />;
+  if (mode) {
+    const params = new URLSearchParams(search);
+    params.set("mode", mode);
+    return <Navigate to={`/study?${params.toString()}`} replace />;
+  }
+
+  const target = LEGACY_VIEWS[pathname];
+  if (target) {
+    // Merge rather than replace: an incoming link may carry a topic or an id
+    // alongside the part being rewritten, and dropping it loses the intent.
+    const [path, ownQuery] = target.split("?");
+    const params = new URLSearchParams(search);
+    new URLSearchParams(ownQuery).forEach((v, k) => params.set(k, v));
+    const query = params.toString();
+    return <Navigate to={query ? `${path}?${query}` : path} replace />;
+  }
+
+  return <NotFound />;
 }
 
 function NotFound() {
@@ -41,10 +63,10 @@ function NotFound() {
       </p>
       <div className="mt-6 flex gap-2">
         <Button asChild variant="primary">
-          <Link to="/study">Go to Study</Link>
+          <Link to="/">Go to Today</Link>
         </Button>
         <Button asChild variant="ghost">
-          <Link to="/">Browse questions</Link>
+          <Link to="/library">Browse the library</Link>
         </Button>
       </div>
     </div>
@@ -66,18 +88,23 @@ function LayoutRoutes() {
     <Layout>
       <Suspense fallback={<Loader label="Loading" />}>
         <Routes>
-          <Route path="/" element={<Browse />} />
+          <Route path="/" element={<Today />} />
           <Route path="/study" element={<Study />} />
-          <Route path="/learn" element={<LegacyStudyRedirect />} />
-          <Route path="/flashcards" element={<LegacyStudyRedirect />} />
-          <Route path="/quiz" element={<LegacyStudyRedirect />} />
-          <Route path="/sources" element={<Sources />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/reader" element={<Reader />} />
+          <Route path="/library" element={<Library />} />
           <Route path="/notes" element={<Notes />} />
-          <Route path="/graph" element={<Graph />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/bookmarks" element={<Bookmarks />} />
+          <Route path="/progress" element={<Dashboard />} />
+          <Route path="/reader" element={<Reader />} />
+
+          {/* retired destinations */}
+          <Route path="/learn" element={<LegacyRedirect />} />
+          <Route path="/flashcards" element={<LegacyRedirect />} />
+          <Route path="/quiz" element={<LegacyRedirect />} />
+          <Route path="/bookmarks" element={<LegacyRedirect />} />
+          <Route path="/sources" element={<LegacyRedirect />} />
+          <Route path="/resources" element={<LegacyRedirect />} />
+          <Route path="/dashboard" element={<LegacyRedirect />} />
+          <Route path="/graph" element={<LegacyRedirect />} />
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

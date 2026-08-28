@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ExternalLink, FileText, Plus } from "lucide-react";
-import { SourceDoc } from "../components/SourceDoc";
-import { Page } from "../components/page/PageLayout";
-import { Orient, Fact } from "../components/page/Orient";
-import { Empty, Loader } from "../components/States";
-import { Button } from "../components/ui/button";
-import { addGithubSource, fetchSources, quizFromResource, type LibraryCollection } from "../lib/api";
-import { reloadQuestions } from "../hooks/useQuestions";
-import { toast } from "../components/ui/sonner";
-import type { VaultSource } from "../lib/types";
+import { SourceDoc } from "../SourceDoc";
+import { Empty, Loader } from "../States";
+import { Button } from "../ui/button";
+import { addGithubSource, fetchSources, quizFromResource, type LibraryCollection } from "../../lib/api";
+import { reloadQuestions } from "../../hooks/useQuestions";
+import { toast } from "../ui/sonner";
+import type { VaultSource } from "../../lib/types";
 
 // Everything you have pulled in to study from: cloned repos, captured pages, uploads.
 // One box adds more — a repo URL is cloned, any other URL is read into the library.
@@ -30,7 +28,7 @@ const SUGGESTED = [
   "https://github.com/ombharatiya/AI-Engineer-Interview-Questions",
 ];
 
-export function Sources() {
+export function CollectionsView() {
   const [data, setData] = useState<{ collections: LibraryCollection[]; docs: number; cards: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState("");
@@ -89,20 +87,7 @@ export function Sources() {
   );
 
   return (
-    <Page
-      title="Sources"
-      orient={
-        <Orient>
-          <Fact
-            label="collections"
-            value={data?.collections.length ?? null}
-            emphasis={Boolean(data?.collections.length)}
-          />
-          <Fact label="documents" value={data?.docs ?? null} />
-          <Fact label="cards made" value={data?.cards ?? null} />
-        </Orient>
-      }
-    >
+    <>
       <SourceDoc source={reading} onClose={() => setReading(null)} />
 
       <div className="mb-2 flex flex-wrap items-end gap-2">
@@ -163,7 +148,7 @@ export function Sources() {
           ))}
         </div>
       )}
-    </Page>
+    </>
   );
 }
 
