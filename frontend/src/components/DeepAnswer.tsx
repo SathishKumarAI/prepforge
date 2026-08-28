@@ -114,12 +114,20 @@ export function DeepAnswer({
   topic,
   qid,
   controlled,
+  mayGenerate = true,
 }: {
   question: string;
   topic: string;
   qid: string;
   /** Render just the body for this mode; the caller draws the tabs. */
   controlled?: Mode;
+  /**
+   * Controlled only. Whether this lens may be generated if it is not in hand.
+   * False is how hovering a tab row stays free: the mode switches, an already
+   * generated lens shows, and one that is not offers a control instead of
+   * silently spending an API call you did not ask for.
+   */
+  mayGenerate?: boolean;
 }) {
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<Mode>(controlled ?? "deep");
@@ -166,11 +174,11 @@ export function DeepAnswer({
       setCustomText(progress.custom[qid] ?? "");
       return;
     }
-    if (!slots[controlled]) load(controlled);
+    if (mayGenerate && !slots[controlled]) load(controlled);
     // `slots` is deliberately absent: it changes as the fetch lands, and
     // depending on it would re-run this the moment the answer arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controlled, qid, load]);
+  }, [controlled, qid, load, mayGenerate]);
 
   if (!opened && !controlled) {
     return (
@@ -232,6 +240,22 @@ export function DeepAnswer({
               <Markdown>{progress.custom[qid]}</Markdown>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Hovered onto a lens nobody has generated yet. The switch was free; the
+          generation is not, so it waits for a deliberate press. */}
+      {controlled && !slot && mode !== "custom" && (
+        <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-surface1 px-4 py-5">
+          <span className="text-small text-overlay1">
+            {MODE_TITLE[mode]} has not been generated for this question yet.
+          </span>
+          <button
+            onClick={() => load(mode)}
+            className="inline-flex h-9 items-center rounded-lg bg-surface0 px-3.5 text-small font-medium text-text transition-colors duration-100 hover:bg-surface1"
+          >
+            Generate it
+          </button>
         </div>
       )}
 

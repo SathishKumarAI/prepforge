@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, FileText, PencilLine } from "lucide-react";
 import { DifficultyBadge, TopicBadge } from "../Badge";
 import { DeepAnswer, LENS_TABS, type Mode } from "../DeepAnswer";
@@ -33,6 +33,12 @@ export function QuestionDetail({
   onSelect: (id: string) => void;
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
+  // Whether the CURRENT tab was chosen deliberately. Hovering a lens switches
+  // to it for free; only a press licenses the API call behind an ungenerated
+  // one, so sweeping the row costs nothing.
+  const [pressed, setPressed] = useState(false);
+  const tabTimer = useRef<number>();
+  const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
@@ -45,8 +51,27 @@ export function QuestionDetail({
   // selection change would fire a generation for a question you only glanced at.
   useEffect(() => {
     setTab("answer");
+    setPressed(false);
     setNoteOpen(false);
   }, [q.id]);
+
+  // 400ms, longer than the list's 250ms: crossing a tab row is a much smaller
+  // target, and landing on the wrong lens is more disruptive than landing on
+  // the wrong question.
+  function peekTab(v: "answer" | Mode) {
+    window.clearTimeout(tabTimer.current);
+    if (!canHover) return;
+    tabTimer.current = window.setTimeout(() => {
+      setTab(v);
+      setPressed(false);
+    }, 400);
+  }
+  function pickTab(v: "answer" | Mode) {
+    window.clearTimeout(tabTimer.current);
+    setTab(v);
+    setPressed(true);
+  }
+  useEffect(() => () => window.clearTimeout(tabTimer.current), []);
 
   return (
     // The 68ch measure comes off in here. In a pane whose whole job is to hold
@@ -71,11 +96,13 @@ export function QuestionDetail({
 
       {/* One row, two kinds of thing — free and generated — because that is the
           order you use them in, not because they share an implementation. */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "answer" | Mode)} className="mb-4">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="answer">Answer</TabsTrigger>
+      <Tabs value={tab} onValueChange={(v) => pickTab(v as "answer" | Mode)} className="mb-4">
+        <TabsList className="flex-wrap" onMouseLeave={() => window.clearTimeout(tabTimer.current)}>
+          <TabsTrigger value="answer" onMouseEnter={() => peekTab("answer")}>
+            Answer
+          </TabsTrigger>
           {LENS_TABS.map((t) => (
-            <TabsTrigger key={t.mode} value={t.mode}>
+            <TabsTrigger key={t.mode} value={t.mode} onMouseEnter={() => peekTab(t.mode)}>
               {t.label}
             </TabsTrigger>
           ))}
@@ -91,7 +118,13 @@ export function QuestionDetail({
           </p>
         )
       ) : (
-        <DeepAnswer question={q.question} topic={q.topic} qid={q.id} controlled={tab} />
+        <DeepAnswer
+          question={q.question}
+          topic={q.topic}
+          qid={q.id}
+          controlled={tab}
+          mayGenerate={pressed}
+        />
       )}
 
       {q.sources && q.sources.length > 0 && (
