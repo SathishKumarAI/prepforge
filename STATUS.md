@@ -3,17 +3,48 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-08-27.
-- **Where I stopped:** Everything merged to `main` and nothing in flight. The app runs on this
-  Windows machine, loaded with real prep material, with a **Sources** tab for managing it. Eight
-  public repos are cloned into `backend/content/library/` and ingested: **8,330 questions**
-  (100 curated + 6,685 ingested + 1,545 vault), 6,353 synthetic quizzes, 1,864 with reading links.
-  Shipped as PRs #1 (ingest quality) → #2 (Sources tab, provenance, reading, tags, quiz picker) →
-  #3 (dev.sh + vault path) → #5 (glossary letter-headings, COD-18), squash-merged in that order;
-  Plane COD-14 → COD-18 are Done.
-- **Next action:** Nothing queued — the board has no open `repo:interview_prep` item. Pick from
-  `docs/BACKLOG.md` — 11 unchecked, the cheapest being `P1 URL → clean article to library`, which
-  `capture.read` already mostly does.
-- **Blocked on:** Nothing.
+- **Where I stopped:** Mid-branch on `refactor/ui-page-contract-primitives` — a whole-app UI/UX
+  rebuild onto a three-zone page contract. Four commits, none pushed, no PR open yet. Content is
+  unchanged: still **8,330 questions**, 6,353 synthetic quizzes, 1,864 with reading links, from the
+  eight repos in `backend/content/library/`.
+- **Next action:** Push the branch and open the PR. Then the two things the branch did not verify:
+  drive a **timed quiz through a real 30s expiry**, and exercise **Reader's PDF + web-fetch** paths
+  against a real file and a real URL.
+- **Blocked on:** Nothing. Note that **Plane was down** during this work (`localhost:8080`
+  refused), so no work item was filed — file one for this branch when it is back up.
+
+## The UI rebuild (read this before touching the frontend)
+
+Every page is now at most **three zones, in order**: orient (one bar, ≤4 facts) → act (the one
+thing the page does, holding its single primary button) → review (what has been recorded). There
+is no zone 4 — that is the rule that stops badges and tips accreting at the bottom of a screen.
+
+**`frontend/src/components/page/README.md` is the contract.** Read it before adding UI. It carries
+the change → file table, the accent rule, and the traps.
+
+| Was | Is |
+|---|---|
+| `/learn`, `/flashcards`, `/quiz` | `/study?mode=recall\|drill\|quiz` — old routes redirect |
+| Three session shells | One, driven by `lib/studyModes.ts` |
+| `.glass` (blur + coloured halo) | `.panel` (flat, hairline). `.glass` is a deprecated alias |
+| Catppuccin Mocha default | **Databricks dark** default, on `:root` with no attribute |
+| Gradient `from-mauve to-blue` buttons | Solid accent fill, one primary per page |
+| 11 nav entries | 9, heading for 5 |
+
+**Traps:**
+
+- **`text-base` sets a font size as well as a colour** — `base` exists in both the colour scale and
+  Tailwind's `fontSize`. Use `text-crust` on accent fills.
+- **The default theme lives on `:root` with no `data-theme`.** `lib/theme.ts` must agree: it
+  removes the attribute for `databricks-dark` and sets it for everything else. Changing the default
+  means moving the `:root` block *and* bumping `THEME_MIGRATION` in `lib/settings.ts`.
+- **Sticky page chrome parks against `--app-bar-h`**, which `Layout.tsx` measures and publishes.
+  Never hardcode that offset — the bar wraps to two lines at narrow widths.
+- **The wide-tier split is a container query, not a media query.** The sidebar collapses, so
+  viewport width is the wrong signal.
+- **`Spine` degrades to a proportional bar above 48 cards.** Check the branch you mean.
+- Grade sinks are deliberately **not** unified: `flash` is "do I know this", `srs` moves real due
+  dates. Merging them would rewrite the meaning of every card graded before today.
 
 ## What the Sources tab does
 
@@ -44,10 +75,12 @@ Both venv (`backend/.venv`, Windows layout) and `node_modules` were rebuilt on 2
 
 **Backend port is 8787, not 8000.** `frontend/vite.config.ts` proxies `/api` there; the browser
 extension's `host_permissions` is locked to `127.0.0.1:8787`. `dev.sh` said 8000 until 2026-08-27 —
-fixed. Anything else quoting 8000 is stale.
+fixed, as was Browse's backend-unreachable message, which still told you to start uvicorn on 8000.
+Anything else quoting 8000 is stale.
 
-**Vite will not land on 5173 here.** Ports 5173–5179 are taken by the user's other apps; the dev
-server picked **5180**. Read the actual URL off the Vite banner instead of assuming.
+**Vite's port varies — read it off the banner.** It landed on **5180** on 2026-08-27 because
+5173–5179 were taken by other apps, and on **5173** later the same day when they were free. Do not
+hardcode either.
 
 **`dev.sh` works from Git Bash now.** It resolves `.venv/Scripts` vs `.venv/bin` at runtime and
 picks `python3` or `python`, so the one helper covers both machines.
