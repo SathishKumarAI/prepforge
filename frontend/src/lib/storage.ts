@@ -40,6 +40,9 @@ export interface Progress {
   quizzes: QuizResult[];
   // day-strings the user studied, for streaks e.g. "2026-07-10"
   studyDays: string[];
+  // question ids most recently opened, newest first, capped — what the command
+  // palette offers before you have typed anything
+  recent: string[];
 }
 
 export interface QuizResult {
@@ -57,7 +60,12 @@ export const EMPTY_PROGRESS: Progress = {
   custom: {},
   quizzes: [],
   studyDays: [],
+  recent: [],
 };
+
+/** How many recently-opened questions are kept. Enough to get back to what you
+ *  were doing, few enough that the list stays a shortcut rather than a page. */
+export const RECENT_CAP = 8;
 
 export function loadProgress(): Progress {
   return { ...EMPTY_PROGRESS, ...load<Progress>("progress", EMPTY_PROGRESS) };
