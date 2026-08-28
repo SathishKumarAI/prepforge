@@ -76,6 +76,13 @@ _SKIP_FILES = {
 }
 _SKIP_DIRS = {".github", ".git", "node_modules", ".venv"}
 
+# Glossary files index their entries under bare letter headings ("## W"), so the
+# split produced 46 cards asking "Explain: W — Glossary" — 26 sections whose only
+# shared subject is the alphabet. A heading needs two alphanumerics before it names
+# anything: "AI", "ML" and "QA:" clear that bar, "W" and a stray "]" do not.
+_NON_ALNUM = re.compile(r"[^0-9A-Za-z]")
+MIN_HEADING_ALNUM = 2
+
 
 # Answers are shown in full on the card. 6000 chars covers ~99% of sections whole;
 # anything longer is still readable end-to-end by opening its source document.
@@ -192,6 +199,8 @@ def _split_sections(md: str) -> list[tuple[str, str]]:
         end = matches[i + 1].start() if i + 1 < len(matches) else len(md)
         body = _ANSWER_LEAD.sub("", _HTML_WRAPPER.sub("", md[start:end]).strip()).strip()
         if heading.lower() in _SKIP_HEADINGS:
+            continue
+        if len(_NON_ALNUM.sub("", heading)) < MIN_HEADING_ALNUM:
             continue
         # Measure the *prose*, not the fences — a section that is only a mermaid or
         # code block has nothing to recall, and made 436 unusable cards on first run.
