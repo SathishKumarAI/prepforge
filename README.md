@@ -41,8 +41,8 @@ npm install
 npm run dev
 ```
 
-Or `./dev.sh` from the repo root, which starts both. `dev.sh` is bash and assumes a POSIX venv
-layout (`.venv/bin/`); on Windows use the two commands above with `.venv\Scripts\`.
+Or `./dev.sh` from the repo root, which starts both. It resolves `.venv/bin` vs `.venv/Scripts` and
+`python3` vs `python` itself, so it works from Git Bash on Windows too.
 
 ## Stack
 
