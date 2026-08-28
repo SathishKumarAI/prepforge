@@ -69,6 +69,43 @@ and the change→file table live in **`docs/DESIGN-THEMES.md`**. Read it before 
 - The accent variable is still named `--ctp-mauve` and is now a **desaturated blue**. The name is
   historical; renaming it would touch every file in `src/` and buy nothing.
 
+## Running the local model
+
+Start the server without opening the LM Studio window:
+
+```bash
+~/.lmstudio/bin/lms.exe server start --port 1234
+~/.lmstudio/bin/lms.exe load openai/gpt-oss-20b -y   # ~10s, 11.3 GiB into VRAM
+~/.lmstudio/bin/lms.exe ps                            # what is actually loaded
+```
+
+**Load `openai/gpt-oss-20b`. Do not leave `qwen/qwen3.5-9b` loaded for this.** Measured on this
+machine, same prompt, same server:
+
+| Model | Throughput | A lens answer |
+|---|---|---|
+| `openai/gpt-oss-20b` (12.11 GB, MoE) | ~96 tok/s | **4-7s** |
+| `qwen/qwen3.5-9b` (6.55 GB, reasoning) | ~2.4 tok/s | 3-6 min, or never |
+
+qwen3.5 is a reasoning model that spends its whole `max_tokens` budget thinking — 400 of 400
+`completion_tokens` came back as `reasoning_tokens`, with `content` **empty**. It ignores
+`chat_template_kwargs: {"enable_thinking": false}`. At 2.4 tok/s it blows the 180s
+`LMSTUDIO_TIMEOUT` and `generate.py` falls back to Claude with only a `log.warning` — which is
+exactly the sweep-across-the-tab-row billing risk this file warns about, and it fires whether or
+not LM Studio is running. **If lenses feel slow, check `lms ps` before suspecting the code.**
+
+`local_model()` prefers the **loaded** chat model, via LM Studio's own `/api/v0/models` (it carries
+`type` and `state`; the OpenAI-compatible `/v1/models` carries neither and lists the embedding model
+right alongside the LLMs). Any other OpenAI-compatible server without `/api/v0` still works off the
+`/v1` listing. `LMSTUDIO_MODEL` in `backend/.env` overrides the probe entirely.
+
+Two shapes to know if you touch `_local_generate`: reasoning arrives in a **separate**
+`reasoning_content` / `reasoning` field on newer LM Studio builds, not inline — so
+`_strip_reasoning`'s `<think>` regex is a no-op there, and an empty `content` is what you actually
+have to handle. And `lms load -c/--context-length/--parallel/--gpu` were **ignored** on this build:
+the model loaded with its own saved config (235k context, parallel 4, 15.5 of 16.3 GB VRAM) no
+matter what was passed. Change those in LM Studio's UI, not on the command line.
+
 ## The UI rebuild (read this before touching the frontend)
 
 Every page is at most **three zones, in order**: orient (one bar, ≤4 facts) → act (the one thing the
