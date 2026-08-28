@@ -90,6 +90,27 @@ def test_generic_link_text_gets_a_title_from_the_url():
     assert _links("[Attention Is All You Need](https://arxiv.org/abs/1706.03762)")[0]["title"] == "Attention Is All You Need"
 
 
+GLOSSARY = """# Glossary
+
+## A
+
+**Attention** — the mechanism that lets a token read every other token in the sequence,
+which is what made transformers parallelizable in the first place.
+
+## QA:
+
+Quality assurance sits between staging and release; the gate is the regression suite,
+not a person clicking through the app one screen at a time.
+"""
+
+
+def test_letter_headings_do_not_become_cards():
+    headings = [h for h, _ in _split_sections(GLOSSARY)]
+    assert "A" not in headings, "a glossary letter became 'Explain: A'"
+    # two alphanumerics is enough to name something — short real headings survive
+    assert "QA:" in headings, headings
+
+
 def test_repo_boilerplate_files_are_not_study_material():
     for junk in ["repo/LICENSE.md", "repo/CONTRIBUTING.md", "repo/CODE_OF_CONDUCT.md",
                  "repo/.github/ISSUE_TEMPLATE/bug_report.md"]:

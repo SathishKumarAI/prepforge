@@ -2,15 +2,17 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-08-28.
+- **Last touched:** 2026-08-27.
 - **Where I stopped:** Everything merged to `main` and nothing in flight. The app runs on this
   Windows machine, loaded with real prep material, with a **Sources** tab for managing it. Eight
-  public repos are cloned into `backend/content/library/` and ingested: **8,377 questions**
-  (100 curated + 6,732 ingested + 1,545 vault), 6,399 quizzable, 1,836 distinct "go deeper" links.
+  public repos are cloned into `backend/content/library/` and ingested: **8,330 questions**
+  (100 curated + 6,685 ingested + 1,545 vault), 6,353 synthetic quizzes, 1,864 with reading links.
   Shipped as PRs #1 (ingest quality) → #2 (Sources tab, provenance, reading, tags, quiz picker) →
-  #3 (dev.sh + vault path), squash-merged in that order; Plane COD-14 → COD-17 are Done.
-- **Next action:** Nothing queued. Pick from `docs/BACKLOG.md` — 11 unchecked, the cheapest being
-  `P1 URL → clean article to library`, which `capture.read` already mostly does.
+  #3 (dev.sh + vault path) → #5 (glossary letter-headings, COD-18), squash-merged in that order;
+  Plane COD-14 → COD-18 are Done.
+- **Next action:** Nothing queued — the board has no open `repo:interview_prep` item. Pick from
+  `docs/BACKLOG.md` — 11 unchecked, the cheapest being `P1 URL → clean article to library`, which
+  `capture.read` already mostly does.
 - **Blocked on:** Nothing.
 
 ## What the Sources tab does
@@ -68,8 +70,11 @@ default ingest tier is `deterministic` — zero tokens, no model.
 
 ## Verified 2026-08-27
 
-- `backend/test_ingest_split.py` → 7/7 pass (guards the `<details>` strip, TOC/diagram skip,
-  heading numbering, doc-title fallback, repo boilerplate, deep-link extraction).
+- `backend/test_ingest_split.py` → 9/9 pass (guards the `<details>` strip, TOC/diagram skip,
+  heading numbering, doc-title fallback, repo boilerplate, deep-link extraction, letter headings).
+- Re-ingest after the letter-heading fix: 853 files → **6,685 cards** (was 6,732 — the 47 dropped
+  are the 46 glossary letters plus one stray `]`), `build_related` → 8,330 questions,
+  8,301 with related, 1,864 with reading. `GET /questions` carries no bare-letter card.
 - `cd frontend && npm run build` → `✓ built in 2.71s`, exit 0 (`tsc --noEmit` clean). Warns the
   main chunk is 680 kB — pre-existing, not from this work.
 - `GET /health` → `{"status":"ok","questions":8377,...}`; `GET /sources` → 9 collections.
@@ -82,21 +87,20 @@ default ingest tier is `deterministic` — zero tokens, no model.
 - Quiz source picker: 9 collection chips + a filter box + 8 rows. Typing "kafka" narrows 636 docs
   to 16 across two collections; picking one shows the selection chip and the footer reads
   "13 questions match · drawing 10".
-- Provenance + reading: `GET /questions` returns `origin` on **8377/8377**; a curated card renders
+- Provenance + reading: `GET /questions` returns `origin` on every question; a curated card renders
   "✦ PrepForge bank" and its authored XGBoost citation under "More to read".
-  `backend/test_reading_index.py` → 5/5, `test_ingest_split.py` → 8/8.
+  `backend/test_reading_index.py` → 5/5.
 - `GET /questions` → 15 MB. Growing; if Browse ever feels slow, that payload is the first suspect.
 
 ## Open threads
 
-- **COD-18** (Backlog): glossary letter-headings still become cards — `Explain: W — Glossary`.
-  Needs a minimum heading length in `_split_sections`, `backend/ingest.py`.
-- Ingest quality, still imperfect: glossary letter-headings ("W") still become cards. Repo
-  boilerplate is filtered now (`_is_boilerplate`).
+- Ingest quality: glossary letter-headings are gone (COD-18, `MIN_HEADING_ALNUM` in
+  `backend/ingest.py`), repo boilerplate is filtered (`_is_boilerplate`), fence-only and
+  navigation sections are skipped. Nothing known-bad is left in the card set.
 - The "awesome list" repos (`awesome-system-design-resources`, `system-design-academy`,
   `system-design-resources`) are link collections, not prose — they yield few cards (19/5/64) but
   most of the "go deeper" links. That is the right trade, not a bug.
-- Only 1,869 of 8,377 questions have reading links, and that is honest: the rest have neither their
+- Only 1,864 of 8,330 questions have reading links, and that is honest: the rest have neither their
   own links, an authored citation, nor a close-enough neighbour to borrow from. Lowering
   `BORROW_SCORE` (`pipeline.py`) would raise coverage and lower precision — it was 0.12 once and
   offered "ACID transactions" as further reading on "AI vs ML vs deep learning".
