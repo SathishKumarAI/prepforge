@@ -24,7 +24,13 @@ RES = DATA / "resources.json"
 LIBRARY = BASE / "content" / "library"
 
 _YT = ("youtube.com/watch", "youtu.be/", "youtube.com/shorts")
-_UA = "Mozilla/5.0 (compatible; PrepForgeBot/1.0; +local)"
+# Identifies the tool and where to complain about it. Wikipedia in particular
+# 403s generic bot agents by policy and asks for exactly this shape; 21 cited
+# Wikipedia pages failed under the old "+local" string.
+_UA = (
+    "PrepForge/1.0 (personal study tool; +https://github.com/SathishKumarAI/prepforge) "
+    "python-httpx"
+)
 
 
 def _load() -> list[dict]:
@@ -122,13 +128,31 @@ def read(url: str, topic: str = "AI", title: str = "") -> dict:
             log.warning("read failed: %s", exc)
             return {"error": "fetch_failed", "message": str(exc)}
 
-    # persist to library as markdown (for ingestion + graph + future use)
+    return _save(url, title, md, topic)
+
+
+def _save(url: str, title: str, md: str, topic: str, source: str = "web-capture") -> dict:
+    """Persist one page as library markdown. The only writer of that shape."""
     LIBRARY.mkdir(parents=True, exist_ok=True)
     fname = f"{_slug(title)}.md"
-    doc = f"---\ntitle: {json.dumps(title)}\nurl: {url}\ntopic: {topic}\nsource: web-capture\n---\n\n{md}"
+    doc = f"---\ntitle: {json.dumps(title)}\nurl: {url}\ntopic: {topic}\nsource: {source}\n---\n\n{md}"
     (LIBRARY / fname).write_text(doc, encoding="utf-8")
     log.info("read+saved: %s", fname)
     return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
+
+
+def read_html(url: str, html: str, topic: str = "AI", title: str = "") -> dict:
+    """Same extraction and same file shape as read(), for HTML somebody else
+    fetched — a browser that ran the page's JavaScript, in practice. Frontmatter
+    says `source: web-render` so a rendered capture is distinguishable from a
+    plain one without re-fetching either."""
+    soup = BeautifulSoup(html, "html.parser")
+    page_title = (soup.title.string if soup.title else None) or title or url
+    title = title or page_title.strip()
+    body = _html_to_markdown(soup)
+    if not body:
+        return {"error": "empty", "message": "Rendered page still had no readable content."}
+    return _save(url, title, f"# {title}\n\n{body}\n", topic, source="web-render")
 
 
 def _pdf_to_markdown(data: bytes) -> str:
