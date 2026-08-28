@@ -38,6 +38,18 @@ export async function generateAnswer(
   return res.json();
 }
 
+/** Four fields per question — what a jump box needs. See GET /questions/index. */
+export interface QuestionLite {
+  id: string;
+  question: string;
+  topic: string;
+  difficulty: string;
+}
+
+export async function fetchQuestionIndex(): Promise<{ questions: QuestionLite[] }> {
+  return get("/questions/index");
+}
+
 export interface Providers {
   /** The model id LM Studio is serving right now, or null if it is not running. */
   local_model: string | null;
