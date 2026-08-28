@@ -160,3 +160,63 @@ Chrome automation was unavailable in this session.
       headless fetch or a reader service, not a bigger `User-Agent` lie.
 - [ ] Cached lenses are free too, and the tab row cannot know it. A cache-state
       endpoint would make the `$` markers exact rather than conservative.
+
+## 2026-08-28 23:10 — Everything the first entry left pending, closed
+
+**Summary:** The follow-ups from the entry above are done, and the thing that made them
+possible came first: `npm run shoot`, a screenshot script built on the Chrome that is
+already installed and the WebSocket Node already has. Nine more PRs (#26-#36). The
+question bank went **8,330 -> 19,074** because the fetched web pages became cards, and
+five of the seven "not verified" claims from this morning are now photographs.
+
+**Changes:**
+
+- `frontend/scripts/shoot.mjs` (new) — launches a throwaway headless Chrome, drives it
+  over CDP, writes PNGs of Today, Library, the palette (empty, typed, and showing recent)
+  and a lens generating, in both themes.
+- `frontend/src/hooks/useProviders.ts`, `QuestionDetail.tsx` — a third state, `loaded`.
+  The row no longer claims "LM Studio is off" during the seconds before it has asked.
+- `backend/main.py`, `generate.py` — `GET /questions/index` (1.17 MB instead of 17.5 MB)
+  and `GET /generate/cached/{qid}` (a cached lens is free whatever the provider is).
+- `frontend/src/App.tsx`, `pages/Today.tsx` — Library and Study lazy; Today reads the
+  index. Main chunk 754 kB -> 344 kB.
+- `backend/fetch_reading.py`, `capture.py` — `--render` through headless Chrome for
+  JS-only pages, a User-Agent that Wikipedia accepts, and `looks_like_a_wall()`.
+- `frontend/src/components/CommandPalette.tsx`, `lib/storage.ts`, `hooks/useProgress.ts` —
+  `Recently read`, backed by `progress.recent`.
+- The fetched library ingested: 6,685 -> 17,429 cards, 1,864 -> 3,016 questions with
+  reading links.
+
+**Decisions:**
+
+- **A screenshot tool that asserts nothing.** A "visual test" that passes on a blank page
+  is worse than no test; this writes evidence and a human reads it. It earned its place
+  in the first ten minutes by showing two bugs a green build could not.
+- **Unknown is a third state, not a default.** Twice today a surface rendered "I do not
+  know yet" as a fact: the lens row said LM Studio was off, and the palette said nothing
+  matched "kafka". Both are now explicit.
+- **The wall gate exists because rendering succeeded.** `--render` "recovered" five pages
+  that were 404s and Cloudflare interstitials. A pass that reports success while writing
+  garbage is worse than one that fails.
+- **PR #16 was merged, not closed.** Its measured LM Studio notes — gpt-oss-20b at 96
+  tok/s versus qwen3.5-9b at 2.4 tok/s, whose entire token budget goes to reasoning and
+  returns empty content — are not reproducible from the code, and would have cost the
+  next session an afternoon.
+
+**Found on the way:**
+
+- The shot script's Chrome profile lived under `frontend/` for one run and killed vite's
+  watcher with `EBUSY`. It is in the OS temp dir now.
+- It also wrote `settings` rather than `prepforge:settings`, so three shots named "light"
+  were dark — mislabelled evidence, which is worse than none.
+- `/questions/index` returned `{"error":"not found"}` until the route moved above
+  `/questions/{qid}`. FastAPI matches in definition order; a test now asserts it.
+- Sampled ingested cards include consultancy marketing sections. `_is_boilerplate` was
+  written for cloned repos, not the open web. Left as a decision for the next session.
+
+**Follow-ups:**
+- [ ] Decide on the web-ingest noise (a filter, or accept it).
+- [ ] The three still-unverified UI-rebuild pieces: timed quiz expiry, Reader PDF +
+      web-fetch, drill mode.
+- [ ] A plain `--retry-failed` pass now that the User-Agent is fixed; Wikipedia alone is
+      21 pages.

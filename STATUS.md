@@ -3,43 +3,48 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-08-28.
-- **Where I stopped:** A UI pass shipped in seven PRs — **#18, #19, #20, #21, #22, #23, #24** — all
-  squash-merged; `main` is at #24. **Two PRs from the previous session are still open and are not
-  mine to merge: #16** (`fix/local-model-picks-loaded-chat-model`) and **#17** (`docs/plane-rules…`).
-  Read them before branching, because #16 touches `generate.py`'s local-model probe, which #19 now
-  depends on.
-- **The one thing still running:** `backend/fetch_reading.py --all` was fetching the 1,842 pages the
-  bank cites into `content/library/`. It is resumable — re-run the same command and it picks up
-  where it stopped, because every URL's outcome is written to `content/reading_fetch.json` as it
-  lands. At the last check: **1,445 queued, ~335 processed, 250 ok / 63 failed / 20 empty / 2
-  refused as non-public**, ~75% success.
-- **Next action, in order:**
-  1. **Finish the fetch** — `cd backend && ./.venv/Scripts/python.exe fetch_reading.py --all`.
-  2. **Make them quizzable** — `POST /ingest`, then `POST /pipeline/build`, and record the new card
-     count here. Fetched pages are readable but not yet cards.
-  3. **Look at the UI.** Nothing shipped today has been *seen*: the `$` markers on billed lens tabs,
-     the Ctrl+K palette, and both new themes are verified by build output and measured contrast, not
-     by looking. Chrome automation was unavailable all session (devtools profile held by a running
-     Chrome; the claude-in-chrome extension not connected).
-  4. Then the three verifications that were already outstanding: a **timed quiz through a real 30s
-     expiry**, **Reader's PDF + web-fetch** against a real file and URL, and **drill mode** end to end.
-- **Blocked on:** nothing. The old blocker — port 8787 held by a listener whose owning process no
-  longer exists (pid 7768, gone; Windows keeps the socket until a reboot) — is now routed around:
-  **`PF_API_PORT=8788 ./dev.sh`**.
-- **Found, not fixed:** the question bank still contains *"What's the weather like today?"* tagged
-  `Behavioral` (COD-34, Backlog).
+- **Where I stopped:** Everything is merged and **no PR is open**. `main` carries fifteen PRs from
+  this session (#18-#36, minus the two that were closed in favour of #35). The board is clear:
+  COD-30, 39, 44, 45, 62-72 are Done.
+- **The bank more than doubled.** The 1,842 URLs the questions cite were fetched into the library,
+  ingested, and re-indexed: **8,330 -> 19,074 questions**, 6,685 -> **17,429** ingested cards, and
+  questions carrying reading links went **1,864 -> 3,016**. `GET /health` says 19,074.
+- **Next action:** **read some of the new cards.** 1,124 web pages became 10,744 new cards on a
+  deterministic ingest, and the sampling done here found real material (scikit-learn, Kafka, system
+  design) next to marketing sections from consultancies' pages — "Explain: Consulting services".
+  The ingest's `_is_boilerplate` was written for cloned repos, not for the open web. Decide whether
+  that noise is worth a filter or worth leaving. Then: a **timed quiz through a real 30s expiry**,
+  **Reader's PDF + web-fetch**, and **drill mode** end to end — the three still-unverified pieces of
+  the UI rebuild.
+- **Blocked on:** nothing. Port 8787 is still held by a dead listener (pid 7768) until a reboot;
+  **`PF_API_PORT=8788 ./dev.sh`** goes around it, and everything in this session was verified that
+  way.
+- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34, Backlog),
+  and the consultancy-page noise above.
 
 ## What shipped 2026-08-28, and the traps inside it
 
 | PR | What | The trap it leaves |
 |---|---|---|
-| #18 | Two in-app links stopped using routes retired in #6 | none — the redirect tables stay for bookmarks and the extension |
-| #19 | **Hover reaches only lenses that are free right now** | the `$` markers mark by *provider*, not by cache: a cached lens is free and still marked |
-| #20 | `PF_API_PORT` overrides the backend port | the extension's `host_permissions` is still pinned to 8787 — it cannot follow the override |
+| #18 | Two in-app links stopped using routes retired in #6 | none |
+| #19 | **Hover reaches only lenses that are free right now** | superseded by #31 — the row now also knows what is cached |
+| #20 | `PF_API_PORT` overrides the backend port | the extension's `host_permissions` is pinned to 8787 and cannot follow |
 | #21 | **Five themes became two**, measured | `npm run contrast` must pass before any colour change lands |
 | #22 | `fetch_reading.py` pulls the cited web into the library | fetched pages are git-ignored on purpose; do not commit them |
-| #23 | A `τ` in a page title no longer kills a whole run | — |
-| #24 | **Ctrl+K** searches all 8,330 questions from anywhere | it indexes titles only; Library's box is still the one that searches answers |
+| #23 | A `t`-with-a-tail in a page title no longer kills a whole run | — |
+| #24 | **Ctrl+K** searches every question from anywhere | it indexes titles only; Library's box still searches answers |
+| #25 | The docs for all of the above | — |
+| #26 | **`npm run shoot`** — screenshots the running app | it asserts nothing; a screenshot is evidence, not a test |
+| #27 | The lens row stopped claiming "LM Studio is off" before it had asked | — |
+| #28 | The shot script wrote the wrong localStorage key, so "light" shot dark | the app namespaces every key with `prepforge:` |
+| #29 | The palette's close button, and a favicon that 404'd | — |
+| #30 | **`GET /questions/index`** — 1.17 MB instead of 17.5 MB | it is declared ABOVE `/questions/{qid}`; below it, "index" is a question id |
+| #31 | **A cached lens is free**, and the row knows | the cache check is per question, one small request |
+| #32 | Library and Study are lazy; Today reads the index | main chunk 754 kB -> 344 kB |
+| #33 | **`--render`** re-tries failures through Chrome, and refuses walls | a browser renders a 403 as happily as an article — that is what `looks_like_a_wall` is for |
+| #34 | The empty palette lists what you were just reading | recorded on mount of the detail pane, not on hover |
+| #35 | Merged the local-model pick (#16) and kept its measured notes | — |
+| #36 | The shot script can press a tab and wait for a generation | use `[role=tab]`; Library's view switch is buttons too |
 
 ### The lens cost gate (#19), which replaces the old #14 trap
 
@@ -151,29 +156,43 @@ Library's header and from the Ctrl+K palette.
 - **One accent.** After #21 the only hues on chrome are the accent and the topic dot (which is data).
   If you reach for `lavender` or `sky` to make something stand out, that is the rule saying no.
 
-## Pulling the cited web into the library (#22)
+## Pulling the cited web into the library (#22, #23, #33)
 
-The bank carries **7,398 citations to 1,842 distinct URLs**. `backend/fetch_reading.py` turns them
-into library Markdown, most-cited first:
+The bank carried **7,398 citations to 1,842 distinct URLs**. They are now library Markdown, and
+through ingest they are cards:
+
+| | |
+|---|---|
+| URLs walked | 1,515 (leetcode.com skipped by policy — it 403s every scraper) |
+| Pages saved | **1,124** (74%), 42 MB, 1,107 files in `content/library/` |
+| Failed / empty / refused | 247 / 140 / 4 — recorded per URL in `content/reading_fetch.json` |
+| Cards after ingest | 6,685 -> **17,429** |
+| Questions | 8,330 -> **19,074**; with reading links 1,864 -> **3,016** |
 
 ```bash
 cd backend
 ./.venv/Scripts/python.exe fetch_reading.py --dry-run       # the plan, fetch nothing
-./.venv/Scripts/python.exe fetch_reading.py --limit 50      # a bounded pass
 ./.venv/Scripts/python.exe fetch_reading.py --all           # everything still pending
-./.venv/Scripts/python.exe fetch_reading.py --retry-failed  # only the failures
-./.venv/Scripts/python.exe test_fetch_reading.py            # 4/4, no network
+./.venv/Scripts/python.exe fetch_reading.py --retry-failed  # plain re-try (the UA is better now)
+./.venv/Scripts/python.exe fetch_reading.py --render        # re-try through headless Chrome
+./.venv/Scripts/python.exe test_fetch_reading.py            # 6/6, no network
+curl -X POST localhost:8788/ingest?mode=deterministic       # library -> cards
+curl -X POST localhost:8788/pipeline/build                  # -> related + reading indexes
 ```
 
-- Outcomes go to `content/reading_fetch.json` **after every fetch**, so a run is resumable and an
-  interruption costs nothing. Both files are git-ignored.
-- ≥2s between hits on the same host. Non-public addresses (localhost, RFC1918, link-local,
-  `169.254.169.254`) are refused — these URLs come from ingested third-party content and are
-  untrusted input. Two real cited URLs have already been refused by that guard.
-- `leetcode.com` is in `BLOCKED_HOSTS`: it 403s every scraper and is the most-cited host by 2×. For
-  a problem page the link *is* the content.
-- Roughly **a quarter of URLs fail** — Medium, Stack Overflow and some vendor docs answer a scraper
-  with a wall or need JavaScript. That is recorded per URL, not hidden.
+Traps worth knowing before the next pass:
+
+- **A browser renders an error page as happily as an article.** The first `--render` pass saved
+  "Error 404", "Access Denied" and "Attention Required! | Cloudflare" as study material.
+  `looks_like_a_wall()` now rejects those by title and rejects anything under 800 characters. If you
+  loosen it, you are choosing to let walls into the card set.
+- **Outcomes are written after every fetch**, so a run is resumable and an interruption costs
+  nothing. Both `reading_fetch.json` and the pages are git-ignored.
+- The User-Agent now names the tool and links the repo — Wikipedia 403s the generic shape, and that
+  alone cost 21 cited pages until it was fixed.
+- **The ingest's boilerplate filter was written for cloned repos, not the open web.** Sampled cards
+  include real material and also things like "Explain: Consulting services", which is a consultancy's
+  pitch section. Nobody has decided yet whether that is worth filtering.
 
 ## What the Sources tab does
 
@@ -237,24 +256,35 @@ default ingest tier is `deterministic` — zero tokens, no model.
 
 ## Verified 2026-08-28
 
-- `cd frontend && npm run build` → exit 0, `tsc --noEmit` clean, on every PR. Main chunk 747.26 kB →
-  **753.62 kB** across the session (+5.19 kB is the palette; +1.17 kB the cost gate). CSS **43.63 kB
-  → 41.39 kB** (gzip 9.17 → 8.50) — three palettes lighter.
-- `cd frontend && npm run contrast` → **all 24 pairings clear their floor in both themes**, exit 0.
-- `backend/test_fetch_reading.py` → **4/4**. Guards the non-public-address refusal
-  (localhost, 127.0.0.1, ::1, 192.168/10.x, 169.254.169.254, `file://`, `ftp://`, an unresolvable
-  host), the dedupe-and-rank, and "never fetch a success twice".
-- `GET /generate/providers` against a **real LM Studio** on this machine:
-  `{"local_model":"openai/gpt-oss-20b","free_modes":["star","eli5","first_principles","aws","thinking","faang"]}`.
-  This is the first time the local path has been checked against a real LM Studio rather than the
-  stub in `test_local_provider.py` — the *endpoint* is now proven; the *rendered meta row* still is
-  not (COD-44).
-- `PF_API_PORT=8788 npm run dev` + backend on 8788 → `curl localhost:5177/api/health` returns
-  `{"status":"ok","questions":8330,...}` through the proxy. The override works end to end.
-- `fetch_reading.py` real runs: `--limit 40` → 20 ok; `--limit 30` with `BLOCKED_HOSTS` → 27 ok.
+Everything here is a command's output from this session, not an estimate.
 
-**Not verified, and say so out loud:** anything visual. No screenshot was taken and no page was
-driven this session.
+**Seen, in a browser** (`cd frontend && npm run shoot`, PNGs in `scripts/.shots/`, git-ignored):
+
+- Today, Library and the Ctrl+K palette, in **both themes**.
+- The palette **driven**: Ctrl+K, type "kafka" -> 12 results from 8,330 with topic and difficulty.
+- The palette's **Recently read** section, after opening a question.
+- The lens tab row on a web-ingested card: `$` on **Grounded alone**, and
+  "Local model · openai/gpt-oss-20b — 6 lenses generate free on hover."
+
+**Measured:**
+
+- `npm run build` -> exit 0, `tsc --noEmit` clean. Main chunk **754.52 kB -> 343.67 kB**
+  (gzip 242.21 -> 110.49); the >500 kB warning is gone. CSS **43.63 -> 41.39 kB**.
+- `npm run contrast` -> **24/24 pairings clear their floor** in both themes.
+- `GET /questions/index` **1,170,238 bytes** vs `GET /questions` **17,489,709**; 0.22s through the
+  dev proxy.
+- Backend tests: `test_local_provider.py` **6/6**, `test_fetch_reading.py` **6/6**,
+  `test_questions_index.py` **3/3**.
+- `POST /generate/answer` (mode `eli5`, uncached qid) against a **real LM Studio** ->
+  `{"model":"openai/gpt-oss-20b","provider":"lmstudio","input_tokens":155,"output_tokens":241,`
+  `"total_tokens":396,"cost_usd":0.0}` with a real answer body. **This is COD-44, closed.**
+- `GET /generate/cached/q001` -> all seven lenses, which is why q001's row shows no `$` at all.
+- `PF_API_PORT=8788 npm run dev` -> `curl localhost:5173/api/health` returns the backend on 8788.
+- `POST /ingest` -> 17,429 cards; `POST /pipeline/build` ->
+  `{"questions":19074,"with_related":19045,"with_reading":3016}`.
+
+**Not verified:** the timed quiz's 30s expiry, Reader's PDF and web-fetch, drill mode end to end.
+Same three as before this session — nothing here touched them.
 
 ## Open threads
 
