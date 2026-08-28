@@ -38,6 +38,20 @@ export async function generateAnswer(
   return res.json();
 }
 
+export interface Providers {
+  /** The model id LM Studio is serving right now, or null if it is not running. */
+  local_model: string | null;
+  /** Lens modes that cost nothing at this moment. Empty when nothing is local. */
+  free_modes: string[];
+}
+
+// Probed on every call, not cached at startup: LM Studio is started and stopped
+// by hand mid-session, and a stale answer here is the difference between a free
+// hover and a billed one.
+export async function fetchProviders(): Promise<Providers> {
+  return get("/generate/providers");
+}
+
 export interface ReadResult {
   ok?: boolean;
   title?: string;
