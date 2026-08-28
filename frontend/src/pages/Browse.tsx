@@ -201,7 +201,10 @@ function DeepStudyLinks({ questions, label }: { questions: Question[]; label: st
   const links = useMemo(() => {
     const seen = new Map<string, { title: string; url: string; count: number }>();
     for (const q of questions) {
-      for (const l of q.links ?? []) {
+      // own links + authored citations; borrowed ones (`via`) are already counted
+      // under the question they came from, so counting them again would inflate
+      const cited = [...(q.links ?? []), ...(q.reading ?? []).filter((l) => !l.via)];
+      for (const l of cited) {
         const hit = seen.get(l.url);
         if (hit) hit.count += 1;
         else seen.set(l.url, { ...l, count: 1 });

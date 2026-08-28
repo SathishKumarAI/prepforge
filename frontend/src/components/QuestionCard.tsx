@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { useProgress } from "../hooks/useProgress";
 import { questionMap } from "../hooks/useQuestions";
-import type { Question, VaultSource } from "../lib/types";
+import type { DeepLink, Question, VaultSource } from "../lib/types";
 import { ACCENT_BORDER, topicColor } from "../lib/topics";
 import { DifficultyBadge, TopicBadge } from "./Badge";
 import { DeepAnswer } from "./DeepAnswer";
@@ -39,9 +39,12 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <TopicBadge topic={q.topic} />
             <DifficultyBadge difficulty={q.difficulty} />
-            {q.from_vault && (
-              <span className="pill border-peach/40 text-peach">
-                ⛁ vault{(q.sources?.length ?? 0) > 1 ? ` · ${q.sources!.length} sources` : ""}
+            {q.origin && (
+              <span
+                className="pill border-white/10 text-overlay1"
+                title={`Where this question came from: ${q.origin.label}`}
+              >
+                {ORIGIN_ICON[q.origin.kind] ?? "⛁"} {q.origin.label}
               </span>
             )}
           </div>
@@ -137,26 +140,7 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
                 </div>
               )}
 
-              {/* outbound reading the source author curated */}
-              {q.links && q.links.length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">Go deeper</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {q.links.map((l) => (
-                      <a
-                        key={l.url}
-                        href={l.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={l.url}
-                        className="pill border-sapphire/30 text-sapphire hover:bg-sapphire/10"
-                      >
-                        ↗ {l.title.length > 42 ? l.title.slice(0, 40) + "…" : l.title}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <MoreToRead links={q.links} reading={q.reading} />
 
               <DeepAnswer question={q.question} topic={q.topic} qid={q.id} />
 
@@ -251,6 +235,50 @@ function stripMd(md: string): string {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 240);
+}
+
+const ORIGIN_ICON: Record<string, string> = {
+  curated: "✦",
+  library: "⛁",
+  vault: "◈",
+};
+
+// Reading for this question: links its own source cites first, then anything the
+// index could offer it — borrowed links carry `via`, so a suggestion never passes
+// itself off as something the author of this card actually cited.
+function MoreToRead({ links, reading }: { links?: DeepLink[]; reading?: DeepLink[] }) {
+  const seen = new Set<string>();
+  const items: DeepLink[] = [];
+  for (const l of [...(links ?? []), ...(reading ?? [])]) {
+    if (!seen.has(l.url)) {
+      seen.add(l.url);
+      items.push(l);
+    }
+  }
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mt-4">
+      <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">More to read</div>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((l) => (
+          <a
+            key={l.url}
+            href={l.url}
+            target="_blank"
+            rel="noreferrer"
+            title={l.via ? `${l.url}\nsuggested via: ${l.via}` : l.url}
+            className={`pill hover:bg-sapphire/10 ${
+              l.via ? "border-white/10 text-subtext0" : "border-sapphire/30 text-sapphire"
+            }`}
+          >
+            ↗ {l.title.length > 42 ? l.title.slice(0, 40) + "…" : l.title}
+            {l.via && <span className="ml-1 text-overlay0">· related</span>}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function RelatedRail({ related, onJump }: { related?: { id: string; score: number }[]; onJump: (id: string) => void }) {

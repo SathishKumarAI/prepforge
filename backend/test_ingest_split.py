@@ -80,6 +80,16 @@ def test_deep_links_keep_reading_and_drop_credits():
     assert _links("[repo](https://github.com/o/r)")[0]["url"] == "https://github.com/o/r"
 
 
+def test_generic_link_text_gets_a_title_from_the_url():
+    # question banks write "[Answer](url)" constantly — a reading list of twenty
+    # entries all called "Answer" is no reading list at all
+    got = _links("[Answer](https://aws.amazon.com/what-is/overfitting/)")[0]["title"]
+    assert got == "overfitting · aws.amazon.com", got
+    assert _links("[here](https://example.com/)")[0]["title"] == "example.com"
+    # a descriptive title is left alone
+    assert _links("[Attention Is All You Need](https://arxiv.org/abs/1706.03762)")[0]["title"] == "Attention Is All You Need"
+
+
 def test_repo_boilerplate_files_are_not_study_material():
     for junk in ["repo/LICENSE.md", "repo/CONTRIBUTING.md", "repo/CODE_OF_CONDUCT.md",
                  "repo/.github/ISSUE_TEMPLATE/bug_report.md"]:

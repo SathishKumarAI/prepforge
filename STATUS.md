@@ -81,6 +81,9 @@ default ingest tier is `deterministic` — zero tokens, no model.
 - Quiz source picker: 9 collection chips + a filter box + 8 rows. Typing "kafka" narrows 636 docs
   to 16 across two collections; picking one shows the selection chip and the footer reads
   "13 questions match · drawing 10".
+- Provenance + reading: `GET /questions` returns `origin` on **8377/8377**; a curated card renders
+  "✦ PrepForge bank" and its authored XGBoost citation under "More to read".
+  `backend/test_reading_index.py` → 5/5, `test_ingest_split.py` → 8/8.
 - `GET /questions` → 15 MB. Growing; if Browse ever feels slow, that payload is the first suspect.
 
 ## Open threads
@@ -92,6 +95,8 @@ default ingest tier is `deterministic` — zero tokens, no model.
 - The "awesome list" repos (`awesome-system-design-resources`, `system-design-academy`,
   `system-design-resources`) are link collections, not prose — they yield few cards (19/5/64) but
   most of the "go deeper" links. That is the right trade, not a bug.
-- `_tags()` in `ingest.py` has a thin stopword list, so tags like `#you`, `#would`, `#they` show up
-  in the Quiz tag picker and leak into cloze distractors.
+- Only 1,869 of 8,377 questions have reading links, and that is honest: the rest have neither their
+  own links, an authored citation, nor a close-enough neighbour to borrow from. Lowering
+  `BORROW_SCORE` (`pipeline.py`) would raise coverage and lower precision — it was 0.12 once and
+  offered "ACID transactions" as further reading on "AI vs ML vs deep learning".
 - `docs/BACKLOG.md` has 11 unchecked items; `docs/QUIZ-BACKLOG.md` has none.

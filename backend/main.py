@@ -50,19 +50,39 @@ def _read_bank(path: Path) -> list[dict]:
     return data.get("questions", data if isinstance(data, list) else [])
 
 
+def _origin(q: dict, kind: str) -> dict:
+    """Where this question came from, for every question — the curated bank, a cloned
+    repo, an uploaded doc, or the vault. Shown on the card so provenance is never a guess."""
+    if kind == "curated":
+        return {"kind": "curated", "label": "PrepForge bank"}
+    if kind == "vault":
+        return {"kind": "vault", "label": "Obsidian vault"}
+    src = (q.get("source_file") or "").replace("\\", "/")
+    collection = src.split("/")[0] if "/" in src else ""
+    return {"kind": "library", "label": collection or "Captured pages"}
+
+
 def _load_questions() -> list[dict]:
     # curated bank + ingested markdown + source-tagged vault questions
-    curated = _read_bank(CONTENT / "questions.json")
-    generated = _read_bank(CONTENT / "generated.json")
-    vault_q = _read_bank(CONTENT / "vault_questions.json")
-    qs = curated + generated + vault_q
-    # attach the zero-token related-questions memory index, if built
+    banks = (
+        ("curated", _read_bank(CONTENT / "questions.json")),
+        ("library", _read_bank(CONTENT / "generated.json")),
+        ("vault", _read_bank(CONTENT / "vault_questions.json")),
+    )
+    qs: list[dict] = []
+    for kind, bank in banks:
+        for q in bank:
+            q["origin"] = _origin(q, kind)
+            qs.append(q)
+    # attach the zero-token related + reading indexes, if built
     related = pipeline_mod.load_related()
-    if related:
-        for q in qs:
-            rel = related.get(q.get("id", ""))
-            if rel:
-                q["related"] = rel
+    reading = pipeline_mod.load_reading()
+    for q in qs:
+        qid = q.get("id", "")
+        if related.get(qid):
+            q["related"] = related[qid]
+        if reading.get(qid):
+            q["reading"] = reading[qid]
     return qs
 
 

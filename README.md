@@ -17,7 +17,8 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **+ any question bank you clone** | e.g. three public GitHub repos → ~5,400 more cards, see [seeding](#seeding-from-public-question-banks) |
 | **700 pre-authored answers** | 7 variants per question, as readable `.md` — see [Answer variants](#answer-variants) |
 | **11 pages** | Learn · Browse · Flashcards · Quiz · **Sources** · Resources · Reader · Notes · Graph · Dashboard · Bookmarks |
-| **Go deeper links** | every outbound link a source cites, on the card and aggregated per topic/search |
+| **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
+| **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
@@ -164,7 +165,7 @@ backend/
   capture.py             URL/upload → readable Markdown
   transcript.py          YouTube captions → chunked Markdown
   vault.py               Obsidian vault scan → deduped questions
-  pipeline.py            TF-IDF related-questions index
+  pipeline.py            TF-IDF related-questions index + the "more to read" index
   scrapers/              rss.py · html.py · youtube.py
   content/questions.json curated bank (committed)
   content/answers/       700 answer .md files (committed)
