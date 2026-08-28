@@ -7,6 +7,7 @@ import { SourceDoc } from "../SourceDoc";
 import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { useProgress } from "../../hooks/useProgress";
+import { useProviders } from "../../hooks/useProviders";
 import { questionMap } from "../../hooks/useQuestions";
 import type { Question, VaultSource } from "../../lib/types";
 
@@ -38,6 +39,12 @@ export function QuestionDetail({
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
+  const { local_model: localModel, free_modes: freeModes } = useProviders();
+  // The bank's own answer and your own content are files, not generations. Every
+  // other lens is free only while LM Studio is serving one — `deep` never is,
+  // because web search is the whole point of it and that runs on Claude.
+  const isFree = (v: "answer" | Mode) =>
+    v === "answer" || v === "custom" || freeModes.includes(v);
   const bookmarked = progress.bookmarks.includes(q.id);
   const note = progress.notes[q.id] ?? "";
   const map = questionMap();
@@ -50,14 +57,18 @@ export function QuestionDetail({
     setNoteOpen(false);
   }, [q.id]);
 
-  // Selecting a lens generates it, hover or press alike — so this delay is the
-  // only thing between a pointer crossing the row and a run of generations.
+  // Selecting a lens generates it, hover or press alike. So hover reaches only
+  // the lenses that are free at this moment: with LM Studio running that is six
+  // of the eight tabs and the row behaves exactly as it did, and with it off a
+  // pointer crossing the row cannot spend anything. The billed lenses still
+  // generate — they need a press, which is a decision rather than a path.
+  //
   // 400ms, longer than the list's 250ms: a tab is a much smaller target than a
   // row, and landing on the wrong lens is more disruptive than landing on the
   // wrong question.
   function peekTab(v: "answer" | Mode) {
     window.clearTimeout(tabTimer.current);
-    if (!canHover) return;
+    if (!canHover || !isFree(v)) return;
     tabTimer.current = window.setTimeout(() => setTab(v), 400);
   }
   function pickTab(v: "answer" | Mode) {
@@ -89,18 +100,46 @@ export function QuestionDetail({
 
       {/* One row, two kinds of thing — free and generated — because that is the
           order you use them in, not because they share an implementation. */}
-      <Tabs value={tab} onValueChange={(v) => pickTab(v as "answer" | Mode)} className="mb-4">
+      <Tabs value={tab} onValueChange={(v) => pickTab(v as "answer" | Mode)} className="mb-1.5">
         <TabsList className="flex-wrap" onMouseLeave={() => window.clearTimeout(tabTimer.current)}>
           <TabsTrigger value="answer" onMouseEnter={() => peekTab("answer")}>
             Answer
           </TabsTrigger>
           {LENS_TABS.map((t) => (
-            <TabsTrigger key={t.mode} value={t.mode} onMouseEnter={() => peekTab(t.mode)}>
+            <TabsTrigger
+              key={t.mode}
+              value={t.mode}
+              onMouseEnter={() => peekTab(t.mode)}
+              title={isFree(t.mode) ? undefined : "Billed to Claude — press to generate"}
+            >
               {t.label}
+              {/* The marker is what makes the two kinds of tab tell themselves
+                  apart before you commit to one. Text, not colour: a hue would
+                  be a second accent, and it would say nothing to a screen
+                  reader. */}
+              {!isFree(t.mode) && (
+                <span className="text-overlay0">
+                  <span aria-hidden="true">$</span>
+                  <span className="sr-only">, billed</span>
+                </span>
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
+
+      {/* One line, under the row it explains, because the answer to "did that
+          hover just cost me money" is worthless anywhere else on the page. */}
+      <p className="mb-4 text-micro text-overlay1">
+        {localModel ? (
+          <>
+            Local model · <span className="font-mono">{localModel}</span> — {freeModes.length} lens
+            {freeModes.length === 1 ? "" : "es"} generate free on hover.
+          </>
+        ) : (
+          <>LM Studio is off — every lens bills Claude, so they generate on a press, not a hover.</>
+        )}
+      </p>
 
       {tab === "answer" ? (
         q.answer ? (
