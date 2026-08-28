@@ -47,8 +47,9 @@ export function StudyCard({
   return (
     // Reading tier: capped measure at every width. A question set across a
     // 1050px column is a question you scan rather than read, and this is the
-    // one thing on the page you are meant to think about.
-    <article className="panel max-w-[46rem] p-5 sm:p-7">
+    // one thing on the page you are meant to think about. Focus mode is the one
+    // exception — you asked for the whole screen, so the cap comes off there.
+    <article className="panel max-w-[46rem] p-5 sm:p-7 [.focus-mode_&]:max-w-none">
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
         <TopicBadge topic={question.topic} />
         <DifficultyBadge difficulty={question.difficulty} />

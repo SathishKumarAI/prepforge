@@ -5,7 +5,7 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
     title: "Anywhere",
     items: [
       { keys: "Ctrl B", desc: "Show or hide the navigation" },
-      { keys: "f", desc: "Focus mode — hide every piece of chrome" },
+      { keys: "f", desc: "Focus mode — fullscreen, no chrome at all" },
       { keys: "?", desc: "Open this list" },
       { keys: "Esc", desc: "Leave focus mode, or close a dialog" },
     ],

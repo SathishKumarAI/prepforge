@@ -31,7 +31,7 @@ on every batch. Any future UI work: add new tickets below rather than reopening 
 - [x] Vertical rhythm on the 4/8px Tailwind spacing scale (gap/padding are all multiples of 4px); section bands via `SectionDivider`.
 - [x] Dim/secondary metadata via `overlay0/overlay1/subtext0` tokens so the eye rests on content, not counts.
 - [x] Sepia (low-blue) reading theme added to the theme switcher.
-- [x] Focus mode (press `f`): hides nav/sidebar/footer, centers a narrow reading column.
+- [x] Focus mode (press `f`): hides nav/sidebar/footer and enters real browser fullscreen; the page runs full width.
 - [x] Respect reduced-motion everywhere — global CSS override **plus** `<MotionConfig reducedMotion="user">` at the root, so every framer-motion animation honors the OS setting.
 
 ## Reading experience

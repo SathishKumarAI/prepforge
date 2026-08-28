@@ -106,6 +106,27 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, [focus]);
 
+  // Focus mode hides our chrome; the browser's chrome is chrome too, so take
+  // the real screen. A failed request (iframe, permission) is not fatal — the
+  // in-page focus layout still applies.
+  useEffect(() => {
+    if (focus) {
+      document.documentElement.requestFullscreen?.().catch(() => {});
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [focus]);
+
+  // Esc leaves fullscreen inside the browser and our keydown never fires, so
+  // follow the browser rather than assume our state is the truth.
+  useEffect(() => {
+    const sync = () => {
+      if (!document.fullscreenElement) setFocus(false);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+
   // Global keys. Ignored while typing so "f" in a search box is just an f.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -153,7 +174,10 @@ export function Layout({ children }: { children: ReactNode }) {
   const current = NAV.find((n) => (n.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(n.to)));
 
   return (
-    <div className="relative flex min-h-screen">
+    // `focus-mode` is the hook the reading tier reads: components that cap
+    // their own measure (StudyCard, the spine above it) release the cap when
+    // this class is on an ancestor. One class, no prop threaded through pages.
+    <div className={`relative flex min-h-screen ${focus ? "focus-mode" : ""}`}>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
 
@@ -296,7 +320,9 @@ export function Layout({ children }: { children: ReactNode }) {
             variant="outline"
             size="sm"
             onClick={() => setFocus(false)}
-            className="fixed right-4 top-4 z-40"
+            // Bottom, not top: the top-right corner belongs to the page's own
+            // actions ("End session"), and a fixed chip there sits on them.
+            className="fixed bottom-4 right-4 z-40"
           >
             Exit focus · Esc
           </Button>
@@ -304,7 +330,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
         <main
           className={`w-full flex-1 px-4 py-6 sm:px-6 lg:px-10 ${
-            focus ? "mx-auto max-w-3xl" : "max-w-[84rem]"
+            focus ? "" : "max-w-[84rem]"
           }`}
         >
           {children}

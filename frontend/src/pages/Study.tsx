@@ -268,7 +268,7 @@ export function Study() {
         orient={
           // Same measure as the card below it — one left gutter, one right
           // gutter, or the page reads as unstructured.
-          <div className="max-w-[46rem] pb-1">
+          <div className="max-w-[46rem] pb-1 [.focus-mode_&]:max-w-none">
             <Spine
               total={session.queue.length}
               position={session.pos}
