@@ -161,6 +161,13 @@ def generate_providers():
     return {"local_model": generate_mod.local_model(), "free_modes": generate_mod.free_modes()}
 
 
+@app.get("/generate/cached/{qid}")
+def generate_cached(qid: str):
+    """Which lenses this question already has on disk. Those cost nothing to
+    open no matter which provider is up, so the UI can stop marking them."""
+    return {"qid": qid, "cached_modes": generate_mod.cached_modes(qid)}
+
+
 class CaptureReq(BaseModel):
     url: str
     topic: str = "AI"

@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { useProgress } from "../../hooks/useProgress";
 import { useProviders } from "../../hooks/useProviders";
 import { questionMap } from "../../hooks/useQuestions";
+import { fetchCachedModes } from "../../lib/api";
 import type { Question, VaultSource } from "../../lib/types";
 
 /**
@@ -40,11 +41,26 @@ export function QuestionDetail({
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
   const { local_model: localModel, free_modes: freeModes, loaded: providersKnown } = useProviders();
+  // Which lenses this question already has on disk. Asked per question, because
+  // that is what it depends on; the answer is four fields of JSON.
+  const [cachedModes, setCachedModes] = useState<string[]>([]);
+  useEffect(() => {
+    let live = true;
+    setCachedModes([]);
+    fetchCachedModes(q.id)
+      .then((r) => live && setCachedModes(r.cached_modes))
+      .catch(() => {
+        /* unknown stays unknown: the row then marks by provider alone */
+      });
+    return () => {
+      live = false;
+    };
+  }, [q.id]);
   // The bank's own answer and your own content are files, not generations. Every
   // other lens is free only while LM Studio is serving one — `deep` never is,
   // because web search is the whole point of it and that runs on Claude.
   const isFree = (v: "answer" | Mode) =>
-    v === "answer" || v === "custom" || freeModes.includes(v);
+    v === "answer" || v === "custom" || freeModes.includes(v) || cachedModes.includes(v);
   // Until the probe answers, a generated lens is neither free nor known to bill.
   // Hover stays closed (the safe half of the unknown) but the row says nothing:
   // for the first second of every page load the honest answer is silence, and

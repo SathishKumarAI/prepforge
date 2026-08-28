@@ -64,6 +64,12 @@ export async function fetchProviders(): Promise<Providers> {
   return get("/generate/providers");
 }
 
+// Which lenses this question already has on disk. Cache-first generation serves
+// those without calling anyone, so they are free whatever the provider is.
+export async function fetchCachedModes(qid: string): Promise<{ cached_modes: string[] }> {
+  return get(`/generate/cached/${encodeURIComponent(qid)}`);
+}
+
 export interface ReadResult {
   ok?: boolean;
   title?: string;

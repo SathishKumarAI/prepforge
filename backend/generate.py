@@ -160,6 +160,26 @@ def local_model() -> str | None:
     return found
 
 
+def cached_modes(qid: str) -> list[str]:
+    """Lenses already on disk for this question — free, whatever the provider is.
+
+    `generate()` is cache-first: a mode whose .md exists costs nothing and calls
+    nobody. The tab row could not know that, so it marked every billed-provider
+    lens as billed, including ones it would have served from a file. Both file
+    shapes count: `<qid><suffix>.md` (Claude) and `<qid><suffix>__local.md` (a
+    local model), because either one short-circuits the same way.
+    """
+    if not qid:
+        return []
+    safe = _safe_qid(qid)
+    out = []
+    for mode, (_, suffix, _) in MODES.items():
+        base = f"{safe}{suffix}"
+        if (ANSWERS_DIR / f"{base}.md").exists() or (ANSWERS_DIR / f"{base}{LOCAL_SUFFIX}.md").exists():
+            out.append(mode)
+    return out
+
+
 def free_modes() -> list[str]:
     """Lenses that cost nothing right now — every non-search lens, if LM Studio
     is up. The UI generates these on hover and gates the rest behind a press."""
