@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
-import { useQuestions } from "../hooks/useQuestions";
+import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { DifficultyBadge, TopicBadge } from "./Badge";
 
 /**
@@ -47,7 +47,9 @@ const LIMIT = 12;
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
-  const { questions } = useQuestions();
+  // Fetched on the first open, not on app start: a palette nobody opens should
+  // cost nothing, and this is the titles-only projection, not the 15 MB bank.
+  const { rows: questions, loading: indexLoading } = useQuestionIndex(open);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
@@ -154,7 +156,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         >
           {rows.length === 0 && (
             <li className="px-3 py-6 text-center text-small text-overlay1">
-              Nothing matches “{query.trim()}”.
+              {indexLoading ? "Loading the question index…" : `Nothing matches “${query.trim()}”.`}
             </li>
           )}
           {rows.map((row, i) => (

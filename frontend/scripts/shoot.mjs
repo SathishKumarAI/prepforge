@@ -47,6 +47,9 @@ const SHOTS = [
   { name: "today-dark", path: "/", theme: "dark" },
   { name: "library-dark", path: "/library?view=questions", theme: "dark", settle: 9000 },
   { name: "palette-dark", path: "/", theme: "dark", keys: [{ key: "k", ctrl: true }], settle: 1200 },
+  // Typed, because an empty palette proves the dialog opens and nothing else.
+  // This one proves the index loaded and the search matches.
+  { name: "palette-search", path: "/", theme: "dark", keys: [{ key: "k", ctrl: true }], type: "kafka", settle: 4000 },
   { name: "today-light", path: "/", theme: "light" },
   { name: "library-light", path: "/library?view=questions", theme: "light", settle: 9000 },
   { name: "settings-light", path: "/", theme: "light", keys: [{ key: "k", ctrl: true }], settle: 1200 },
@@ -165,6 +168,10 @@ async function main() {
     for (const key of shot.keys || []) {
       await press(cdp, key);
       await sleep(600);
+    }
+    if (shot.type) {
+      await cdp.send("Input.insertText", { text: shot.type });
+      await sleep(1200);
     }
 
     const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });

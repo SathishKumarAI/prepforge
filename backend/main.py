@@ -105,6 +105,23 @@ def questions():
     return {"questions": qs, "topics": topics, "count": len(qs)}
 
 
+INDEX_FIELDS = ("id", "question", "topic", "difficulty")
+
+
+@app.get("/questions/index")
+def questions_index():
+    """Titles only — what a jump box needs, without the 15 MB.
+
+    GET /questions carries every answer, source and related list: ~15 MB, and
+    the palette needs four fields per row. Declared ABOVE /questions/{qid} on
+    purpose — FastAPI matches in definition order, and below it "index" would be
+    read as a question id.
+    """
+    qs = _load_questions()
+    rows = [{k: q.get(k, "") for k in INDEX_FIELDS} for q in qs]
+    return {"questions": rows, "count": len(rows)}
+
+
 @app.get("/questions/{qid}")
 def question(qid: str):
     for q in _load_questions():
