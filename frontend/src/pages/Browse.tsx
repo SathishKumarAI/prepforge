@@ -1,9 +1,14 @@
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { ChevronRight, ExternalLink, Search, X } from "lucide-react";
 import { QuestionCard } from "../components/QuestionCard";
 import { CardSkeletonGrid, Empty } from "../components/States";
-import { ChevronRight } from "../components/NavButton";
+import { Page } from "../components/page/PageLayout";
+import { Orient, Fact } from "../components/page/Orient";
+import { StickyChrome } from "../components/page/StickyChrome";
+import { Button } from "../components/ui/button";
+import { Chip } from "../components/ui/chip";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { isDue } from "../lib/srs";
@@ -76,121 +81,165 @@ export function Browse() {
 
   if (loading)
     return (
-      <div>
-        <div className="mb-6 h-9 w-72 animate-pulse rounded-lg bg-surface0/60" />
+      <Page title="Browse">
         <CardSkeletonGrid count={6} />
-      </div>
+      </Page>
     );
   if (error)
     return (
-      <Empty
-        title="Backend not reachable"
-        hint="Start the API: cd backend && uvicorn main:app --reload --port 8000"
-      />
+      <Page title="Browse">
+        {/* Port 8787, not 8000 — vite.config.ts proxies /api there and the
+            extension's host_permissions is pinned to it. */}
+        <Empty
+          title="The question bank is not answering."
+          hint="Start the backend, then reload: ./dev.sh — or uvicorn main:app --port 8787"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+              Reload
+            </Button>
+          }
+        />
+      </Page>
     );
 
-  return (
-    <div>
-      <Header count={questions.length} />
+  const activeFilters = Boolean(topic || diff || query.trim());
 
-      {/* next best action — guide the user, reduce decision load */}
+  return (
+    <Page
+      title="Browse"
+      orient={
+        <Orient>
+          <Fact label="questions" value={questions.length.toLocaleString()} />
+          <Fact label="due for review" value={dueCount || null} emphasis={dueCount > 0} />
+          <Fact label="matching" value={activeFilters ? filtered.length : null} />
+        </Orient>
+      }
+    >
       {dueCount > 0 && (
-        <Link
-          to="/learn"
-          className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-mauve/30 bg-gradient-to-r from-mauve/10 to-blue/10 px-4 py-3 transition-colors hover:from-mauve/20 hover:to-blue/20"
-        >
-          <span className="text-sm text-subtext1">
-            <span className="font-semibold text-text">{dueCount}</span> card{dueCount !== 1 ? "s" : ""} due for review — keep your streak going.
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <Button asChild variant="primary">
+            <Link to="/learn">
+              Review {dueCount} due card{dueCount !== 1 ? "s" : ""}
+            </Link>
+          </Button>
+          <span className="text-small text-overlay1">
+            Reviews come first; new material fills what is left.
           </span>
-          <span className="group flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-mauve to-blue px-3 py-1.5 text-xs font-semibold text-crust">
-            Start review
-            <span className="transition-transform duration-300 group-hover:translate-x-0.5"><ChevronRight /></span>
-          </span>
-        </Link>
+        </div>
       )}
 
-      {/* sticky search + filters — stays reachable while scrolling a long deck */}
-      <div className="sticky top-2 z-10 mb-6 rounded-2xl border border-white/[0.06] bg-base/85 p-3 backdrop-blur-xl sm:p-4">
-      {/* search */}
-      <div className="relative mb-3">
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-overlay0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" strokeLinecap="round" />
-          </svg>
-        </span>
-        <input
-          ref={searchRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search questions, answers, tags…"
-          className="glass w-full rounded-xl py-3.5 pl-11 pr-12 font-mono text-sm text-text outline-none placeholder:text-overlay0 focus:border-mauve/40"
-        />
-        <kbd className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 rounded border border-white/10 bg-crust px-1.5 py-0.5 font-mono text-[11px] text-overlay0">
-          /
-        </kbd>
-      </div>
-
-      {/* filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterChip active={!topic} onClick={() => setTopic(null)} label="All topics" />
-        {topics.map((t) => (
-          <FilterChip
-            key={t}
-            active={topic === t}
-            onClick={() => setTopic(topic === t ? null : t)}
-            label={t}
-            dot={ACCENT_DOT[topicColor(t)]}
+      {/* Search and filters slide away while you read the deck and come back
+          the moment you scroll up. They are wanted for two seconds and pinned
+          for the whole session otherwise. */}
+      <StickyChrome className="mb-5 py-2">
+        <div className="relative mb-2.5 max-w-xl">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-overlay0"
           />
-        ))}
-        <span className="mx-1 h-4 w-px bg-white/10" />
-        {DIFFS.map((d) => (
-          <FilterChip
-            key={d}
-            active={diff === d}
-            onClick={() => setDiff(diff === d ? null : d)}
-            label={d}
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search questions"
+            placeholder="Search questions, answers, tags"
+            className="input h-10 pl-9 pr-16"
           />
-        ))}
-      </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap items-center gap-2 font-mono text-xs text-overlay0">
-        <span>{filtered.length} question{filtered.length !== 1 ? "s" : ""}</span>
-        {(topic || diff || query.trim()) && (
-          <>
-            <span className="text-overlay0/60">·</span>
-            {query.trim() && <ActiveChip label={`“${query.trim()}”`} onClear={() => setQuery("")} />}
-            {topic && <ActiveChip label={topic} onClear={() => setTopic(null)} />}
-            {diff && <ActiveChip label={diff} onClear={() => setDiff(null)} />}
+          {query ? (
             <button
-              onClick={() => { setQuery(""); setTopic(null); setDiff(null); }}
-              className="text-subtext0 underline decoration-dotted underline-offset-2 hover:text-red"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-overlay0 hover:text-text"
             >
-              clear all
+              <X aria-hidden="true" className="size-4" />
             </button>
-          </>
-        )}
-      </div>
+          ) : (
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0">
+              /
+            </kbd>
+          )}
+        </div>
 
-      <DeepStudyLinks questions={filtered} label={topic ?? (query.trim() ? "these results" : "everything")} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Chip active={!topic} onClick={() => setTopic(null)} label="All topics" />
+          {topics.map((t) => (
+            <Chip
+              key={t}
+              active={topic === t}
+              onClick={() => setTopic(topic === t ? null : t)}
+              className="capitalize"
+              label={
+                <>
+                  <span className={`size-1.5 shrink-0 rounded-full ${ACCENT_DOT[topicColor(t)]}`} />
+                  {t}
+                </>
+              }
+            />
+          ))}
+          <span className="mx-1 h-4 w-px bg-surface0" />
+          {DIFFS.map((d) => (
+            <Chip
+              key={d}
+              active={diff === d}
+              onClick={() => setDiff(diff === d ? null : d)}
+              label={d}
+              className="capitalize"
+            />
+          ))}
+          {activeFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setQuery("");
+                setTopic(null);
+                setDiff(null);
+              }}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+      </StickyChrome>
+
+      <DeepStudyLinks
+        questions={filtered}
+        label={topic ?? (query.trim() ? "these results" : "everything")}
+      />
 
       {filtered.length === 0 ? (
-        <Empty title="No matches" hint="Try a different search or clear the filters." />
+        <Empty
+          title="No question matches those filters."
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setQuery("");
+                setTopic(null);
+                setDiff(null);
+              }}
+            >
+              Clear filters
+            </Button>
+          }
+        />
       ) : (
         <>
           <div className="pf-deck grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
-            {shown.map((q, i) => (
-              <QuestionCard key={q.id} q={q} index={Math.min(i, 12)} />
+            {shown.map((q) => (
+              <QuestionCard key={q.id} q={q} />
             ))}
           </div>
           {visible < filtered.length && (
-            <div ref={sentinel} className="py-8 text-center font-mono text-[11px] text-overlay0">
-              showing {shown.length} of {filtered.length} — scroll for more
+            <div ref={sentinel} className="py-8 text-center text-micro text-overlay0">
+              <span className="tabular-nums">{shown.length}</span> of{" "}
+              <span className="tabular-nums">{filtered.length}</span> — keep scrolling for more
             </div>
           )}
         </>
       )}
-    </div>
+    </Page>
   );
 }
 
@@ -214,91 +263,47 @@ function DeepStudyLinks({ questions, label }: { questions: Question[]; label: st
   }, [questions]);
 
   if (links.length === 0) return null;
-  const shown = open ? links.slice(0, 200) : links.slice(0, 8);
+  const shown = open ? links.slice(0, 200) : links.slice(0, 6);
 
+  // A quiet disclosure, not a titled card: this is a side door off the deck.
+  // Giving it card chrome gave six links the same weight as the deck itself.
   return (
-    <div className="mb-5 rounded-2xl border border-white/[0.05] bg-surface0/20 p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-widest text-sapphire">Go deeper</span>
-        <span className="font-mono text-[11px] text-overlay0">
-          {links.length} link{links.length !== 1 ? "s" : ""} the sources cite for {label}
+    <details
+      className="mb-5 border-b border-surface0 pb-3"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-micro text-overlay1 marker:content-none hover:text-subtext0 [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          aria-hidden="true"
+          className={`size-3.5 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+        />
+        <span className="font-semibold uppercase tracking-[0.14em]">Go deeper</span>
+        <span>
+          <span className="tabular-nums">{links.length}</span> link
+          {links.length !== 1 ? "s" : ""} the sources cite for {label}
         </span>
-      </div>
-      <div className="flex flex-wrap gap-1.5">
+      </summary>
+      <ul className="mt-2 flex flex-col gap-0.5">
         {shown.map((l) => (
-          <a
-            key={l.url}
-            href={l.url}
-            target="_blank"
-            rel="noreferrer"
-            title={`${l.url}${l.count > 1 ? ` · cited by ${l.count} questions` : ""}`}
-            className="pill border-sapphire/25 text-sapphire hover:bg-sapphire/10"
-          >
-            ↗ {l.title.length > 44 ? l.title.slice(0, 42) + "…" : l.title}
-            {l.count > 1 && <span className="ml-1 text-overlay1">×{l.count}</span>}
-          </a>
+          <li key={l.url}>
+            <a
+              href={l.url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+            >
+              <ExternalLink aria-hidden="true" className="size-3.5 shrink-0 text-overlay0" />
+              <span className="truncate">{l.title}</span>
+              {l.count > 1 && (
+                <span className="shrink-0 tabular-nums text-micro text-overlay0">
+                  cited {l.count}×
+                </span>
+              )}
+            </a>
+          </li>
         ))}
-        {links.length > 8 && (
-          <button onClick={() => setOpen((v) => !v)} className="pill text-subtext0 hover:text-text">
-            {open ? "show less" : `+ ${links.length - 8} more`}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
-  return (
-    <button
-      onClick={onClear}
-      className="inline-flex items-center gap-1 rounded-full border border-mauve/30 bg-mauve/10 px-2 py-0.5 capitalize text-subtext1 transition-colors hover:border-red/40 hover:text-red"
-      title="Remove this filter"
-    >
-      {label}
-      <span className="text-[13px] leading-none">×</span>
-    </button>
-  );
-}
-
-function Header({ count }: { count: number }) {
-  return (
-    <header className="mb-6">
-      <div className="mb-2 font-mono text-xs uppercase tracking-[0.25em] text-overlay0">
-        {count} curated questions
-      </div>
-      <h1 className="font-display text-display font-semibold text-text">
-        Forge your <span className="italic text-mauve">interview</span> answers.
-      </h1>
-      <p className="mt-2 max-w-xl text-sm text-subtext0">
-        Local-first prep for AI, ML, Data Science &amp; Analytics — browse, drill, quiz, and pull live resources.
-      </p>
-    </header>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-  dot,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  dot?: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`pill capitalize transition-all ${
-        active
-          ? "border-mauve/40 bg-mauve/10 text-text"
-          : "text-subtext0 hover:border-white/20 hover:text-subtext1"
-      }`}
-    >
-      {dot && <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />}
-      {label}
-    </button>
+      </ul>
+    </details>
   );
 }
