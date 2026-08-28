@@ -4,6 +4,7 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
   {
     title: "Anywhere",
     items: [
+      { keys: "Ctrl K", desc: "Search every question, or jump to a page" },
       { keys: "Ctrl B", desc: "Show or hide the navigation" },
       { keys: "f", desc: "Focus mode — fullscreen, no chrome at all" },
       { keys: "?", desc: "Open this list" },

@@ -14,10 +14,12 @@ import {
   Keyboard,
   Library,
   PanelLeft,
+  Search as SearchIcon,
   Settings as SettingsIcon,
   StickyNote,
   Sun,
 } from "lucide-react";
+import { CommandPalette } from "./CommandPalette";
 import { SettingsPanel } from "./SettingsPanel";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Button } from "./ui/button";
@@ -60,6 +62,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const loc = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   // Default open on a wide screen — a nav you have to discover is a nav you do
   // not use — but never on a phone, where 240px is most of the viewport.
   const [navOpen, setNavOpen] = useState(() => {
@@ -140,6 +143,13 @@ export function Layout({ children }: { children: ReactNode }) {
         setNavOpen((v) => !v);
         return;
       }
+      // Cmd/Ctrl+K likewise: the search box you want is often the one you are
+      // not typing in. Toggles, so the same keystroke closes it.
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey || typing) return;
       if (e.key === "?") {
         e.preventDefault();
@@ -180,6 +190,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className={`relative flex min-h-screen ${focus ? "focus-mode" : ""}`}>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* ---- side nav ---------------------------------------------------- */}
       {/* Below md the nav overlays the page, so it needs a scrim to dismiss.
@@ -294,6 +305,22 @@ export function Layout({ children }: { children: ReactNode }) {
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">
+            {/* A keystroke nobody can see is a keystroke nobody presses. On a
+                phone this IS the search entry point, so it is a real control,
+                not a hint. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Search questions and jump to a page"
+              title="Search  (Ctrl+K)"
+            >
+              <SearchIcon aria-hidden="true" />
+              <span className="hidden sm:inline text-overlay1">Search</span>
+              <kbd className="ml-1 hidden rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0 sm:inline">
+                Ctrl K
+              </kbd>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
