@@ -60,6 +60,18 @@ const SHOTS = [
     settle: 16000,
     keys: [{ key: "k", ctrl: true }],
   },
+  // Presses a lens tab and waits for the local model to answer, so the meta row
+  // (model id, tokens, cost) is photographed rather than described.
+  {
+    name: "lens-local",
+    path: "/library?view=questions&id=ing_eed59e3a4a",
+    theme: "dark",
+    settle: 16000,
+    // [role=tab], not button: the view switch above it is buttons too, and the
+    // first match was "Questions".
+    js: "[...document.querySelectorAll('[role=tab]')].find(b => b.textContent.trim().startsWith('ELI5'))?.click()",
+    after: 30000,
+  },
   { name: "today-light", path: "/", theme: "light" },
   { name: "library-light", path: "/library?view=questions", theme: "light", settle: 9000 },
   { name: "settings-light", path: "/", theme: "light", keys: [{ key: "k", ctrl: true }], settle: 1200 },
@@ -186,6 +198,13 @@ async function main() {
     if (shot.type) {
       await cdp.send("Input.insertText", { text: shot.type });
       await sleep(1200);
+    }
+    // Some surfaces are only reachable by pressing something the keyboard
+    // cannot reach. `after` is how long that press needs — a lens generation on
+    // a local model is seconds, not milliseconds.
+    if (shot.js) {
+      await cdp.send("Runtime.evaluate", { expression: shot.js });
+      await sleep(shot.after ?? 3000);
     }
 
     const { data } = await cdp.send("Page.captureScreenshot", { format: "png" });
