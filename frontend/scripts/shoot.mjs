@@ -146,11 +146,15 @@ async function main() {
     // previous one.
     await cdp.send("Page.navigate", { url: BASE });
     await cdp.once("Page.loadEventFired");
+    // "prepforge:settings", not "settings" — lib/storage.ts namespaces every
+    // key, and writing the un-namespaced one shot six dark screenshots while
+    // claiming three of them were light.
     await cdp.send("Runtime.evaluate", {
       expression: `(() => {
-        const raw = localStorage.getItem("settings");
+        const key = "prepforge:settings";
+        const raw = localStorage.getItem(key);
         const s = raw ? JSON.parse(raw) : {};
-        localStorage.setItem("settings", JSON.stringify({ ...s, theme: ${JSON.stringify(shot.theme)}, themeMigration: 2 }));
+        localStorage.setItem(key, JSON.stringify({ ...s, theme: ${JSON.stringify(shot.theme)}, themeMigration: 2 }));
       })()`,
     });
 
