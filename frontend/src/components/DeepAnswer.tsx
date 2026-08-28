@@ -107,27 +107,20 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
  * the mode it is handed — that is the Library detail pane, where the lenses are
  * the point and belong in the same row as the bank answer.
  *
- * Either way a lens generates only when it is selected. One tab, one call.
+ * Either way a lens generates as soon as it is selected — hovered or pressed,
+ * no second confirmation. One tab, one call.
  */
 export function DeepAnswer({
   question,
   topic,
   qid,
   controlled,
-  mayGenerate = true,
 }: {
   question: string;
   topic: string;
   qid: string;
   /** Render just the body for this mode; the caller draws the tabs. */
   controlled?: Mode;
-  /**
-   * Controlled only. Whether this lens may be generated if it is not in hand.
-   * False is how hovering a tab row stays free: the mode switches, an already
-   * generated lens shows, and one that is not offers a control instead of
-   * silently spending an API call you did not ask for.
-   */
-  mayGenerate?: boolean;
 }) {
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<Mode>(controlled ?? "deep");
@@ -174,11 +167,11 @@ export function DeepAnswer({
       setCustomText(progress.custom[qid] ?? "");
       return;
     }
-    if (mayGenerate && !slots[controlled]) load(controlled);
+    if (!slots[controlled]) load(controlled);
     // `slots` is deliberately absent: it changes as the fetch lands, and
     // depending on it would re-run this the moment the answer arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controlled, qid, load, mayGenerate]);
+  }, [controlled, qid, load]);
 
   if (!opened && !controlled) {
     return (
@@ -243,19 +236,13 @@ export function DeepAnswer({
         </div>
       )}
 
-      {/* Hovered onto a lens nobody has generated yet. The switch was free; the
-          generation is not, so it waits for a deliberate press. */}
+      {/* The frame between selecting a lens and the effect firing its fetch.
+          Shows the same spinner the fetch itself will, so landing on a lens
+          reads as one continuous load rather than a flash of empty state. */}
       {controlled && !slot && mode !== "custom" && (
-        <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-surface1 px-4 py-5">
-          <span className="text-small text-overlay1">
-            {MODE_TITLE[mode]} has not been generated for this question yet.
-          </span>
-          <button
-            onClick={() => load(mode)}
-            className="inline-flex h-9 items-center rounded-lg bg-surface0 px-3.5 text-small font-medium text-text transition-colors duration-100 hover:bg-surface1"
-          >
-            Generate it
-          </button>
+        <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-lavender" />
+          {MODE_LOADING[mode]}
         </div>
       )}
 

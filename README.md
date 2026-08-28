@@ -85,9 +85,14 @@ for free; local answers cache under a further `__local` suffix so they can never
 `LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT` override the defaults; leaving `LMSTUDIO_MODEL`
 blank uses whatever is loaded. With LM Studio off, all six fall back to Claude exactly as before.
 
-That split is what the tab row's hover behaviour keys off. `GET /generate/providers` reports which
-modes are free *right now*; those generate on hover, and the ones that bill still wait for a press.
-Starting LM Studio mid-session is picked up within 10s — no backend restart.
+**Selecting a lens generates it — hovering counts.** There is no confirm step, on any mode. A tab
+you rest on for 400ms in the Library detail pane fires its generation, so with LM Studio off, a slow
+sweep across the row can bill several Claude calls. That 400ms is the only brake; it lives in
+`peekTab` in `QuestionDetail.tsx`.
+
+`GET /generate/providers` reports which modes are free *right now* and the local model's id — the
+quickest way to check the local path is actually wired up. Starting LM Studio mid-session is picked
+up within 10s, no backend restart.
 
 `backend/test_local_provider.py` guards it: a stub LM Studio server, asserting a prose lens really
 goes local at zero cost, that `deep` never does, and that the two caches stay separate.

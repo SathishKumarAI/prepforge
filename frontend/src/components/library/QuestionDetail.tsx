@@ -6,7 +6,6 @@ import { Markdown } from "../Markdown";
 import { SourceDoc } from "../SourceDoc";
 import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
-import { useFreeModes } from "../../hooks/useFreeModes";
 import { useProgress } from "../../hooks/useProgress";
 import { questionMap } from "../../hooks/useQuestions";
 import type { Question, VaultSource } from "../../lib/types";
@@ -34,12 +33,6 @@ export function QuestionDetail({
   onSelect: (id: string) => void;
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
-  // Whether the CURRENT tab was chosen deliberately. The press gate exists to
-  // stop a pointer sweep billing eight Anthropic calls — so it applies only to
-  // the lenses that bill. A lens a local model serves is free, and hovering
-  // generates it outright.
-  const [pressed, setPressed] = useState(false);
-  const { free } = useFreeModes();
   const tabTimer = useRef<number>();
   const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
@@ -54,25 +47,22 @@ export function QuestionDetail({
   // selection change would fire a generation for a question you only glanced at.
   useEffect(() => {
     setTab("answer");
-    setPressed(false);
     setNoteOpen(false);
   }, [q.id]);
 
-  // 400ms, longer than the list's 250ms: crossing a tab row is a much smaller
-  // target, and landing on the wrong lens is more disruptive than landing on
-  // the wrong question.
+  // Selecting a lens generates it, hover or press alike — so this delay is the
+  // only thing between a pointer crossing the row and a run of generations.
+  // 400ms, longer than the list's 250ms: a tab is a much smaller target than a
+  // row, and landing on the wrong lens is more disruptive than landing on the
+  // wrong question.
   function peekTab(v: "answer" | Mode) {
     window.clearTimeout(tabTimer.current);
     if (!canHover) return;
-    tabTimer.current = window.setTimeout(() => {
-      setTab(v);
-      setPressed(false);
-    }, 400);
+    tabTimer.current = window.setTimeout(() => setTab(v), 400);
   }
   function pickTab(v: "answer" | Mode) {
     window.clearTimeout(tabTimer.current);
     setTab(v);
-    setPressed(true);
   }
   useEffect(() => () => window.clearTimeout(tabTimer.current), []);
 
@@ -121,13 +111,7 @@ export function QuestionDetail({
           </p>
         )
       ) : (
-        <DeepAnswer
-          question={q.question}
-          topic={q.topic}
-          qid={q.id}
-          controlled={tab}
-          mayGenerate={pressed || free.has(tab)}
-        />
+        <DeepAnswer question={q.question} topic={q.topic} qid={q.id} controlled={tab} />
       )}
 
       {q.sources && q.sources.length > 0 && (

@@ -6,7 +6,9 @@ Update this when you STOP working, not when you start.
 - **Newest branch:** `feat/local-lm-studio-lenses` (COD-33), stacked on
   `feat/library-hover-lens-tabs`. Six of the seven generated lenses now run on a local model via
   LM Studio when its server is up, for free; `deep` stays on Claude because it needs web citations.
-  Free lenses generate on hover, billed ones keep the press gate. **Unverified against a real
+  **There is no confirm step on any lens** — resting on a tab for 400ms generates it, `deep`
+  included, so a sweep across the row with LM Studio off bills real Claude calls. Removed
+  deliberately; `peekTab`'s 400ms is the only brake. **Unverified against a real
   LM Studio** — the server was not running, so the local path is proven only against the stub in
   `backend/test_local_provider.py`. Start LM Studio (Developer → Start Server), reload Library,
   and hover a lens: the meta row should show the local model id and `$0.0000`.
