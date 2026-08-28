@@ -1,8 +1,9 @@
 import Fuse from "fuse.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronRight, ExternalLink, Search, X } from "lucide-react";
-import { QuestionCard } from "../QuestionCard";
+import { QuestionDetail } from "./QuestionDetail";
+import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
 import { StickyChrome } from "../page/StickyChrome";
 import { Button } from "../ui/button";
@@ -27,7 +28,7 @@ export function QuestionsView() {
   // A link into the library can carry its search in ?q= — that is how a related
   // question you cannot see from here (filtered out, or past the render window)
   // gets you to the card instead of nowhere.
-  const [params] = useSearchParams();
+  const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") ?? "");
   useEffect(() => {
     const q = params.get("q");
@@ -73,6 +74,47 @@ export function QuestionsView() {
   const [visible, setVisible] = useState(PAGE);
   const sentinel = useRef<HTMLDivElement>(null);
   useEffect(() => setVisible(PAGE), [query, topic, diff]); // reset window when the filter changes
+
+  // ---- selection ---------------------------------------------------------
+  // Which question the detail pane is showing. In the URL so a refresh, a back
+  // button and a shared link all land on the same question.
+  const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
+  // Below lg the panes cannot share the screen, so the detail replaces the list
+  // and this says which one you are looking at.
+  const [detailOnly, setDetailOnly] = useState(false);
+  const peekTimer = useRef<number>();
+  // Hover selects on a real pointer only. On touch, mouseenter fires from the
+  // tap that is already selecting, so honouring it would do the work twice.
+  const canHover = window.matchMedia("(hover: hover)").matches;
+
+  const select = useCallback(
+    (id: string) => {
+      window.clearTimeout(peekTimer.current);
+      setSelectedId(id);
+      setDetailOnly(true);
+      // Merge: `Library` writes ?view= with a bare object, so anything written
+      // here has to preserve what is already in the query or the view switch
+      // and the search would wipe each other.
+      setParams(
+        (prev: URLSearchParams) => {
+          const next = new URLSearchParams(prev);
+          next.set("id", id);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setParams],
+  );
+
+  // Hover with intent. 250ms is long enough that crossing the list on the way
+  // to the scrollbar does not load six questions, short enough to feel direct.
+  function peek(on: boolean, id: string) {
+    window.clearTimeout(peekTimer.current);
+    if (!canHover || !on) return;
+    peekTimer.current = window.setTimeout(() => setSelectedId(id), 250);
+  }
+  useEffect(() => () => window.clearTimeout(peekTimer.current), []);
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
@@ -84,6 +126,28 @@ export function QuestionsView() {
     return () => io.disconnect();
   }, [filtered.length]);
   const shown = filtered.slice(0, visible);
+  const selected = useMemo(
+    () => filtered.find((q) => q.id === selectedId) ?? filtered[0] ?? null,
+    [filtered, selectedId],
+  );
+
+  // Arrow keys walk the list, so the whole surface is reachable without a mouse
+  // and without tabbing through 48 rows to reach the 49th.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      const el = document.activeElement;
+      if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      const i = shown.findIndex((q) => q.id === selected?.id);
+      if (i === -1) return;
+      const next = shown[i + (e.key === "ArrowDown" ? 1 : -1)];
+      if (!next) return;
+      e.preventDefault();
+      select(next.id);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [shown, selected, select]);
 
   if (loading) return <CardSkeletonGrid count={6} />;
   if (error)
@@ -215,19 +279,52 @@ export function QuestionsView() {
           }
         />
       ) : (
-        <>
-          <div className="pf-deck grid grid-cols-1 items-start gap-3 xl:grid-cols-2">
-            {shown.map((q) => (
-              <QuestionCard key={q.id} q={q} />
-            ))}
+        // Two panes above lg, one below it. The grid's second track is
+        // minmax(0,1fr) so the detail takes every pixel the list does not — the
+        // point of the layout is that nothing on this screen is empty.
+        <div className="lg:grid lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)] lg:gap-6">
+          {/* The list scrolls inside itself and parks under the app bar, so
+              reading a long answer never scrolls the list away from you. Its
+              offset is --app-bar-h, the same measured value StickyChrome uses;
+              a constant here and the two would overlap by exactly one notch. */}
+          <div
+            style={{ top: "calc(var(--app-bar-h, 0px) + 0.5rem)" }}
+            className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:pr-1 ${
+              detailOnly ? "hidden lg:block" : ""
+            }`}
+          >
+            <ul className="flex flex-col gap-0.5">
+              {shown.map((q) => (
+                <QuestionRow
+                  key={q.id}
+                  q={q}
+                  selected={q.id === selectedId}
+                  onSelect={() => select(q.id)}
+                  onPeek={(on) => peek(on, q.id)}
+                />
+              ))}
+            </ul>
+            {visible < filtered.length && (
+              <div ref={sentinel} className="py-6 text-center text-micro text-overlay0">
+                <span className="tabular-nums">{shown.length}</span> of{" "}
+                <span className="tabular-nums">{filtered.length}</span> — keep scrolling
+              </div>
+            )}
           </div>
-          {visible < filtered.length && (
-            <div ref={sentinel} className="py-8 text-center text-micro text-overlay0">
-              <span className="tabular-nums">{shown.length}</span> of{" "}
-              <span className="tabular-nums">{filtered.length}</span> — keep scrolling for more
-            </div>
-          )}
-        </>
+
+          <div className={detailOnly ? "" : "hidden lg:block"}>
+            {selected ? (
+              <QuestionDetail
+                key={selected.id}
+                q={selected}
+                onBack={() => setDetailOnly(false)}
+                onSelect={select}
+              />
+            ) : (
+              <p className="text-small text-overlay1">Pick a question to read it.</p>
+            )}
+          </div>
+        </div>
       )}
     </>
   );

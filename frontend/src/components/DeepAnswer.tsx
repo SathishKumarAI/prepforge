@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useProgress } from "../hooks/useProgress";
 import { useSettings } from "../hooks/useSettings";
 import { generateAnswer } from "../lib/api";
@@ -8,10 +8,11 @@ import type { GeneratedAnswer } from "../lib/types";
 import { Markdown } from "./Markdown";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
-type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang" | "custom";
+export type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang" | "custom";
 type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
 
-const TABS: { mode: Mode; label: string }[] = [
+/** Exported so a caller can put these lenses in ITS tab row — see `controlled`. */
+export const LENS_TABS: { mode: Mode; label: string }[] = [
   { mode: "deep", label: "Grounded" },
   { mode: "star", label: "Interview · STAR" },
   { mode: "eli5", label: "ELI5" },
@@ -21,6 +22,7 @@ const TABS: { mode: Mode; label: string }[] = [
   { mode: "faang", label: "FAANG" },
   { mode: "custom", label: "My content" },
 ];
+const TABS = LENS_TABS;
 
 const MODE_TITLE: Record<Mode, string> = {
   deep: "✦ Grounded answer",
@@ -95,12 +97,32 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
   ],
 };
 
-// Two answer variants per question, in one box:
-//  · Grounded  — web-sourced, anti-slop, with token/cost/source metadata
-//  · STAR      — first-person interview answer (Situation·Task·Action·Result)
-export function DeepAnswer({ question, topic, qid }: { question: string; topic: string; qid: string }) {
+/**
+ * The generated answers: eight lenses on one question, each fetched the first
+ * time you ask for it and kept in a slot after that.
+ *
+ * Two shapes, one component. Left alone it is self-contained: a button, then its
+ * own tab row — that is the card in a list, where the lenses are an aside. Given
+ * `controlled`, the caller owns the tab row and this renders only the body for
+ * the mode it is handed — that is the Library detail pane, where the lenses are
+ * the point and belong in the same row as the bank answer.
+ *
+ * Either way a lens generates only when it is selected. One tab, one call.
+ */
+export function DeepAnswer({
+  question,
+  topic,
+  qid,
+  controlled,
+}: {
+  question: string;
+  topic: string;
+  qid: string;
+  /** Render just the body for this mode; the caller draws the tabs. */
+  controlled?: Mode;
+}) {
   const [opened, setOpened] = useState(false);
-  const [mode, setMode] = useState<Mode>("deep");
+  const [mode, setMode] = useState<Mode>(controlled ?? "deep");
   const [slots, setSlots] = useState<Partial<Record<Mode, Slot>>>({});
   const [customText, setCustomText] = useState("");
   const { settings } = useSettings();
@@ -134,7 +156,23 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
     if (!slots[m]) load(m);
   }
 
-  if (!opened) {
+  // Controlled: follow the caller's tab, and fetch that lens the first time it
+  // is asked for. The guard on `slots` is what keeps this to one call per lens —
+  // an effect that refetched on every render would bill you per keystroke.
+  useEffect(() => {
+    if (!controlled) return;
+    setMode(controlled);
+    if (controlled === "custom") {
+      setCustomText(progress.custom[qid] ?? "");
+      return;
+    }
+    if (!slots[controlled]) load(controlled);
+    // `slots` is deliberately absent: it changes as the fetch lands, and
+    // depending on it would re-run this the moment the answer arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlled, qid, load]);
+
+  if (!opened && !controlled) {
     return (
       <button
         onClick={open}
@@ -151,17 +189,19 @@ export function DeepAnswer({ question, topic, qid }: { question: string; topic: 
   const slot = slots[mode];
 
   return (
-    <div className="mt-4 rounded-lg border border-surface0 bg-crust p-4">
-      {/* tabs (shadcn/Radix) */}
-      <Tabs value={mode} onValueChange={(v) => switchTo(v as Mode)} className="mb-3">
-        <TabsList>
-          {TABS.map((t) => (
-            <TabsTrigger key={t.mode} value={t.mode}>
-              {t.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+    <div className={controlled ? "" : "mt-4 rounded-lg border border-surface0 bg-crust p-4"}>
+      {/* tabs (shadcn/Radix) — the caller's row replaces this when controlled */}
+      {!controlled && (
+        <Tabs value={mode} onValueChange={(v) => switchTo(v as Mode)} className="mb-3">
+          <TabsList>
+            {TABS.map((t) => (
+              <TabsTrigger key={t.mode} value={t.mode}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
 
       {mode === "custom" && (
         <div>

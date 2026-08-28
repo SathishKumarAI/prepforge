@@ -1,0 +1,206 @@
+import { useEffect, useState } from "react";
+import { ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, FileText, PencilLine } from "lucide-react";
+import { DifficultyBadge, TopicBadge } from "../Badge";
+import { DeepAnswer, LENS_TABS, type Mode } from "../DeepAnswer";
+import { Markdown } from "../Markdown";
+import { SourceDoc } from "../SourceDoc";
+import { Button } from "../ui/button";
+import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { useProgress } from "../../hooks/useProgress";
+import { questionMap } from "../../hooks/useQuestions";
+import type { Question, VaultSource } from "../../lib/types";
+
+/**
+ * The reading half of the Library: one question, everything about it.
+ *
+ * Owns the tab row. `answer` is the bank's own answer and costs nothing; every
+ * other tab is a generated lens that `DeepAnswer` fetches when selected. Putting
+ * them in ONE row is the point of the layout — as separate surfaces the lenses
+ * were a button inside a card, below the fold of that card, and nobody found
+ * them.
+ *
+ * Does NOT own: which question is selected, or the list. Those are the pane on
+ * the left.
+ */
+export function QuestionDetail({
+  q,
+  onBack,
+  onSelect,
+}: {
+  q: Question;
+  /** Only rendered below lg, where the detail replaces the list. */
+  onBack?: () => void;
+  onSelect: (id: string) => void;
+}) {
+  const [tab, setTab] = useState<"answer" | Mode>("answer");
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [openSource, setOpenSource] = useState<VaultSource | null>(null);
+  const { progress, toggleBookmark, setNote } = useProgress();
+  const bookmarked = progress.bookmarks.includes(q.id);
+  const note = progress.notes[q.id] ?? "";
+  const map = questionMap();
+  const related = (q.related ?? []).map((r) => map.get(r.id)).filter(Boolean) as Question[];
+
+  // A new question starts on its own answer. Keeping the lens tab across a
+  // selection change would fire a generation for a question you only glanced at.
+  useEffect(() => {
+    setTab("answer");
+    setNoteOpen(false);
+  }, [q.id]);
+
+  return (
+    // The 68ch measure comes off in here. In a pane whose whole job is to hold
+    // the answer, that cap IS the empty space the layout was changed to remove —
+    // a deliberate trade of line length for using the width.
+    <article className="min-w-0 [&_.prose-answer]:max-w-none">
+      {onBack && (
+        <Button variant="ghost" size="sm" onClick={onBack} className="mb-3 lg:hidden">
+          <ArrowLeft aria-hidden="true" />
+          All questions
+        </Button>
+      )}
+
+      <header className="mb-4">
+        <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <TopicBadge topic={q.topic} />
+          <DifficultyBadge difficulty={q.difficulty} />
+          {q.origin && <span className="text-micro text-overlay0">{q.origin.label}</span>}
+        </div>
+        <h2 className="font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
+      </header>
+
+      {/* One row, two kinds of thing — free and generated — because that is the
+          order you use them in, not because they share an implementation. */}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "answer" | Mode)} className="mb-4">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="answer">Answer</TabsTrigger>
+          {LENS_TABS.map((t) => (
+            <TabsTrigger key={t.mode} value={t.mode}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      {tab === "answer" ? (
+        q.answer ? (
+          <Markdown>{q.answer}</Markdown>
+        ) : (
+          <p className="text-small text-overlay1">
+            No inline answer was extracted. Open the source below, or pick a lens to generate one.
+          </p>
+        )
+      ) : (
+        <DeepAnswer question={q.question} topic={q.topic} qid={q.id} controlled={tab} />
+      )}
+
+      {q.sources && q.sources.length > 0 && (
+        <section className="mt-6">
+          <h3 className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            {q.sources.some((s) => s.kind === "library") ? "Read the full document" : "From your vault"}
+          </h3>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {q.sources.map((s) => (
+              <Button key={s.path} variant="outline" size="sm" onClick={() => setOpenSource(s)}>
+                <FileText aria-hidden="true" />
+                {s.title.length > 44 ? s.title.slice(0, 42) + "…" : s.title}
+              </Button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section className="mt-6">
+          <h3 className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            Related questions
+          </h3>
+          {/* Selecting, not navigating: the whole value of two panes is that a
+              related question swaps the pane you are reading and leaves the list
+              you were working through exactly where it was. */}
+          <ul className="flex flex-col gap-0.5">
+            {related.map((r) => (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(r.id)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+                >
+                  <span className="min-w-0 flex-1 truncate">{r.question}</span>
+                  <span className="shrink-0 text-micro text-overlay0">{r.topic}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {q.links && q.links.length > 0 && (
+        <section className="mt-6">
+          <h3 className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            More to read
+          </h3>
+          <ul className="flex flex-col gap-0.5">
+            {q.links.map((l) => (
+              <li key={l.url}>
+                <a
+                  href={l.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+                >
+                  <ExternalLink aria-hidden="true" className="size-3.5 shrink-0 text-overlay0" />
+                  <span className="truncate">{l.title}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {q.tags.length > 0 && (
+        <div className="mt-6 flex flex-wrap gap-1.5">
+          {q.tags.map((t) => (
+            <span key={t} className="pill text-overlay1">
+              #{t}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center gap-1 border-t border-surface0 pt-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => toggleBookmark(q.id)}
+          aria-pressed={bookmarked}
+          className={bookmarked ? "text-text" : undefined}
+        >
+          {bookmarked ? <BookmarkCheck aria-hidden="true" /> : <Bookmark aria-hidden="true" />}
+          {bookmarked ? "Saved" : "Save"}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setNoteOpen((n) => !n)}
+          aria-expanded={noteOpen}
+          className={note ? "text-text" : undefined}
+        >
+          <PencilLine aria-hidden="true" />
+          {note ? "Edit note" : "Add note"}
+        </Button>
+      </div>
+
+      {noteOpen && (
+        <textarea
+          value={note}
+          onChange={(e) => setNote(q.id, e.target.value)}
+          placeholder="What tripped you up here?"
+          className="input mt-3 min-h-[5.5rem] resize-y"
+        />
+      )}
+
+      <SourceDoc source={openSource} onClose={() => setOpenSource(null)} />
+    </article>
+  );
+}
