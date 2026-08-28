@@ -19,6 +19,7 @@ import capture as capture_mod
 import generate as generate_mod
 import ingest as ingest_mod
 import pipeline as pipeline_mod
+import sources as sources_mod
 import vault as vault_mod
 from scrapers import html as html_scraper
 from scrapers import rss as rss_scraper
@@ -186,6 +187,36 @@ def library():
     files = [str(p.relative_to(lib)) for p in sorted(lib.rglob("*.md"))]
     generated = _read_bank(CONTENT / "generated.json")
     return {"files": files, "ingested_cards": len(generated)}
+
+
+@app.get("/sources")
+def list_sources():
+    """The library as collections — each cloned repo plus captured pages, with counts."""
+    return sources_mod.collections()
+
+
+class GithubSourceReq(BaseModel):
+    url: str
+
+
+@app.post("/sources/github")
+def add_github_source(req: GithubSourceReq):
+    """Clone a public Markdown repo into the library and ingest it into cards.
+
+    Zero-token: the deterministic tier does the parsing. An already-cloned repo is
+    reported, not re-cloned, so this is safe to hit twice.
+    """
+    result = sources_mod.clone(req.url)
+    if result.get("error"):
+        return result
+    ingested = ingest_mod.ingest("deterministic")
+    try:
+        pipeline_mod.build_related()
+    except Exception as exc:
+        log.warning("related build after repo ingest failed: %s", exc)
+    # ingest rebuilds the whole library, so report *this repo's* share, not the total
+    mine = next((c for c in sources_mod.collections()["collections"] if c["name"] == result["name"]), {})
+    return {**result, "cards": mine.get("cards", 0), "library_cards": ingested.get("cards")}
 
 
 @app.post("/ingest")

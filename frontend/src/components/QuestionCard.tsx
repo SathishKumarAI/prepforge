@@ -118,15 +118,41 @@ export function QuestionCard({ q, index = 0 }: { q: Question; index?: number }) 
                 </div>
               )}
 
-              {/* source documents this question came from — click to read */}
+              {/* source documents this question came from — click to read the whole thing */}
               {q.sources && q.sources.length > 0 && (
                 <div className="mt-4">
-                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">From your vault</div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">
+                    {q.sources.some((s) => s.kind === "library") ? "Read the full document" : "From your vault"}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {q.sources.map((s) => (
                       <button key={s.path} onClick={() => setOpenSource(s)} className="pill border-peach/30 text-peach hover:bg-peach/10">
                         ⛁ {s.title.length > 36 ? s.title.slice(0, 34) + "…" : s.title}
                       </button>
+                    ))}
+                    {q.truncated && (
+                      <span className="font-mono text-[11px] text-overlay0">answer trimmed — the rest is in the source</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* outbound reading the source author curated */}
+              {q.links && q.links.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1.5 font-mono text-[11px] uppercase tracking-widest text-overlay0">Go deeper</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {q.links.map((l) => (
+                      <a
+                        key={l.url}
+                        href={l.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={l.url}
+                        className="pill border-sapphire/30 text-sapphire hover:bg-sapphire/10"
+                      >
+                        ↗ {l.title.length > 42 ? l.title.slice(0, 40) + "…" : l.title}
+                      </a>
                     ))}
                   </div>
                 </div>

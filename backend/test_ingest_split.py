@@ -3,7 +3,9 @@
 Run: ./.venv/bin/python test_ingest_split.py   (Windows: ./.venv/Scripts/python.exe)
 Each failure here is a card the user would have had to read past in a quiz.
 """
-from ingest import _deterministic_card, _frontmatter_title, _split_sections
+from pathlib import Path
+
+from ingest import _deterministic_card, _frontmatter_title, _is_boilerplate, _links, _split_sections
 
 DETAILS_BANK = """# LLM Fundamentals
 
@@ -60,6 +62,31 @@ def test_short_heading_borrows_its_document_title():
 def test_readme_is_titled_by_its_folder():
     assert _frontmatter_title("# Hi\n\nbody", "11-ai-system-design/README.md") == "Ai System Design"
     assert _frontmatter_title("# Hi\n\nbody", "03-attention-mechanisms.md") == "Attention Mechanisms"
+
+
+def test_deep_links_keep_reading_and_drop_credits():
+    body = (
+        "See [Designing Data-Intensive Applications](https://dataintensive.net/) and the "
+        "[LRU Cache problem](https://leetcode.com/problems/lru-cache/).\n"
+        "Follow [@someone](https://github.com/someone) · "
+        "![badge](https://img.shields.io/badge/x-y.svg)\n"
+    )
+    urls = [l["url"] for l in _links(body)]
+    assert "https://dataintensive.net/" in urls
+    assert "https://leetcode.com/problems/lru-cache/" in urls
+    assert not any("github.com/someone" in u for u in urls), "author credit kept"
+    assert not any("shields.io" in u for u in urls), "badge image kept"
+    # a real repo link (owner + repo) is reading material, unlike a bare profile
+    assert _links("[repo](https://github.com/o/r)")[0]["url"] == "https://github.com/o/r"
+
+
+def test_repo_boilerplate_files_are_not_study_material():
+    for junk in ["repo/LICENSE.md", "repo/CONTRIBUTING.md", "repo/CODE_OF_CONDUCT.md",
+                 "repo/.github/ISSUE_TEMPLATE/bug_report.md"]:
+        assert _is_boilerplate(Path(junk)), junk
+    for real in ["repo/README.md", "repo/02-llm-fundamentals/questions.md",
+                 "repo/security-of-llms.md"]:
+        assert not _is_boilerplate(Path(real)), real
 
 
 if __name__ == "__main__":

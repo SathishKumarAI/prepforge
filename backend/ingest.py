@@ -43,6 +43,63 @@ _SKIP_HEADINGS = {
     "table of contents", "contents", "toc", "references", "further reading", "license",
     "contributing", "acknowledgements", "acknowledgments", "star history", "index",
 }
+# Whole files that ship with every repo and teach nothing. Cloning a repo used to
+# put "Explain: Reporting a bug" in the quiz rotation.
+_SKIP_FILES = {
+    "license", "license_mit", "license_apache", "code_of_conduct", "contributing",
+    "changelog", "security", "pull_request_template", "issue_template", "bug_report",
+    "feature_request", "notice", "authors", "codeowners",
+}
+_SKIP_DIRS = {".github", ".git", "node_modules", ".venv"}
+
+
+# Answers are shown in full on the card. 6000 chars covers ~99% of sections whole;
+# anything longer is still readable end-to-end by opening its source document.
+ANSWER_CHARS = 6000
+
+# "Go deeper" links: the outbound URLs an author already curated in the section.
+# Markdown links only — bare URLs in these repos are mostly badges and images.
+_MD_LINK = re.compile(r"(?<!!)\[([^\]\n]{2,90})\]\((https?://[^\s)]+)\)")
+_LINK_NOISE = ("shields.io", "badge", "githubusercontent.com", "/stargazers", "/fork",
+               "twitter.com/intent", "buymeacoffee", "patreon.com")
+MAX_LINKS = 8
+
+
+_PROFILE_HOSTS = {"github.com", "www.github.com", "gitlab.com", "linkedin.com",
+                  "www.linkedin.com", "x.com", "twitter.com", "www.twitter.com"}
+
+
+def _is_profile_link(url: str) -> bool:
+    """A bare profile/org page (github.com/someone) — an author credit, not reading."""
+    from urllib.parse import urlparse
+
+    p = urlparse(url)
+    if p.hostname not in _PROFILE_HOSTS:
+        return False
+    return len([seg for seg in p.path.split("/") if seg]) <= 1
+
+
+def _links(body: str) -> list[dict]:
+    """Outbound reading links from a section, deduped, in document order."""
+    out: list[dict] = []
+    seen: set[str] = set()
+    for text, url in _MD_LINK.findall(body):
+        url = url.rstrip(".,;")
+        if url in seen or any(n in url.lower() for n in _LINK_NOISE):
+            continue
+        if _is_profile_link(url):  # "follow me on GitHub" is not study material
+            continue
+        seen.add(url)
+        out.append({"title": " ".join(text.split())[:90], "url": url})
+        if len(out) == MAX_LINKS:
+            break
+    return out
+
+
+def _is_boilerplate(rel: Path) -> bool:
+    if any(part in _SKIP_DIRS for part in rel.parts):
+        return True
+    return rel.stem.lower().replace("-", "_") in _SKIP_FILES
 
 
 def _frontmatter_title(md: str, fallback: str) -> str:
@@ -110,16 +167,21 @@ def _deterministic_card(source: str, topic: str, heading: str, body: str, doc_ti
     # in a quiz stem. Short headings borrow their document's title for context.
     if doc_title and len(heading) < 40 and doc_title.lower() not in heading.lower():
         q += f" — {doc_title}"
-    return {
+    card = {
         "id": _card_id(source, heading),
         "topic": topic,
         "difficulty": "medium",
         "tags": _tags(heading),
         "question": q,
-        "answer": body[:1600],
+        "answer": body[:ANSWER_CHARS],
+        "truncated": len(body) > ANSWER_CHARS,  # the card says "open the source" when true
         "source_file": source,
         # no quiz for deterministic cards; Quiz mode simply skips them
     }
+    links = _links(body)
+    if links:
+        card["links"] = links
+    return card
 
 
 def _llm_card(client: httpx.Client, key: str, source: str, topic: str, heading: str, body: str) -> dict | None:
@@ -442,6 +504,8 @@ def ingest(mode: str = "deterministic") -> dict:
     titles: dict[str, str] = {}  # source_file → readable title (for the source picker)
     try:
         for f in files:
+            if _is_boilerplate(f.relative_to(LIBRARY)):
+                continue
             source = str(f.relative_to(LIBRARY))
             topic = _infer_topic(f.relative_to(LIBRARY))
             md = f.read_text(encoding="utf-8", errors="ignore")
