@@ -93,6 +93,23 @@ def test_local_answers_cache_under_their_own_suffix():
         path.unlink(missing_ok=True)
 
 
+def test_cached_modes_reports_what_is_actually_on_disk():
+    """A lens with a file costs nothing to open, whatever the provider is — and
+    a qid is caller-supplied, so it must not be able to walk out of the folder."""
+    both_shapes = g.ANSWERS_DIR / "zzztest__star.md"
+    local_only = g.ANSWERS_DIR / "zzztest__eli5__local.md"
+    try:
+        assert g.cached_modes("zzztest") == []
+        both_shapes.write_text("---\n---\nx", encoding="utf-8")
+        local_only.write_text("---\n---\nx", encoding="utf-8")
+        assert set(g.cached_modes("zzztest")) == {"star", "eli5"}, g.cached_modes("zzztest")
+        assert g.cached_modes("") == []
+        assert g.cached_modes("../../etc/passwd") == []
+    finally:
+        both_shapes.unlink(missing_ok=True)
+        local_only.unlink(missing_ok=True)
+
+
 def test_no_local_server_means_no_free_lenses():
     g.LOCAL_URL = "http://127.0.0.1:1/v1"  # nothing listens on port 1
     g._probe = (0.0, None)
@@ -107,6 +124,7 @@ if __name__ == "__main__":
         test_the_reasoning_block_is_stripped,
         test_grounded_never_routes_local,
         test_local_answers_cache_under_their_own_suffix,
+        test_cached_modes_reports_what_is_actually_on_disk,
         test_no_local_server_means_no_free_lenses,  # last: it points LOCAL_URL at a dead port
     ]
     for fn in order:
