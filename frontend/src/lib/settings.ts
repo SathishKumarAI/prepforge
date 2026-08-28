@@ -17,12 +17,23 @@ export interface Settings {
 
 const MAX_TEXT = 200;
 
-// Bumped when the app's default theme changes. Anyone still sitting on the old
-// default is moved once; an explicit later choice is never touched again
-// because the marker is written at the same time. Idempotent by construction —
+// Bumped when the theme set changes. Anyone sitting on a theme that no longer
+// exists is moved once, to the one of the two that matches what they had — a
+// light theme stays light. The marker is written at the same time, so an
+// explicit later choice is never touched again. Idempotent by construction:
 // running it twice is a no-op, so it is safe on every load.
-const THEME_MIGRATION = 1;
-const SUPERSEDED_DEFAULT: ThemeMode = "mocha";
+//
+// 2 (2026-08-28): five themes became two. Anything not "dark", "light" or
+//                 "system" is a retired theme and lands here.
+// 1: the default moved off Catppuccin Mocha.
+const THEME_MIGRATION = 2;
+const RETIRED_THEMES: Record<string, ThemeMode> = {
+  mocha: "dark",
+  "databricks-dark": "dark",
+  latte: "light",
+  "databricks-light": "light",
+  sepia: "light",
+};
 
 export const EMPTY_SETTINGS: Settings = {
   name: "",
@@ -48,12 +59,17 @@ export function loadSettings(): Settings {
   s.theme = s.theme ?? DEFAULT_THEME;
   s.textSize = s.textSize ?? "base";
   s.density = s.density ?? "comfortable";
-  // One-time move off the superseded default. Writing the marker is what makes
-  // this run once, so a later deliberate pick of that theme survives.
+  // One-time move off a retired theme. Writing the marker is what makes this
+  // run once. The fallback is unconditional rather than migration-gated: a
+  // theme id that no longer has a CSS block would otherwise render the default
+  // palette while the settings panel showed nothing selected.
   if ((s.themeMigration ?? 0) < THEME_MIGRATION) {
-    if (s.theme === SUPERSEDED_DEFAULT) s.theme = DEFAULT_THEME;
+    s.theme = RETIRED_THEMES[s.theme] ?? s.theme;
     s.themeMigration = THEME_MIGRATION;
     saveSettings(s);
+  }
+  if (s.theme !== "dark" && s.theme !== "light" && s.theme !== "system") {
+    s.theme = RETIRED_THEMES[s.theme] ?? DEFAULT_THEME;
   }
   return s;
 }

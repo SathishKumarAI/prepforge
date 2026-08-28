@@ -12,7 +12,7 @@ account, no server-side user data.
 
 | Layer | Tech | Responsibility |
 |---|---|---|
-| Frontend | React + Vite + TypeScript, Tailwind (Catppuccin Mocha), framer-motion, Recharts | All UI: the 7 modes, animations, charts |
+| Frontend | React + Vite + TypeScript, Tailwind (dark + light, `docs/DESIGN-THEMES.md`), framer-motion, Recharts | All UI: the 7 modes, animations, charts |
 | Backend | Python + FastAPI | Serves the Q&A bank, runs scrapers, ingests markdown |
 | Content | Flat JSON files | `questions.json` (curated) + `generated.json` (ingested) |
 | Scrapers | httpx, BeautifulSoup, feedparser, YouTube Data API | Pull articles/videos into the resource feed |

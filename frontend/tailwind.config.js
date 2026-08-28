@@ -6,8 +6,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Catppuccin palette via CSS variables → theme-swappable (Mocha dark / Latte light).
-        // Values live in src/styles/index.css :root / [data-theme].
+        // The palette, via CSS variables → theme-swappable (study dark / light).
+        // Values live in src/styles/index.css :root / [data-theme="light"].
+        // The names are Catppuccin's and are now only names: `mauve` means "the
+        // accent", whatever hue the theme gives it. Renaming them would touch
+        // every file in src/ and buy nothing.
         base: "rgb(var(--ctp-base) / <alpha-value>)",
         mantle: "rgb(var(--ctp-mantle) / <alpha-value>)",
         crust: "rgb(var(--ctp-crust) / <alpha-value>)",

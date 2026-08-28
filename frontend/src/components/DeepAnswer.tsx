@@ -241,14 +241,14 @@ export function DeepAnswer({
           reads as one continuous load rather than a flash of empty state. */}
       {controlled && !slot && mode !== "custom" && (
         <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-lavender" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />
           {MODE_LOADING[mode]}
         </div>
       )}
 
       {slot?.status === "loading" && (
         <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-lavender" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />
           {MODE_LOADING[mode]}
         </div>
       )}
