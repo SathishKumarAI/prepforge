@@ -172,7 +172,7 @@ export function QuestionsView() {
       {dueCount > 0 && (
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button asChild variant="primary">
-            <Link to="/learn">
+            <Link to="/study?mode=recall">
               Review {dueCount} due card{dueCount !== 1 ? "s" : ""}
             </Link>
           </Button>
