@@ -6,7 +6,7 @@ import { Loader } from "../components/States";
 import { Button } from "../components/ui/button";
 import { useNotes } from "../hooks/useNotes";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
+import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { suggestActions } from "../lib/nextAction";
 import { isDue } from "../lib/srs";
 
@@ -25,7 +25,10 @@ import { isDue } from "../lib/srs";
  * be deleted rather than kept.
  */
 export function Today() {
-  const { questions, loading } = useQuestions();
+  // Ids, not answers. This page counts questions and ranks an action; it never
+  // renders one. Reading the 17 MB bank to print four numbers is what kept the
+  // app's first screen on skeletons for seconds.
+  const { rows: questions, loading } = useQuestionIndex(true);
   const { progress } = useProgress();
   const { notes } = useNotes();
 

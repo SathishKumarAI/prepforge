@@ -55,6 +55,10 @@ const SHOTS = [
   { name: "settings-light", path: "/", theme: "light", keys: [{ key: "k", ctrl: true }], settle: 1200 },
 ];
 
+/** Dev serves unbundled modules, so first paint is far slower than production.
+ *  Every shot waits at least this long unless it asks for more. */
+const DEFAULT_SETTLE = 4000;
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitForDevTools() {
@@ -163,7 +167,7 @@ async function main() {
 
     await cdp.send("Page.navigate", { url: BASE + shot.path });
     await cdp.once("Page.loadEventFired");
-    await sleep(shot.settle ?? 1500);
+    await sleep(shot.settle ?? DEFAULT_SETTLE);
 
     for (const key of shot.keys || []) {
       await press(cdp, key);
