@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bookmark,
@@ -30,15 +30,42 @@ import { scrollToElement } from "../lib/scroll";
  * state announced rather than inferring it from a rotating glyph. No entrance
  * animation and no index-staggered delay: a deck of 48 cards rippling in on
  * every filter change is choreography, not feedback.
+ *
+ * Hover opens it, click pins it. Two states rather than one, because a card
+ * that closed the instant the pointer left would take the answer away while you
+ * were still reading it: the pin is what makes opening on hover survivable. The
+ * delays are the other half — 350ms before opening so sweeping across the deck
+ * does not open six cards, 200ms before closing so crossing a gap on the way to
+ * the card does not shut it.
+ *
+ * Cost, accepted knowingly: an opening card pushes the cards below it in its
+ * column down. The hovered card's own top does not move, so what you are aiming
+ * at stays put, but the deck under it does shift.
  */
 export function QuestionCard({ q }: { q: Question; index?: number }) {
-  const [open, setOpen] = useState(false);
+  // `pinned` is a click; `peeked` is a hover. Either one opens the card.
+  const [pinned, setPinned] = useState(false);
+  const [peeked, setPeeked] = useState(false);
+  const open = pinned || peeked;
+  const peekTimer = useRef<number>();
   const [noteOpen, setNoteOpen] = useState(false);
   const [altOpen, setAltOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote } = useProgress();
   const bookmarked = progress.bookmarks.includes(q.id);
   const note = progress.notes[q.id] ?? "";
+
+  // Only where hovering is a real gesture. A touch device fires mouseenter from
+  // a tap, so without this the tap would open the card by hover and then the
+  // click would immediately pin it — one tap, two state changes.
+  const canHover = window.matchMedia("(hover: hover)").matches;
+
+  function peek(on: boolean, delay: number) {
+    window.clearTimeout(peekTimer.current);
+    if (!canHover) return;
+    peekTimer.current = window.setTimeout(() => setPeeked(on), delay);
+  }
+  useEffect(() => () => window.clearTimeout(peekTimer.current), []);
 
   function jumpTo(id: string) {
     scrollToElement(document.getElementById(`q-${id}`), "center");
@@ -52,9 +79,21 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
       // wide as the 68ch answer inside it — the width showed up as a gutter,
       // not as content.
       className="panel scroll-mt-24 transition-colors duration-100 hover:border-surface1"
+      onMouseEnter={() => peek(true, 350)}
+      onMouseLeave={() => peek(false, 200)}
     >
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          // Clicking an open card closes it for good — clearing the hover too,
+          // or it would spring back open under the pointer that just shut it.
+          window.clearTimeout(peekTimer.current);
+          if (open) {
+            setPinned(false);
+            setPeeked(false);
+          } else {
+            setPinned(true);
+          }
+        }}
         aria-expanded={open}
         className="pf-card flex w-full items-start gap-4 rounded-xl px-4 py-3.5 text-left"
       >
