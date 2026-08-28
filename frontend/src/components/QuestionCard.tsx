@@ -19,6 +19,7 @@ import { DeepAnswer } from "./DeepAnswer";
 import { Markdown } from "./Markdown";
 import { SourceDoc } from "./SourceDoc";
 import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { scrollToElement } from "../lib/scroll";
 
 /**
@@ -283,6 +284,28 @@ function CollapsibleAnswer({ md }: { md: string }) {
   );
 }
 
+/**
+ * What a related link shows on hover: enough to judge it, not enough to read
+ * instead of opening it. The answer is already in memory via `questionMap`, so
+ * this costs no request.
+ */
+function RelatedPreview({ q }: { q: Question }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <TopicBadge topic={q.topic} />
+        <DifficultyBadge difficulty={q.difficulty} />
+      </div>
+      <p className="font-display text-small font-medium leading-snug text-text">{q.question}</p>
+      {q.answer ? (
+        <p className="line-clamp-4 text-small leading-relaxed text-subtext0">{stripMd(q.answer)}</p>
+      ) : (
+        <p className="text-micro text-overlay0">No inline answer — open it to read the source.</p>
+      )}
+    </div>
+  );
+}
+
 /** Strip markdown syntax for a clean one-line preview. */
 function stripMd(md: string): string {
   return md
@@ -347,6 +370,9 @@ function MoreToRead({ links, reading }: { links?: DeepLink[]; reading?: DeepLink
  * middle-click and "open in new tab" behave. When the card is already on this
  * page the click is intercepted and scrolls to it instead — no navigation for
  * something two screens down.
+ *
+ * Hover or keyboard-focus previews the answer, so deciding whether one is worth
+ * reading costs neither a navigation nor a scroll away from what you are on.
  */
 function RelatedLinks({
   related,
@@ -373,26 +399,38 @@ function RelatedLinks({
         <span className="font-semibold uppercase tracking-[0.14em]">Related</span>
         <span className="tabular-nums">{items.length}</span>
       </summary>
-      <ul className="mt-1.5 flex flex-col gap-0.5">
-        {items.map(({ id, q }) => (
-          <li key={id}>
-            <Link
-              to={`/library?q=${encodeURIComponent(q!.question)}`}
-              onClick={(e) => {
-                if (!document.getElementById(`q-${id}`)) return; // let the link navigate
-                e.preventDefault();
-                onJump(id);
-              }}
-              // Quieter than a prose link on purpose: six of these per card in
-              // full accent read as an alarm, not as a list you may follow.
-              className="flex items-center gap-2 rounded-lg px-2 py-1 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
-            >
-              <span className="truncate">{q!.question}</span>
-              <span className="shrink-0 text-micro text-overlay0">{q!.topic}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* One provider for the whole list: the skip-delay window is shared, so
+          moving along the list previews instantly after the first one opens,
+          instead of charging 300ms per link. */}
+      <TooltipProvider delayDuration={300} skipDelayDuration={400}>
+        <ul className="mt-1.5 flex flex-col gap-0.5">
+          {items.map(({ id, q }) => (
+            <li key={id}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={`/library?q=${encodeURIComponent(q!.question)}`}
+                    onClick={(e) => {
+                      if (!document.getElementById(`q-${id}`)) return; // let the link navigate
+                      e.preventDefault();
+                      onJump(id);
+                    }}
+                    // Quieter than a prose link on purpose: six of these per card in
+                    // full accent read as an alarm, not as a list you may follow.
+                    className="flex items-center gap-2 rounded-lg px-2 py-1 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+                  >
+                    <span className="truncate">{q!.question}</span>
+                    <span className="shrink-0 text-micro text-overlay0">{q!.topic}</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" align="start">
+                  <RelatedPreview q={q!} />
+                </TooltipContent>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      </TooltipProvider>
     </details>
   );
 }
