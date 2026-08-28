@@ -65,30 +65,45 @@ personal prep tool, not a bloated product.
 
 ## Phase 5 — after the 2026-08-28 UI pass
 
-Filed because they were deliberately NOT done, with what would have to be true to
-do them. See `docs/WORKLOG.md` 2026-08-28 for why each was left.
+Filed because they were deliberately NOT done. All seven shipped the same day; the
+lines are kept ticked rather than deleted so the reasoning stays findable. See `docs/WORKLOG.md` 2026-08-28 for why each was left.
 
-- [ ] `P1` **See the UI pass in a browser.** The lens `$` markers, the Ctrl+K
+- [x] `P1` **See the UI pass in a browser.** Done — `npm run shoot` (#26); the shots are in `frontend/scripts/.shots/`. The lens `$` markers, the Ctrl+K
       palette's keyboard path, and both themes are verified by build output and
       contrast numbers, not by looking. Needs a session where Chrome automation
       works (the devtools profile was held by a running Chrome; the extension was
       not connected).
-- [ ] `P1` **Turn the fetched pages into cards** — `POST /ingest` then
+- [x] `P1` **Turn the fetched pages into cards** — done: 17,429 cards, 19,074 questions, 3,016 with reading. — `POST /ingest` then
       `POST /pipeline/build` after `fetch_reading.py --all` finishes, and record
       the new card count. Until then the pages are readable but not quizzable.
-- [ ] `P2` **A retry path for JS-only and 403 hosts** (Medium, Stack Overflow,
+- [x] `P2` **A retry path for JS-only and 403 hosts** — `--render` + the wall gate (#33). (Medium, Stack Overflow,
       some vendor docs). A headless fetch or a reader service — not a bigger
       `User-Agent` lie, which is both rude and fragile.
-- [ ] `P2` **Make the `$` markers exact.** A cached lens costs nothing, and the
+- [x] `P2` **Make the `$` markers exact.** — `GET /generate/cached/{qid}` (#31). A cached lens costs nothing, and the
       tab row cannot know which are cached, so it marks by provider and is
       conservative. Needs a cache-state endpoint (`qid` -> which lens files exist).
-- [ ] `P2` **Slim the questions payload.** `GET /questions` is 15 MB and both
+- [x] `P2` **Slim the questions payload.** — `GET /questions/index`, 17.5 MB -> 1.17 MB (#30). `GET /questions` is 15 MB and both
       Library and the palette hold it in memory; an index endpoint (id, title,
       topic, difficulty) would cut the palette's cost to almost nothing.
-- [ ] `P3` **Code-split the main chunk** — 753 kB minified, warned about on every
+- [x] `P3` **Code-split the main chunk** — 754 kB -> 344 kB (#32). — 753 kB minified, warned about on every
       build. Library and Study are the obvious split points.
-- [ ] `P3` **Recent questions in the empty palette**, instead of the first six
+- [x] `P3` **Recent questions in the empty palette** — (#34)., instead of the first six
       destinations. Needs a small recently-viewed list in progress storage.
+
+## Phase 6 — what the 2026-08-28 evening left
+
+- [ ] `P1` **Decide on the web-ingest noise.** 1,124 fetched pages became 10,744 cards on a
+      deterministic ingest. Sampling found real material (scikit-learn, Kafka, system design) next
+      to consultancy marketing — "Explain: Consulting services". `_is_boilerplate` in
+      `backend/ingest.py` was written for cloned repos, not the open web. Either extend it or
+      accept the noise deliberately; do not leave it undecided.
+- [ ] `P2` **A plain `--retry-failed` pass.** The User-Agent that made Wikipedia 403 is fixed, so
+      those 21 pages and others like them are recoverable without rendering.
+- [ ] `P2` **The three still-unverified UI-rebuild pieces**: a timed quiz through a real 30s
+      expiry, Reader's PDF + web-fetch, drill mode end to end. Untouched by this session.
+- [ ] `P3` **Library still waits on the 17.5 MB bank.** Today and the palette do not any more. The
+      detail pane needs full answers, but the LIST does not — it could open on the index and fetch
+      one question at a time.
 
 ## Cross-cutting engineering rules (apply to every item)
 
