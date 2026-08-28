@@ -69,14 +69,14 @@ export function VoiceRecorder({
   }
 
   return (
-    <div className="glass rounded-2xl p-5 shadow-card">
+    <div className="panel p-4">
       <div className="mb-3 flex items-center justify-between">
         <div className="font-display text-lg font-medium text-text">Voice note</div>
         <button onClick={onCancel} className="text-overlay1 hover:text-text">✕</button>
       </div>
 
       {status === "denied" && (
-        <div className="mb-3 rounded-lg border border-peach/30 bg-peach/10 px-3 py-2 text-sm text-peach">
+        <div className="mb-3 rounded-lg border border-surface0 bg-crust px-3 py-2 text-small text-subtext0">
           Microphone blocked. You can still type the note below.
         </div>
       )}
@@ -99,14 +99,14 @@ export function VoiceRecorder({
             ● Record
           </button>
         ) : (
-          <button onClick={stop} className="flex items-center gap-2 rounded-xl border border-white/10 bg-surface0 px-4 py-2 text-sm text-text">
+          <button onClick={stop} className="inline-flex h-9 items-center gap-2 rounded-lg bg-surface0 px-3.5 text-small text-text transition-colors duration-100 hover:bg-surface1">
             ■ Stop
           </button>
         )}
         <button
           onClick={save}
           disabled={!transcript.trim() && !chunksRef.current.length}
-          className="ml-auto rounded-xl bg-gradient-to-r from-mauve to-blue px-4 py-2 text-sm font-semibold text-crust disabled:opacity-40"
+          className="ml-auto inline-flex h-9 items-center rounded-lg bg-mauve px-3.5 text-small font-medium text-crust transition-colors duration-100 hover:bg-mauve/90 disabled:opacity-50"
         >
           Save note
         </button>

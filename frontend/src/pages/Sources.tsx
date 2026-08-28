@@ -1,8 +1,11 @@
-import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { ExternalLink, FileText, Plus } from "lucide-react";
 import { SourceDoc } from "../components/SourceDoc";
+import { Page } from "../components/page/PageLayout";
+import { Orient, Fact } from "../components/page/Orient";
 import { Empty, Loader } from "../components/States";
+import { Button } from "../components/ui/button";
 import { addGithubSource, fetchSources, quizFromResource, type LibraryCollection } from "../lib/api";
 import { reloadQuestions } from "../hooks/useQuestions";
 import { toast } from "../components/ui/sonner";
@@ -86,57 +89,60 @@ export function Sources() {
   );
 
   return (
-    <div>
+    <Page
+      title="Sources"
+      orient={
+        <Orient>
+          <Fact
+            label="collections"
+            value={data?.collections.length ?? null}
+            emphasis={Boolean(data?.collections.length)}
+          />
+          <Fact label="documents" value={data?.docs ?? null} />
+          <Fact label="cards made" value={data?.cards ?? null} />
+        </Orient>
+      }
+    >
       <SourceDoc source={reading} onClose={() => setReading(null)} />
 
-      <header className="mb-6">
-        <h1 className="font-display text-h1 font-semibold text-text">Sources</h1>
-        <p className="mt-1 max-w-xl text-sm text-subtext0">
-          Everything you study from. Add a GitHub repo of Markdown — or any article URL — and it
-          becomes flashcards and quizzes, offline, with no API key.
-        </p>
-        {data && (
-          <div className="mt-3 flex gap-5 font-mono text-[11px] text-overlay0">
-            <span><b className="text-mauve">{data.collections.length}</b> collections</span>
-            <span><b className="text-teal">{data.docs}</b> documents</span>
-            <span><b className="text-peach">{data.cards.toLocaleString()}</b> cards</span>
-          </div>
-        )}
-      </header>
-
-      <div className="mb-2 flex gap-2">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="github.com/owner/repo  —  or any article URL…"
-          className="input flex-1 font-mono"
-        />
-        <button
-          onClick={() => add()}
-          disabled={busy || !url.trim()}
-          className="rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-mauve transition-colors hover:bg-mauve/20 disabled:opacity-40"
-        >
-          {busy ? "Working…" : "+ Add source"}
-        </button>
+      <div className="mb-2 flex flex-wrap items-end gap-2">
+        <label className="field">
+          <span className="mb-1.5 block text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            Repository or article URL
+          </span>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="github.com/owner/repo"
+            className="input h-9"
+          />
+        </label>
+        <Button variant="primary" onClick={() => add()} disabled={busy || !url.trim()}>
+          <Plus aria-hidden="true" />
+          {busy ? "Adding" : "Add source"}
+        </Button>
       </div>
-      <p className="mb-6 font-mono text-[11px] text-overlay0">
-        Repos are cloned shallow into <code className="text-subtext0">content/library/</code> and stay on your machine.
+      <p className="mb-6 max-w-prose text-small text-overlay1">
+        A repository of Markdown is cloned shallow into{" "}
+        <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">
+          content/library/
+        </code>{" "}
+        and stays on your machine. Any other URL is fetched as an article. Both become cards and
+        quizzes offline, with no API key.
       </p>
 
       {unused.length > 0 && (
         <div className="mb-7">
-          <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-overlay0">Suggested</div>
-          <div className="flex flex-wrap gap-2">
+          <h2 className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            Suggested
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
             {unused.map((s) => (
-              <button
-                key={s}
-                onClick={() => add(s)}
-                disabled={busy}
-                className="rounded-full border border-white/10 bg-surface0/40 px-3 py-1.5 font-mono text-[11px] text-subtext0 transition-colors hover:border-mauve/40 hover:text-text disabled:opacity-40"
-              >
-                + {s.replace("https://github.com/", "")}
-              </button>
+              <Button key={s} variant="outline" size="sm" onClick={() => add(s)} disabled={busy}>
+                <Plus aria-hidden="true" />
+                {s.replace("https://github.com/", "")}
+              </Button>
             ))}
           </div>
         </div>
@@ -145,15 +151,19 @@ export function Sources() {
       {loading ? (
         <Loader label="Reading your library" />
       ) : !data?.collections.length ? (
-        <Empty title="Nothing in your library yet" hint="Paste a GitHub repo of Markdown above — the suggestions are a good start." />
+        <Empty title="Your library is empty. Paste a repository of Markdown above — the suggestions are a good start." />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {data.collections.map((c, i) => (
-            <CollectionCard key={c.name} c={c} index={i} onOpenDoc={(path, title) => setReading({ path, title, kind: "library" })} />
+        <div className="grid gap-3 lg:grid-cols-2">
+          {data.collections.map((c) => (
+            <CollectionCard
+              key={c.name}
+              c={c}
+              onOpenDoc={(path, title) => setReading({ path, title, kind: "library" })}
+            />
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 
@@ -165,74 +175,60 @@ const KIND_LABEL: Record<LibraryCollection["kind"], string> = {
 
 function CollectionCard({
   c,
-  index,
   onOpenDoc,
 }: {
   c: LibraryCollection;
-  index: number;
   onOpenDoc: (path: string, title: string) => void;
 }) {
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const shown = open ? c.files : c.files.slice(0, 5);
 
+  // A genuine raised card: a collection is a thing with its own actions and its
+  // own state, which is exactly what a card is for.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.05, 0.3), ease: [0.16, 1, 0.3, 1] }}
-      className="glass flex flex-col rounded-2xl p-5 shadow-card"
-    >
+    <article className="panel flex flex-col p-4">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-display text-base font-medium text-text">{c.name}</h3>
-          <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-overlay0">
-            <span className="rounded bg-surface0/60 px-1.5 py-0.5 text-subtext0">{KIND_LABEL[c.kind]}</span>
-            <span>{c.docs} docs</span>
-            <span>· {c.cards.toLocaleString()} cards</span>
-          </div>
+          <h3 className="truncate text-small font-medium text-text">{c.name}</h3>
+          <p className="mt-0.5 text-micro text-overlay1">
+            {KIND_LABEL[c.kind]} · <span className="tabular-nums">{c.docs}</span> docs ·{" "}
+            <span className="tabular-nums">{c.cards.toLocaleString()}</span> cards
+          </p>
         </div>
         {c.url && (
-          <a
-            href={c.url}
-            target="_blank"
-            rel="noreferrer"
-            title="Open the repository"
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-crust/80 text-subtext0 transition-colors hover:text-text"
-          >
-            ↗
-          </a>
+          <Button asChild variant="ghost" size="icon" className="shrink-0">
+            <a href={c.url} target="_blank" rel="noreferrer" aria-label={`Open ${c.name} on the web`}>
+              <ExternalLink aria-hidden="true" />
+            </a>
+          </Button>
         )}
       </div>
 
-      <ul className="mb-3 flex flex-col gap-0.5">
+      <ul className="mb-2 flex flex-col gap-px">
         {shown.map((f) => (
           <li key={f}>
             <button
               onClick={() => onOpenDoc(f, f.split("/").pop() ?? f)}
-              className="w-full truncate rounded-lg px-2 py-1 text-left font-mono text-[11px] text-subtext0 transition-colors hover:bg-surface0/60 hover:text-text"
+              className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-micro text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
               title={f}
             >
-              {f.replace(`${c.name}/`, "")}
+              <FileText aria-hidden="true" className="size-3 shrink-0 text-overlay0" />
+              <span className="truncate">{f.replace(`${c.name}/`, "")}</span>
             </button>
           </li>
         ))}
       </ul>
 
-      <div className="mt-auto flex items-center gap-3 font-mono text-[11px]">
+      <div className="mt-auto flex items-center gap-1 border-t border-surface0 pt-2">
         {c.files.length > 5 && (
-          <button onClick={() => setOpen((v) => !v)} className="text-sapphire hover:underline">
-            {open ? "show less" : `+ ${c.files.length - 5} more`}
-          </button>
+          <Button variant="ghost" size="sm" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            {open ? "Show fewer" : `Show all ${c.files.length}`}
+          </Button>
         )}
-        <button
-          onClick={() => navigate("/quiz")}
-          className="ml-auto text-mauve hover:underline"
-          title="Pick this collection's docs under “Quiz from a specific source”"
-        >
-          quiz these →
-        </button>
+        <Button asChild variant="ghost" size="sm" className="ml-auto">
+          <Link to="/study?mode=quiz">Quiz on this</Link>
+        </Button>
       </div>
-    </motion.div>
+    </article>
   );
 }

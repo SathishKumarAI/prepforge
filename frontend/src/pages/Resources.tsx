@@ -1,10 +1,13 @@
-import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronRight, ExternalLink, Plus, RotateCw } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 import { ArticleReader } from "../components/ArticleReader";
 import { TopicBadge } from "../components/Badge";
+import { Page } from "../components/page/PageLayout";
+import { Orient, Fact } from "../components/page/Orient";
 import { Empty, Loader } from "../components/States";
+import { Button } from "../components/ui/button";
 import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, quizFromResource, refreshResources } from "../lib/api";
 import { reloadQuestions } from "../hooks/useQuestions";
 import { toast } from "../components/ui/sonner";
@@ -15,7 +18,6 @@ export function Resources() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [kind, setKind] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
   const [addUrl, setAddUrl] = useState("");
   const [adding, setAdding] = useState(false);
   const [reading, setReading] = useState<Resource | null>(null);
@@ -28,13 +30,12 @@ export function Resources() {
   useEffect(() => {
     fetchResources()
       .then((d) => setItems(d.resources))
-      .catch(() => setMsg("Backend not reachable"))
+      .catch(() => toast.error("Backend not reachable — start it on port 8787."))
       .finally(() => setLoading(false));
   }, []);
 
   async function refresh() {
     setRefreshing(true);
-    setMsg(null);
     try {
       const r = await refreshResources();
       const d = await fetchResources();
@@ -51,19 +52,18 @@ export function Resources() {
     const url = addUrl.trim();
     if (!url) return;
     setAdding(true);
-    setMsg(null);
     try {
       const r = await addResource(url);
       if (r.error) {
-        setMsg(r.message ?? "Could not add that URL.");
+        toast.error(r.message ?? "That URL could not be saved.");
       } else {
         const d = await fetchResources();
         setItems(d.resources);
         setAddUrl("");
-        setMsg("Added.");
+        toast.success("Saved to your resources.");
       }
     } catch {
-      setMsg("Add failed — is the backend running?");
+      toast.error("Save failed — is the backend running?");
     } finally {
       setAdding(false);
     }
@@ -72,32 +72,34 @@ export function Resources() {
   async function saveFeed() {
     const url = feedUrl.trim();
     if (!url) return;
-    setMsg(null);
     try {
       const r = await addFeed(url);
-      setMsg(r.error ? r.message ?? "Bad feed URL." : (r.message ?? "Feed added."));
-      if (!r.error) {
+      if (r.error) {
+        toast.error(r.message ?? "That does not look like a feed URL.");
+      } else {
+        toast.success(r.message ?? "Subscribed. New posts arrive on the next refresh.");
         setFeedUrl("");
-        setShowFeed(false);
       }
     } catch {
-      setMsg("Add feed failed — is the backend running?");
+      toast.error("Subscribe failed — is the backend running?");
     }
   }
 
   async function runVault() {
     setVaultBusy(true);
-    setMsg("Scanning your Obsidian vault (PDF extraction can take ~1 min)…");
+    const t = toast.loading("Scanning your vault — PDF extraction takes about a minute.");
     try {
       const r = await ingestVault();
       if (r.error) {
-        toast.error(r.message ?? "Vault ingest failed.");
+        toast.error(r.message ?? "Vault ingest failed.", { id: t });
       } else {
-        toast.success(`Ingested ${r.questions} questions from ${r.files_scanned} docs — reload to study them.`, { duration: 6000 });
+        toast.success(
+          `Ingested ${r.questions} questions from ${r.files_scanned} documents.`,
+          { id: t, description: "Reload to study them.", duration: 6000 },
+        );
       }
-      setMsg(null);
     } catch {
-      toast.error("Vault ingest failed — is the backend running?");
+      toast.error("Vault ingest failed — is the backend running?", { id: t });
     } finally {
       setVaultBusy(false);
     }
@@ -125,144 +127,174 @@ export function Resources() {
     [items, kind]
   );
 
+  const videos = items.filter((i) => i.kind === "video").length;
+
   return (
-    <div>
+    <Page
+      title="Resources"
+      orient={
+        <Orient>
+          <Fact label="saved" value={items.length || null} emphasis={items.length > 0} />
+          <Fact label="videos" value={videos || null} />
+          <Fact label="articles" value={items.length - videos || null} />
+        </Orient>
+      }
+      actions={
+        <Button variant="ghost" size="sm" onClick={refresh} disabled={refreshing}>
+          <RotateCw aria-hidden="true" className={refreshing ? "animate-spin" : ""} />
+          {refreshing ? "Pulling" : "Refresh"}
+        </Button>
+      }
+    >
       <ArticleReader resource={reading} onClose={() => setReading(null)} />
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-h1 font-semibold text-text">Resource feed</h1>
-          <p className="mt-1 max-w-lg text-sm text-subtext0">
-            Live-aggregated from YouTube, blog RSS, and scraped articles. Configure sources in{" "}
-            <code className="rounded bg-crust px-1.5 py-0.5 font-mono text-xs text-peach">
-              backend/config/sources.yaml
-            </code>
-            .
-          </p>
+
+      <div className="mb-2 flex flex-wrap items-end gap-2">
+        <label className="field">
+          <span className="mb-1.5 block text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            Save a video or article
+          </span>
+          <input
+            value={addUrl}
+            onChange={(e) => setAddUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="https://youtube.com/watch?v=..."
+            className="input h-9"
+          />
+        </label>
+        <Button variant="primary" onClick={add} disabled={adding || !addUrl.trim()}>
+          <Plus aria-hidden="true" />
+          {adding ? "Saving" : "Save"}
+        </Button>
+      </div>
+      <p className="mb-6 max-w-prose text-small text-overlay1">
+        Refresh pulls whatever the feeds in{" "}
+        <code className="rounded border border-surface0 bg-crust px-1 font-mono text-micro">
+          backend/config/sources.yaml
+        </code>{" "}
+        have published since last time.
+      </p>
+
+      {/* One disclosure for the bulk operations. These were four stacked
+          blocks, each with its own differently-tinted button, so nothing on
+          the page looked more important than anything else. */}
+      <details
+        className="mb-6 border-y border-surface0 py-2"
+        open={showFeed}
+        onToggle={(e) => setShowFeed((e.currentTarget as HTMLDetailsElement).open)}
+      >
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-small text-overlay1 hover:text-subtext0 [&::-webkit-details-marker]:hidden">
+          <ChevronRight
+            aria-hidden="true"
+            className={`size-3.5 transition-transform duration-150 ${showFeed ? "rotate-90" : ""}`}
+          />
+          Subscribe to a feed, or build cards in bulk
+        </summary>
+
+        <div className="mt-4 flex flex-col gap-5">
+          <div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="field">
+                <span className="mb-1.5 block text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+                  RSS or Substack feed
+                </span>
+                <input
+                  value={feedUrl}
+                  onChange={(e) => setFeedUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && saveFeed()}
+                  placeholder="yourpub.substack.com"
+                  className="input h-9"
+                />
+              </label>
+              <Button variant="secondary" onClick={saveFeed} disabled={!feedUrl.trim()}>
+                Subscribe
+              </Button>
+            </div>
+            <p className="mt-1.5 max-w-prose text-micro text-overlay1">
+              Free posts and previews arrive on the next refresh. Paywalled full text needs your
+              own login and will not be fetched.
+            </p>
+          </div>
+
+          <div>
+            <Button variant="secondary" onClick={runVault} disabled={vaultBusy}>
+              {vaultBusy ? "Scanning your vault" : "Ingest Obsidian vault"}
+            </Button>
+            <p className="mt-1.5 max-w-prose text-micro text-overlay1">
+              Scans the interview notes and PDFs listed in{" "}
+              <code className="rounded border border-surface0 bg-crust px-1 font-mono">
+                config/vault.yaml
+              </code>{" "}
+              into deduplicated questions with source links. PDF extraction can take about a
+              minute.
+            </p>
+          </div>
+
+          <div>
+            <div className="flex flex-wrap items-end gap-2">
+              <label className="field">
+                <span className="mb-1.5 block text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+                  Card generator
+                </span>
+                <select
+                  value={genMode}
+                  onChange={(e) => setGenMode(e.target.value as typeof genMode)}
+                  className="input h-9"
+                >
+                  <option value="deterministic">Offline (no model)</option>
+                  <option value="ollama">Local model via Ollama</option>
+                  <option value="claude">Claude (needs an API key)</option>
+                </select>
+              </label>
+              <Button variant="secondary" onClick={generateQA} disabled={genBusy}>
+                {genBusy ? "Generating" : "Generate cards"}
+              </Button>
+            </div>
+            <p className="mt-1.5 max-w-prose text-micro text-overlay1">
+              Turns everything already saved in your library into study cards.
+            </p>
+          </div>
         </div>
-        <button
-          onClick={refresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-text transition-colors hover:bg-mauve/20 disabled:opacity-50"
-        >
-          <svg
-            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-            className={refreshing ? "animate-spin" : ""}
-          >
-            <path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {refreshing ? "Pulling…" : "Refresh"}
-        </button>
-      </header>
+      </details>
 
-      {msg && <div className="mb-4 font-mono text-xs text-teal">{msg}</div>}
-
-      {/* manual add by URL — paste a YouTube link or article */}
-      <div className="mb-5 flex gap-2">
-        <input
-          value={addUrl}
-          onChange={(e) => setAddUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Paste a YouTube or article URL to save…"
-          className="input flex-1 font-mono"
+      <div className="mb-5 flex flex-wrap items-center gap-1.5">
+        <Chip active={!kind} onClick={() => setKind(null)} label="All" count={items.length} />
+        <Chip
+          active={kind === "video"}
+          onClick={() => setKind("video")}
+          label="Videos"
+          count={videos}
         />
-        <button
-          onClick={add}
-          disabled={adding || !addUrl.trim()}
-          className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-sm font-medium text-teal hover:bg-teal/20 disabled:opacity-40"
-        >
-          {adding ? "Adding…" : "+ Add"}
-        </button>
-      </div>
-
-      {/* subscribe to an RSS / Substack feed */}
-      <div className="mb-5">
-        {!showFeed ? (
-          <button onClick={() => setShowFeed(true)} className="font-mono text-xs text-sapphire hover:underline">
-            + Subscribe to an RSS / Substack feed
-          </button>
-        ) : (
-          <div className="flex gap-2">
-            <input
-              value={feedUrl}
-              onChange={(e) => setFeedUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveFeed()}
-              placeholder="yourpub.substack.com  or  any /feed URL…"
-              className="input flex-1 font-mono"
-            />
-            <button onClick={saveFeed} disabled={!feedUrl.trim()} className="rounded-xl border border-sapphire/40 bg-sapphire/10 px-4 py-2.5 text-sm font-medium text-sapphire hover:bg-sapphire/20 disabled:opacity-40">
-              Subscribe
-            </button>
-            <button onClick={() => setShowFeed(false)} className="px-2 text-overlay1 hover:text-text">✕</button>
-          </div>
-        )}
-        {showFeed && (
-          <div className="mt-1.5 font-mono text-[11px] text-overlay0">
-            Substack: paste the publication URL — free posts &amp; previews pull in on Refresh; paywalled full text needs your own login.
-          </div>
-        )}
-      </div>
-
-      {/* ingest the Obsidian vault into deduped, source-tagged questions */}
-      <div className="mb-5">
-        <button
-          onClick={runVault}
-          disabled={vaultBusy}
-          className="flex items-center gap-2 rounded-xl border border-peach/40 bg-peach/10 px-4 py-2.5 text-sm font-medium text-peach hover:bg-peach/20 disabled:opacity-40"
-        >
-          <span className={vaultBusy ? "animate-spin" : ""}>⛁</span>
-          {vaultBusy ? "Ingesting vault…" : "Ingest Obsidian vault → questions"}
-        </button>
-        <div className="mt-1.5 font-mono text-[11px] text-overlay0">
-          Scans interview PDFs/notes in <code className="text-subtext0">config/vault.yaml</code> → deduped questions with source links.
-        </div>
-      </div>
-
-      {/* generate Q&A from saved/uploaded resources, with a generator selector */}
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        <select
-          value={genMode}
-          onChange={(e) => setGenMode(e.target.value as typeof genMode)}
-          className="input w-auto"
-        >
-          <option value="deterministic">Deterministic (offline)</option>
-          <option value="ollama">Local model (Ollama)</option>
-          <option value="claude">Claude (needs API key)</option>
-        </select>
-        <button
-          onClick={generateQA}
-          disabled={genBusy}
-          className="flex items-center gap-2 rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-mauve hover:bg-mauve/20 disabled:opacity-40"
-        >
-          <span className={genBusy ? "animate-spin" : ""}>✦</span>
-          {genBusy ? "Generating…" : "Generate Q&A from saved resources"}
-        </button>
-        <span className="font-mono text-[11px] text-overlay0">
-          turns captured/uploaded docs (content/library) into study cards
-        </span>
-      </div>
-
-      <div className="mb-6 flex gap-2">
-        <Chip active={!kind} onClick={() => setKind(null)} label="All" />
-        <Chip active={kind === "video"} onClick={() => setKind("video")} label="Videos" />
-        <Chip active={kind === "article"} onClick={() => setKind("article")} label="Articles" />
+        <Chip
+          active={kind === "article"}
+          onClick={() => setKind("article")}
+          label="Articles"
+          count={items.length - videos}
+        />
       </div>
 
       {loading ? (
         <Loader label="Loading feed" />
       ) : filtered.length === 0 ? (
-        <Empty title="No resources yet" hint="Hit Refresh to aggregate from your configured sources." />
+        <Empty
+          title="Nothing saved yet. Refresh pulls from your configured feeds, or paste a URL above."
+          action={
+            <Button variant="secondary" size="sm" onClick={refresh} disabled={refreshing}>
+              Refresh now
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((r, i) => (
-            <ResourceCard key={r.id} r={r} index={i} onOpen={() => setReading(r)} />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((r) => (
+            <ResourceCard key={r.id} r={r} onOpen={() => setReading(r)} />
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 
-function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen: () => void }) {
+function ResourceCard({ r, onOpen }: { r: Resource; onOpen: () => void }) {
   const navigate = useNavigate();
   const [quizzing, setQuizzing] = useState(false);
 
@@ -291,63 +323,52 @@ function ResourceCard({ r, index, onOpen }: { r: Resource; index: number; onOpen
   }
 
   return (
-    <motion.div
-      onClick={onOpen}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.04, 0.4), ease: [0.16, 1, 0.3, 1] }}
-      className="glass group relative flex cursor-pointer flex-col overflow-hidden rounded-2xl shadow-card transition-transform hover:-translate-y-0.5"
-    >
-      {/* top-right actions; stop the card's in-app open */}
-      <div className="absolute right-3 top-3 z-10 flex gap-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-        <button
-          onClick={makeQuiz}
-          disabled={quizzing}
-          title="Generate a quiz from this resource"
-          className="grid h-7 place-items-center rounded-lg bg-crust/80 px-2 font-mono text-[10px] uppercase tracking-widest text-mauve backdrop-blur hover:text-text disabled:opacity-50"
-        >
-          {quizzing ? "…" : "＋ quiz"}
-        </button>
-        <a
-          href={r.url}
-          target="_blank"
-          rel="noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          title="Open in a new tab"
-          className="grid h-7 w-7 place-items-center rounded-lg bg-crust/80 text-subtext0 backdrop-blur hover:text-text"
-        >
-          ↗
-        </a>
-      </div>
-      {r.thumbnail ? (
-        <div className="relative aspect-video overflow-hidden bg-crust">
-          <img src={r.thumbnail} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-          <span className="absolute left-3 top-3 rounded-md bg-crust/80 px-2 py-1 font-mono text-[10px] uppercase tracking-widest text-red backdrop-blur">
-            ▶ video
-          </span>
-        </div>
-      ) : (
-        <div className="flex aspect-[3/1] items-center justify-center bg-gradient-to-br from-surface0/60 to-mantle">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-overlay0">
-            {r.kind === "video" ? "▶ video" : "◆ article"}
-          </span>
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <TopicBadge topic={r.topic} />
-        </div>
-        <h3 className="mb-1.5 font-display text-base font-medium leading-snug text-text group-hover:text-mauve">
-          {r.title}
+    <article className="panel group flex flex-col overflow-hidden transition-colors duration-100 hover:border-surface1">
+      {/* The thumbnail is the button, so the card is not a giant click target
+          that swallows the links inside it. */}
+      <button onClick={onOpen} className="block text-left">
+        {r.thumbnail ? (
+          <div className="aspect-video overflow-hidden bg-crust">
+            <img src={r.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover" />
+          </div>
+        ) : (
+          <div className="flex aspect-[4/1] items-center justify-center border-b border-surface0 bg-crust">
+            <span className="text-micro uppercase tracking-[0.14em] text-overlay0">{r.kind}</span>
+          </div>
+        )}
+      </button>
+
+      <div className="flex flex-1 flex-col p-3.5">
+        <TopicBadge topic={r.topic} />
+        <h3 className="mb-1.5 mt-1.5 text-small font-medium leading-snug text-text">
+          <button onClick={onOpen} className="text-left hover:underline">
+            {r.title}
+          </button>
         </h3>
-        {r.summary && <p className="line-clamp-3 text-sm text-subtext0">{r.summary}</p>}
-        <div className="mt-3 flex items-center gap-2 font-mono text-[11px] text-overlay0">
-          <span className="text-subtext0">{r.source}</span>
-          {r.published && <span>· {r.published.slice(0, 10)}</span>}
-          <span className="ml-auto text-mauve opacity-0 transition-opacity group-hover:opacity-100">open ↵</span>
+        {r.summary && <p className="line-clamp-2 text-micro text-overlay1">{r.summary}</p>}
+
+        <div className="mt-2 flex items-center gap-2 text-micro text-overlay0">
+          <span className="truncate">{r.source}</span>
+          {r.published && <span className="shrink-0 tabular-nums">{r.published.slice(0, 10)}</span>}
+        </div>
+
+        <div className="mt-2.5 flex items-center gap-1 border-t border-surface0 pt-2">
+          <Button variant="ghost" size="sm" onClick={makeQuiz} disabled={quizzing}>
+            {quizzing ? "Building" : "Make a quiz"}
+          </Button>
+          <Button asChild variant="ghost" size="icon" className="ml-auto">
+            <a
+              href={r.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Open "${r.title}" in a new tab`}
+            >
+              <ExternalLink aria-hidden="true" />
+            </a>
+          </Button>
         </div>
       </div>
-    </motion.div>
+    </article>
   );
 }
 

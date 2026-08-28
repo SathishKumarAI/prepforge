@@ -27,14 +27,14 @@ export function SourceDoc({ source, onClose }: { source: VaultSource | null; onC
       {source && (
         <DialogContent className="max-w-2xl">
           <div className="pr-8">
-            <div className="mb-1 font-mono text-[11px] uppercase tracking-widest text-peach">
+            <div className="mb-1 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
               {source.kind === "library" ? "ingested source" : "vault source"}
             </div>
             <DialogTitle className="text-h3 leading-tight">{data?.title ?? source.title}</DialogTitle>
             <div className="mt-1 truncate font-mono text-[11px] text-overlay0">{source.path}</div>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.05] bg-crust/40 p-5">
+          <div className="rounded-lg border border-surface0 bg-crust p-5">
             {loading ? (
               <div className="flex items-center gap-3 py-10 text-subtext0">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-peach" />

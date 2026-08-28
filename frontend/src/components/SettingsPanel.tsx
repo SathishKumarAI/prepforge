@@ -1,4 +1,5 @@
 import { useQuestions } from "../hooks/useQuestions";
+import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
@@ -91,11 +92,13 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           </Field>
         </div>
 
-        <div className="mt-2 flex items-center justify-between">
-          <button onClick={reset} className="pill text-subtext0 hover:text-red">Reset</button>
-          <button onClick={onClose} className="rounded-xl bg-gradient-to-r from-mauve to-blue px-5 py-2.5 font-display font-semibold text-crust shadow-glow">
+        <div className="mt-2 flex items-center justify-between border-t border-surface0 pt-3">
+          <Button variant="danger" size="sm" onClick={reset}>
+            Reset everything
+          </Button>
+          <Button variant="primary" onClick={onClose}>
             Done
-          </button>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -105,7 +108,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-overlay0">{label}</div>
+      <div className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">{label}</div>
       {children}
     </div>
   );

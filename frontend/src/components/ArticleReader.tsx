@@ -42,7 +42,7 @@ export function ArticleReader({ resource, onClose }: { resource: Resource | null
             </a>
           </div>
 
-          <div className="rounded-2xl border border-white/[0.05] bg-crust/40 p-5">
+          <div className="rounded-lg border border-surface0 bg-crust p-5">
             {loading ? (
               <div className="flex items-center gap-3 py-10 text-subtext0">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ExternalLink, FileUp } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
+import { Page } from "../components/page/PageLayout";
 import { ReadingPane } from "../components/ReadingPane";
+import { Button } from "../components/ui/button";
 import { readResource, uploadResource, type ReadResult } from "../lib/api";
 
 // Read-only viewer for local files (PDF native + markdown/text) AND web pages,
@@ -14,21 +17,19 @@ export function Reader() {
   const [src, setSrc] = useState<Src>("local");
 
   return (
-    <div>
-      <header className="mb-6">
-        <h1 className="font-display text-h1 font-semibold text-text">Reader</h1>
-        <p className="mt-1 text-sm text-subtext0">
-          Read PDFs &amp; Markdown from your machine or the web — right here, read-only.
-        </p>
-      </header>
-
-      <div className="mb-6 flex gap-2">
+    <Page title="Reader">
+      {/* A reading-tier page: single column at every width, deliberate gutters. */}
+      <div className="mb-5 flex flex-wrap items-center gap-1.5">
         <Chip active={src === "local"} onClick={() => setSrc("local")} label="Local file" />
-        <Chip active={src === "web"} onClick={() => setSrc("web")} label="Web URL" />
+        <Chip active={src === "web"} onClick={() => setSrc("web")} label="Web page" />
       </div>
+      <p className="mb-5 max-w-prose text-small text-overlay1">
+        Read a PDF, Markdown file or article here, without leaving the app. Nothing is edited —
+        adding it to your library is a separate, explicit step.
+      </p>
 
       {src === "local" ? <LocalReader /> : <WebReader />}
-    </div>
+    </Page>
   );
 }
 
@@ -73,45 +74,48 @@ function LocalReader() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label className="cursor-pointer rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-mauve hover:bg-mauve/20">
-          Choose PDF / Markdown…
-          <input
-            type="file"
-            accept=".pdf,.md,.markdown,.txt"
-            className="hidden"
-            onChange={(e) => pick(e.target.files?.[0] ?? null)}
-          />
-        </label>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button asChild variant="primary">
+          <label className="cursor-pointer">
+            <FileUp aria-hidden="true" />
+            Choose a file
+            <input
+              type="file"
+              accept=".pdf,.md,.markdown,.txt"
+              className="sr-only"
+              onChange={(e) => pick(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        </Button>
         {file && (
           <>
-            <span className="min-w-0 truncate font-mono text-xs text-subtext0">{file.name}</span>
-            <button
-              onClick={extract}
-              disabled={busy}
-              className="rounded-xl border border-teal/40 bg-teal/10 px-3.5 py-2 text-sm font-medium text-teal hover:bg-teal/20 disabled:opacity-40"
-            >
-              {busy ? "Extracting…" : "＋ Add to resources"}
-            </button>
+            <span className="min-w-0 truncate text-small text-subtext0">{file.name}</span>
+            <Button variant="secondary" onClick={extract} disabled={busy}>
+              {busy ? "Adding" : "Add to library"}
+            </Button>
           </>
         )}
       </div>
 
       {!file && (
-        <div className="glass grid place-items-center rounded-2xl py-24 text-center text-subtext0 shadow-card">
-          <div>
-            <div className="font-display text-xl text-subtext1">No file open</div>
-            <div className="mt-1 text-sm">Pick a PDF or Markdown file to read it here.</div>
-          </div>
+        <div className="rounded-lg border border-dashed border-surface0 px-4 py-10">
+          <p className="text-small text-overlay1">
+            Nothing open. Choose a PDF, Markdown or text file and it renders here — reading it
+            does not add it to your library.
+          </p>
         </div>
       )}
 
       {pdfUrl && (
-        <iframe title={file?.name} src={pdfUrl} className="h-[74vh] w-full rounded-2xl border border-white/[0.06] bg-crust" />
+        <iframe
+          title={file?.name}
+          src={pdfUrl}
+          className="h-[74vh] w-full rounded-lg border border-surface0 bg-crust"
+        />
       )}
 
       {text !== null && (
-        <div className="glass rounded-2xl p-6 shadow-card">
+        <div className="panel reading-lg p-5 sm:p-7">
           <ReadingPane md={text} storageKey={`local:${file?.name ?? "doc"}`} />
         </div>
       )}
@@ -143,34 +147,49 @@ function WebReader() {
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && load()}
-          placeholder="Paste an article or YouTube URL…"
-          className="input flex-1 font-mono"
-        />
-        <button onClick={load} disabled={loading || !url.trim()} className="rounded-xl border border-mauve/40 bg-mauve/10 px-4 py-2.5 text-sm font-medium text-mauve hover:bg-mauve/20 disabled:opacity-40">
-          {loading ? "Loading…" : "Read"}
-        </button>
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <label className="field">
+          <span className="mb-1.5 block text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+            Article or video URL
+          </span>
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && load()}
+            placeholder="https://example.com/post"
+            className="input h-9"
+          />
+        </label>
+        <Button variant="primary" onClick={load} disabled={loading || !url.trim()}>
+          {loading ? "Loading" : "Read it"}
+        </Button>
       </div>
 
       {!data && !loading && (
-        <div className="glass grid place-items-center rounded-2xl py-24 text-center text-subtext0 shadow-card">
-          Paste a link to read it cleaned up, right here.
+        <div className="rounded-lg border border-dashed border-surface0 px-4 py-10">
+          <p className="text-small text-overlay1">
+            Paste a link and it is fetched, stripped of navigation and ads, and rendered here.
+          </p>
         </div>
       )}
 
       {data && (
-        <div className="glass rounded-2xl p-6 shadow-card">
+        <div className="panel reading-lg p-5 sm:p-7">
           {data.error ? (
-            <div className="text-sm text-subtext0">{data.message ?? "Couldn't extract content."}</div>
+            <p className="text-small text-subtext0">
+              {data.message ??
+                "That page could not be read. It may need JavaScript, or be behind a login."}
+            </p>
           ) : (
             <>
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <h2 className="font-display text-h2 font-semibold text-text">{data.title}</h2>
-                <a href={url} target="_blank" rel="noreferrer" className="pill shrink-0 text-subtext0 hover:text-text">↗ New tab</a>
+              <div className="mb-4 flex items-start justify-between gap-3 border-b border-surface0 pb-3">
+                <h2 className="font-display text-h2 font-medium text-text">{data.title}</h2>
+                <Button asChild variant="ghost" size="sm" className="shrink-0">
+                  <a href={url} target="_blank" rel="noreferrer">
+                    <ExternalLink aria-hidden="true" />
+                    Open original
+                  </a>
+                </Button>
               </div>
               <ReadingPane md={data.markdown ?? ""} storageKey={`web:${url}`} maxHeight="68vh" />
             </>

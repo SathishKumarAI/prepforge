@@ -87,7 +87,10 @@ export function Study() {
     }
   }, []);
   const [size, setSize] = useState<number>(prefs.size ?? 20);
-  const [topic, setTopic] = useState<string | null>(prefs.topic ?? null);
+  // A ?topic= in the URL wins over the remembered preference — it is how
+  // Progress hands you "study your weakest topic", and a link that silently
+  // ignores its own parameter is worse than not offering the link.
+  const [topic, setTopic] = useState<string | null>(params.get("topic") ?? prefs.topic ?? null);
   const [weakFirst, setWeakFirst] = useState<boolean>(prefs.weakFirst ?? false);
   const [timed, setTimed] = useState<boolean>(prefs.timed ?? false);
   const [more, setMore] = useState(false);
