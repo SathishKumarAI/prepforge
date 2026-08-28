@@ -2,13 +2,13 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-08-27.
-- **Where I stopped:** App runs on this Windows machine, loaded with real prep material, with a
-  **Sources** tab for managing it. Eight public repos are cloned into `backend/content/library/`
-  and ingested: **8,377 questions** (100 curated + 6,732 ingested + vault/captured), 6,399
-  quizzable, 1,836 distinct "go deeper" links. Two branches, neither merged:
-  `feat/ingest-github-question-banks` (ingest quality) → `feat/sources-tab` (the tab, the
-  clone-by-URL endpoint, deep links). Build and tests green on the second.
+- **Last touched:** 2026-08-28.
+- **Where I stopped:** Everything merged to `main` and nothing in flight. The app runs on this
+  Windows machine, loaded with real prep material, with a **Sources** tab for managing it. Eight
+  public repos are cloned into `backend/content/library/` and ingested: **8,377 questions**
+  (100 curated + 6,732 ingested + 1,545 vault), 6,399 quizzable, 1,836 distinct "go deeper" links.
+  Shipped as PRs #1 (ingest quality) → #2 (Sources tab, provenance, reading, tags, quiz picker) →
+  #3 (dev.sh + vault path), squash-merged in that order; Plane COD-14 → COD-17 are Done.
 - **Next action:** Nothing queued. Pick from `docs/BACKLOG.md` — 11 unchecked, the cheapest being
   `P1 URL → clean article to library`, which `capture.read` already mostly does.
 - **Blocked on:** Nothing.
@@ -89,8 +89,8 @@ default ingest tier is `deterministic` — zero tokens, no model.
 
 ## Open threads
 
-- Plane could not be reached (`localhost:8080` refused), so **no work item was filed** for this
-  branch. File one when the board is up: `repo:interview_prep`, `type:feat`.
+- **COD-18** (Backlog): glossary letter-headings still become cards — `Explain: W — Glossary`.
+  Needs a minimum heading length in `_split_sections`, `backend/ingest.py`.
 - Ingest quality, still imperfect: glossary letter-headings ("W") still become cards. Repo
   boilerplate is filtered now (`_is_boilerplate`).
 - The "awesome list" repos (`awesome-system-design-resources`, `system-design-academy`,
