@@ -52,10 +52,8 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { to: "/learn", label: "Learn", icon: GraduationCap, group: "Study" },
+  { to: "/study", label: "Study", icon: GraduationCap, group: "Study" },
   { to: "/", label: "Browse", icon: Grid2x2, group: "Study" },
-  { to: "/flashcards", label: "Flashcards", icon: Layers, group: "Study" },
-  { to: "/quiz", label: "Quiz", icon: Target, group: "Study" },
   { to: "/sources", label: "Sources", icon: Library, group: "Content" },
   { to: "/resources", label: "Resources", icon: Rss, group: "Content" },
   { to: "/reader", label: "Reader", icon: BookOpen, group: "Content" },
@@ -147,7 +145,7 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 
   function navBadge(to: string): number | null {
-    if (to === "/learn") return dueCount || null;
+    if (to === "/study") return dueCount || null;
     if (to === "/bookmarks") return progress.bookmarks.length || null;
     if (to === "/notes") return notes.length || null;
     return null;

@@ -41,7 +41,14 @@ export function Fact({
   /** Marks the one fact that should carry the accent. At most one per bar. */
   emphasis?: boolean;
 }) {
-  const shown = value === null || value === undefined || value === "" ? "—" : value;
+  // Group thousands here rather than at each call site — "8231" is a number you
+  // have to parse, "8,231" is one you read.
+  const shown =
+    value === null || value === undefined || value === ""
+      ? "—"
+      : typeof value === "number"
+        ? value.toLocaleString()
+        : value;
   return (
     <div className="flex items-baseline gap-2">
       <dd

@@ -86,9 +86,14 @@ export function Spine({
                 key={i}
                 aria-hidden="true"
                 title={outcome ? LABEL[outcome] : current ? "on this card" : "ahead"}
+                // Three distinct SHAPES, so the strip is readable before
+                // colour is: filled = answered, tall outline = you are here,
+                // hairline = ahead. Colour then only has to separate "missed"
+                // from the rest, which matters because the theme's status red
+                // and its accent sit close together on the wheel.
                 className={`flex-1 rounded-sm transition-[height,background-color] duration-150 ${
                   current
-                    ? "h-3 bg-mauve"
+                    ? "h-3 border border-mauve bg-mauve/20"
                     : outcome
                       ? `h-1.5 ${FILL[outcome]}`
                       : "h-1.5 bg-surface0"
