@@ -13,16 +13,54 @@ Update this when you STOP working, not when you start.
   for 400ms generates it, `deep` included. That is deliberate, but it means that with LM Studio
   **off**, a sweep across the tab row bills real Claude calls. `peekTab`'s 400ms in
   `QuestionDetail.tsx` is the only brake; do not shorten it thinking it is hover polish.
-- **Next action:** **Verify the local path against a real LM Studio** — it has never run against
-  one. Start it (Developer tab → Start Server, port 1234), load a model (`openai/gpt-oss-20b` fits
-  16GB), reload Library, hover a lens: the meta row should read the local model id and `$0.0000`.
-  Until that is done the local generation is proven only against the stub server in
-  `backend/test_local_provider.py`. Then the three things still unverified from the UI rebuild:
-  a **timed quiz through a real 30s expiry**, **Reader's PDF + web-fetch** against a real file and
-  URL, and **drill mode** end to end.
-- **Blocked on:** Nothing. Plane is back up; COD-33 is Done, COD-34 is in Backlog.
+- **The local path is now verified against a real LM Studio (2026-08-28)** — see "Running the local
+  model" below. All six free lenses generate in 4-7s at `$0.0000`; `deep` never touched it. **Which
+  model you load decides whether this works at all**, and the difference is not subtle: read that
+  section before starting LM Studio.
+- **Next action:** the three things still unverified from the UI rebuild — a **timed quiz through a
+  real 30s expiry**, **Reader's PDF + web-fetch** against a real file and URL, and **drill mode**
+  end to end. The lens meta row has been verified through the API but not yet in the browser
+  (port 8787 was occupied — see the environment traps).
+- **Blocked on:** Nothing. Plane: COD-33 Done, COD-34 Backlog, COD-39 (this session's fix) In Review.
 - **Found, not fixed:** the question bank contains *"What's the weather like today?"* tagged
   `Behavioral`. Ingest noise. Filed as **COD-34**.
+
+## Running the local model
+
+Start the server without opening the LM Studio window:
+
+```bash
+~/.lmstudio/bin/lms.exe server start --port 1234
+~/.lmstudio/bin/lms.exe load openai/gpt-oss-20b -y   # ~10s, 11.3 GiB into VRAM
+~/.lmstudio/bin/lms.exe ps                            # what is actually loaded
+```
+
+**Load `openai/gpt-oss-20b`. Do not leave `qwen/qwen3.5-9b` loaded for this.** Measured on this
+machine, same prompt, same server:
+
+| Model | Throughput | A lens answer |
+|---|---|---|
+| `openai/gpt-oss-20b` (12.11 GB, MoE) | ~96 tok/s | **4-7s** |
+| `qwen/qwen3.5-9b` (6.55 GB, reasoning) | ~2.4 tok/s | 3-6 min, or never |
+
+qwen3.5 is a reasoning model that spends its whole `max_tokens` budget thinking — 400 of 400
+`completion_tokens` came back as `reasoning_tokens`, with `content` **empty**. It ignores
+`chat_template_kwargs: {"enable_thinking": false}`. At 2.4 tok/s it blows the 180s
+`LMSTUDIO_TIMEOUT` and `generate.py` falls back to Claude with only a `log.warning` — which is
+exactly the sweep-across-the-tab-row billing risk this file warns about, and it fires whether or
+not LM Studio is running. **If lenses feel slow, check `lms ps` before suspecting the code.**
+
+`local_model()` prefers the **loaded** chat model, via LM Studio's own `/api/v0/models` (it carries
+`type` and `state`; the OpenAI-compatible `/v1/models` carries neither and lists the embedding model
+right alongside the LLMs). Any other OpenAI-compatible server without `/api/v0` still works off the
+`/v1` listing. `LMSTUDIO_MODEL` in `backend/.env` overrides the probe entirely.
+
+Two shapes to know if you touch `_local_generate`: reasoning arrives in a **separate**
+`reasoning_content` / `reasoning` field on newer LM Studio builds, not inline — so
+`_strip_reasoning`'s `<think>` regex is a no-op there, and an empty `content` is what you actually
+have to handle. And `lms load -c/--context-length/--parallel/--gpu` were **ignored** on this build:
+the model loaded with its own saved config (235k context, parallel 4, 15.5 of 16.3 GB VRAM) no
+matter what was passed. Change those in LM Studio's UI, not on the command line.
 
 ## The UI rebuild (read this before touching the frontend)
 
@@ -102,6 +140,15 @@ extension's `host_permissions` is locked to `127.0.0.1:8787`. `dev.sh` said 8000
 fixed, as was Browse's backend-unreachable message, which still told you to start uvicorn on 8000.
 Anything else quoting 8000 is stale.
 
+**A backend can outlive the process that owns it.** On 2026-08-28 port 8787 was held by a uvicorn
+running pre-#14 code under PID 7768 — a PID absent from `tasklist` and `Get-Process`, which
+`taskkill /F /T` reported as "not found", while `netstat -ano` still showed it LISTENING and it
+still served `/health`. Not a Docker container (nothing maps 8787). It survived every kill this
+shell could issue; a reboot is the fix. Until then run the backend on another port
+(`--port 8788`) — but note `frontend/vite.config.ts` hardcodes the proxy target at 8787, so the
+UI cannot reach it. The tell is a stale route set: `curl 127.0.0.1:8787/openapi.json` and look for
+`/generate/providers`. If it is missing, the server is older than #14 no matter what the code says.
+
 **Vite's port varies — read it off the banner.** It landed on **5180** on 2026-08-27 because
 5173–5179 were taken by other apps, and on **5173** later the same day when they were free. Do not
 hardcode either.
@@ -124,6 +171,25 @@ banks" — that section is the only record, so keep it correct.
 
 **No API key is needed.** All 700 curated answers are committed Markdown served cache-first, and the
 default ingest tier is `deterministic` — zero tokens, no model.
+
+## Verified 2026-08-28 — the local path, against a real LM Studio
+
+Backend on 8788 (8787 was held, see the traps), `openai/gpt-oss-20b` loaded.
+
+- `GET /generate/providers` → `{"local_model":"openai/gpt-oss-20b","free_modes":["star","eli5",
+  "first_principles","aws","thinking","faang"]}`.
+- All six free lenses through `POST /generate/answer`, every one `provider: lmstudio`,
+  `cost_usd: 0.0`, no error: star 4s/511 tok, eli5 4s/362, first_principles 6s/788, aws 7s/743,
+  thinking 4s/569, faang 7s/702. The STAR answer named `torch.nn.utils.clip_grad_norm_` at a norm
+  of 5.0 — real content, no reasoning leak.
+- `deep` returned in **0s without touching LM Studio** (`no_credentials`, the Claude path). The
+  lens that bills stays on the provider that can cite.
+- Re-asking a generated lens: `cached: true`, written to `…__eli5__local.md`, the Claude cache slot
+  for the same lens untouched.
+- `backend/test_local_provider.py` → **7/7** (two new: the loaded chat model wins over an embedding
+  model; a server with no `/api/v0` still resolves off `/v1`).
+- **No Anthropic credential is configured**, so the Claude fallback errors rather than bills. The
+  money risk is latent, not live — do not read that as the fallback being safe.
 
 ## Verified 2026-08-27
 

@@ -17,6 +17,9 @@ import generate as g
 
 CALLS: list[dict] = []
 ANSWER = "<think>weighing two openings</think>**Situation** — the pipeline was dropping rows."
+# /api/v0/models payload. None means the server has no such endpoint — which is
+# every OpenAI-compatible server that is not LM Studio.
+NATIVE: list[dict] | None = None
 
 
 class Stub(BaseHTTPRequestHandler):
@@ -32,6 +35,12 @@ class Stub(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path.startswith("/api/v0"):
+            if NATIVE is None:
+                self.send_error(404)
+                return
+            self._send({"data": NATIVE})
+            return
         self._send({"data": [{"id": "stub-14b"}]})
 
     def do_POST(self):
@@ -93,6 +102,34 @@ def test_local_answers_cache_under_their_own_suffix():
         path.unlink(missing_ok=True)
 
 
+def test_the_loaded_chat_model_wins_over_an_embedding_model():
+    """LM Studio lists everything downloaded, embeddings included, with no type
+    on /v1/models. Picking the first id can post a chat completion to an
+    embedding model, or JIT-load a cold one while a warm model sits unused."""
+    global NATIVE
+    NATIVE = [
+        {"id": "text-embedding-nomic", "type": "embeddings", "state": "loaded"},
+        {"id": "cold-9b", "type": "llm", "state": "not-loaded"},
+        {"id": "warm-20b", "type": "llm", "state": "loaded"},
+    ]
+    g._probe = (0.0, None)
+    try:
+        assert g.local_model() == "warm-20b"
+        NATIVE = [{"id": "text-embedding-nomic", "type": "embeddings", "state": "loaded"}]
+        g._probe = (0.0, None)
+        # embeddings only: no chat model here, so fall through to the /v1 listing
+        assert g.local_model() == "stub-14b"
+    finally:
+        NATIVE = None
+        g._probe = (0.0, None)
+
+
+def test_a_server_without_the_native_endpoint_still_works():
+    """llama.cpp, vLLM and Ollama serve /v1 but not /api/v0 — the old path."""
+    g._probe = (0.0, None)
+    assert g.local_model() == "stub-14b"
+
+
 def test_no_local_server_means_no_free_lenses():
     g.LOCAL_URL = "http://127.0.0.1:1/v1"  # nothing listens on port 1
     g._probe = (0.0, None)
@@ -107,6 +144,8 @@ if __name__ == "__main__":
         test_the_reasoning_block_is_stripped,
         test_grounded_never_routes_local,
         test_local_answers_cache_under_their_own_suffix,
+        test_the_loaded_chat_model_wins_over_an_embedding_model,
+        test_a_server_without_the_native_endpoint_still_works,
         test_no_local_server_means_no_free_lenses,  # last: it points LOCAL_URL at a dead port
     ]
     for fn in order:

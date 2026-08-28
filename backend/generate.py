@@ -48,6 +48,9 @@ LOCAL_TIMEOUT = float(os.getenv("LMSTUDIO_TIMEOUT", "180"))
 # A local answer is cached under its own suffix so it cannot shadow the Claude
 # one for the same lens. Delete the __local file to force a re-generation.
 LOCAL_SUFFIX = "__local"
+# LM Studio's model types that can take a chat completion. `embeddings` cannot,
+# and it is listed alongside the rest — see `_chat_model_from_native`.
+CHAT_TYPES = ("llm", "vlm")
 _probe: tuple[float, str | None] = (0.0, None)
 
 STAR_SYSTEM = (
@@ -136,6 +139,26 @@ MODES = {
 }
 
 
+def _chat_model_from_native() -> str | None:
+    """Ask LM Studio's own `/api/v0/models`, which `/v1/models` cannot answer.
+
+    The OpenAI-compatible listing is a flat list of ids: no model type, no load
+    state. Both matter here. Downloaded-but-unloaded models are listed too, so
+    picking blind can post a chat completion to an *embedding* model, or JIT-load
+    a cold one — on this machine that meant a 9B at ~2.4 tok/s timing out into
+    the Claude path while a 20B sat loaded in VRAM answering the same lens in 4s.
+
+    Prefers a loaded chat model; falls back to any chat model when none is loaded
+    (LM Studio will load it). Returns None on a server that has no v0 endpoint.
+    """
+    native = LOCAL_URL.rsplit("/v1", 1)[0] + "/api/v0"  # derived per call: tests rebind LOCAL_URL
+    data = httpx.get(f"{native}/models", timeout=1.5).json().get("data") or []
+    chat = [m for m in data if m.get("id") and m.get("type") in CHAT_TYPES]
+    loaded = [m for m in chat if m.get("state") == "loaded"]
+    picked = loaded or chat
+    return picked[0]["id"] if picked else None
+
+
 def local_model() -> str | None:
     """The model id LM Studio is serving, or None if it is not running.
 
@@ -151,9 +174,19 @@ def local_model() -> str | None:
         return _probe[1]
     found: str | None = None
     try:
-        data = httpx.get(f"{LOCAL_URL}/models", timeout=1.5).json().get("data") or []
-        ids = [m.get("id") for m in data if m.get("id")]
-        found = LOCAL_MODEL or (ids[0] if ids else None)
+        if LOCAL_MODEL:
+            found = LOCAL_MODEL
+        else:
+            try:
+                found = _chat_model_from_native()
+            except Exception:
+                # Not LM Studio, or an older build: any OpenAI-compatible server
+                # (llama.cpp, vLLM, Ollama) still works off the /v1 listing.
+                found = None
+            if not found:
+                data = httpx.get(f"{LOCAL_URL}/models", timeout=1.5).json().get("data") or []
+                ids = [m.get("id") for m in data if m.get("id")]
+                found = ids[0] if ids else None
     except Exception:
         found = None
     _probe = (now, found)
