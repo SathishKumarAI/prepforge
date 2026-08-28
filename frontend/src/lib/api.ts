@@ -38,6 +38,12 @@ export async function generateAnswer(
   return res.json();
 }
 
+/** Which lenses the backend will generate for free right now — i.e. LM Studio is
+ * up and serving them. Empty when it is not: everything then bills Anthropic. */
+export async function fetchProviders(): Promise<{ local_model: string | null; free_modes: string[] }> {
+  return get("/generate/providers");
+}
+
 export interface ReadResult {
   ok?: boolean;
   title?: string;

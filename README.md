@@ -72,10 +72,25 @@ running an ingest needs no restart.
 | `faang` | `__faang.md` | Framed for a big-tech interview loop |
 | `aws` | `__aws.md` | Framed against AWS leadership principles |
 
-Cache-first: a hit costs no API call. A miss bills the Anthropic API and returns tokens, dollar cost
-and real web sources alongside the answer. Credentials resolve in order: `ANTHROPIC_API_KEY` (put it
-in `backend/.env`) → `ANTHROPIC_AUTH_TOKEN` → an `ant auth login` profile. Without any of them the
-endpoint returns a message saying so, and everything cached still works.
+Cache-first: a hit costs no API call. A miss goes to one of two providers, chosen per mode.
+
+**`deep` is the only mode that bills.** Its value is real web citations, so it uses Claude with the
+web_search tool and returns tokens, dollar cost and sources alongside the answer. Credentials
+resolve in order: `ANTHROPIC_API_KEY` (put it in `backend/.env`) → `ANTHROPIC_AUTH_TOKEN` → an
+`ant auth login` profile. Without any of them the endpoint says so, and everything cached still works.
+
+**The other six run on a local model** — pure prose against a system prompt, which a 14–20B model
+does well. Start LM Studio's server (Developer tab → **Start Server**, port 1234) and they generate
+for free; local answers cache under a further `__local` suffix so they can never shadow a Claude one.
+`LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT` override the defaults; leaving `LMSTUDIO_MODEL`
+blank uses whatever is loaded. With LM Studio off, all six fall back to Claude exactly as before.
+
+That split is what the tab row's hover behaviour keys off. `GET /generate/providers` reports which
+modes are free *right now*; those generate on hover, and the ones that bill still wait for a press.
+Starting LM Studio mid-session is picked up within 10s — no backend restart.
+
+`backend/test_local_provider.py` guards it: a stub LM Studio server, asserting a prose lens really
+goes local at zero cost, that `deep` never does, and that the two caches stay separate.
 
 ## Bring your own content
 
@@ -138,6 +153,7 @@ GET  /questions/{id}
 GET  /resources               aggregated feed
 POST /scrape/refresh          run RSS + YouTube + HTML scrapers, dedupe, persist
 POST /generate/answer         cache-first; mode = deep|star|eli5|first_principles|thinking|faang|aws
+GET  /generate/providers      which modes are free right now (local model up) + its id
 POST /resources/add           one URL → feed (used by the extension)
 POST /resources/read          URL → readable Markdown → library
 POST /resources/upload        PDF/.md/.txt → library
@@ -159,7 +175,7 @@ POST /vault/read              read one vault doc
 ```
 backend/
   main.py                FastAPI app + routes
-  generate.py            the 7 answer modes, cache-first
+  generate.py            the 7 answer modes, cache-first; local model vs Claude routing
   ingest.py              library Markdown → cards + zero-token MCQ synthesis + deep links
   sources.py             clone a repo into the library; summarise it as collections
   capture.py             URL/upload → readable Markdown

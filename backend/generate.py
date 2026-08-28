@@ -1,18 +1,29 @@
 """Grounded, anti-slop answer generation with Perplexity-style metadata.
 
 Every call returns the answer PLUS: the model used, tokens in/out, the dollar
-cost of producing it, and the real web sources Claude consulted — so the learner
-can see exactly what it cost and read further.
+cost of producing it, and the real web sources consulted — so the learner can
+see exactly what it cost and read further.
 
-Uses the official Anthropic SDK with the web_search server tool for real
-citations. A practitioner-persona system prompt + web grounding is what keeps
-answers sounding like lived experience instead of AI slop.
+Two providers, chosen per lens, not per user:
+
+- **A local model via LM Studio** for the seven prose lenses (STAR, ELI5, …).
+  They are pure writing against a system prompt; a 14-20B model does that well
+  and it costs nothing, so the UI generates them on hover.
+- **Claude with the web_search server tool** for `deep` (Grounded), whose whole
+  value is real citations. No local model can produce those, so this one bills
+  and waits for a deliberate press.
+
+Falls back to Claude for any lens if LM Studio is not running.
 """
 from __future__ import annotations
 
 import logging
+import os
+import re
+import time
 from pathlib import Path
 
+import httpx
 import yaml
 
 log = logging.getLogger("generate")
@@ -27,6 +38,17 @@ PRICE_IN = 5.0 / 1_000_000
 PRICE_OUT = 25.0 / 1_000_000
 # Web search server tool bills ~$10 per 1,000 searches.
 PRICE_SEARCH = 10.0 / 1_000
+
+# LM Studio's OpenAI-compatible server. Nothing to install: it is the same
+# httpx the scrapers already use, and the server is off by default, so a machine
+# without LM Studio behaves exactly as before.
+LOCAL_URL = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1").rstrip("/")
+LOCAL_MODEL = os.getenv("LMSTUDIO_MODEL", "").strip()
+LOCAL_TIMEOUT = float(os.getenv("LMSTUDIO_TIMEOUT", "180"))
+# A local answer is cached under its own suffix so it cannot shadow the Claude
+# one for the same lens. Delete the __local file to force a re-generation.
+LOCAL_SUFFIX = "__local"
+_probe: tuple[float, str | None] = (0.0, None)
 
 STAR_SYSTEM = (
     "You are coaching a candidate to answer this interview question OUT LOUD using the "
@@ -114,6 +136,82 @@ MODES = {
 }
 
 
+def local_model() -> str | None:
+    """The model id LM Studio is serving, or None if it is not running.
+
+    Probed, not configured. The loaded model is changed from LM Studio's own UI,
+    and a stale id in `.env` fails the request with a 404 that reads exactly like
+    the server being down. `LMSTUDIO_MODEL` overrides when several are loaded.
+    The 10s TTL is what lets you start LM Studio mid-session without restarting
+    the backend — long enough that a tab row's worth of hovers costs one probe.
+    """
+    global _probe
+    now = time.monotonic()
+    if now - _probe[0] < 10:
+        return _probe[1]
+    found: str | None = None
+    try:
+        data = httpx.get(f"{LOCAL_URL}/models", timeout=1.5).json().get("data") or []
+        ids = [m.get("id") for m in data if m.get("id")]
+        found = LOCAL_MODEL or (ids[0] if ids else None)
+    except Exception:
+        found = None
+    _probe = (now, found)
+    return found
+
+
+def free_modes() -> list[str]:
+    """Lenses that cost nothing right now — every non-search lens, if LM Studio
+    is up. The UI generates these on hover and gates the rest behind a press."""
+    return [] if not local_model() else [m for m, (_, _, search) in MODES.items() if not search]
+
+
+def _strip_reasoning(text: str) -> str:
+    """Drop a reasoning model's thought block. Qwen3, gpt-oss and friends emit
+    `<think>…</think>` inline in the content; rendering it would bury the answer
+    under the working-out."""
+    return re.sub(r"<(think|thinking|reasoning)>.*?</\1>", "", text, flags=re.S | re.I).strip()
+
+
+def _local_generate(system: str, prompt: str, model: str) -> dict:
+    """One chat completion against LM Studio. Raises on any transport/HTTP error
+    so the caller can fall back to Claude."""
+    resp = httpx.post(
+        f"{LOCAL_URL}/chat/completions",
+        json={
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 1500,
+            "temperature": 0.7,
+        },
+        timeout=LOCAL_TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    answer = _strip_reasoning(data["choices"][0]["message"].get("content") or "")
+    if not answer:
+        raise ValueError("local model returned an empty answer")
+    usage = data.get("usage") or {}
+    in_tok = usage.get("prompt_tokens", 0)
+    out_tok = usage.get("completion_tokens", 0)
+    return {
+        "answer": answer,
+        "sources": [],  # no web search locally — see the module docstring
+        "meta": {
+            "model": model,
+            "provider": "lmstudio",
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
+            "total_tokens": in_tok + out_tok,
+            "web_searches": 0,
+            "cost_usd": 0.0,
+        },
+    }
+
+
 def _extract(resp) -> dict:
     """Pull answer text + sources out of a Messages response."""
     answer_parts: list[str] = []
@@ -184,11 +282,30 @@ def _write_answer(qid: str, question: str, topic: str, out: dict) -> None:
     _answer_path(qid).write_text(md, encoding="utf-8")
 
 
+def _cached(cache_qid: str) -> dict | None:
+    if not cache_qid:
+        return None
+    hit = _read_answer(cache_qid)
+    if hit:
+        hit["meta"] = {**(hit.get("meta") or {}), "cached": True}
+    return hit
+
+
+def _prompt(question: str, topic: str, persona: str) -> str:
+    prompt = f"Topic: {topic}. Question: {question}"
+    if persona.strip():
+        prompt += f"\n\n(Tailor to the candidate: {persona.strip()})"
+    return prompt
+
+
 def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "", mode: str = "deep") -> dict:
     """Return a deep answer. mode="deep" → grounded/web-sourced; mode="star" → a
     STAR-method interview answer (no web search). Cache-first: a pre-authored .md
     is served with NO API call. Cache-misses (when creds exist) hit the live API
     and are then persisted so they're free next time.
+
+    Provider: every lens except `deep` goes to LM Studio when it is running, for
+    free; `deep` and any local failure go to Claude.
 
     Credentials for the live path resolve automatically: ANTHROPIC_API_KEY →
     ANTHROPIC_AUTH_TOKEN → an `ant auth login` developer profile. A Claude Code
@@ -197,12 +314,28 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
     if mode not in MODES:
         mode = "deep"
     system, suffix, use_search = MODES[mode]
+
+    # `deep` is the grounded lens; web search is the whole point of it, so it
+    # never routes local. Everything else prefers the free provider.
+    model = None if use_search else local_model()
+    if model:
+        local_qid = (qid + suffix + LOCAL_SUFFIX) if qid else ""
+        hit = _cached(local_qid)
+        if hit:
+            return hit
+        try:
+            out = _local_generate(system, _prompt(question, topic, persona), model)
+            if local_qid:
+                _write_answer(local_qid, question, topic, out)
+            return out
+        except Exception as exc:
+            # Not an error the learner should see: Claude answers it instead.
+            log.warning("local generation failed (%s), falling back to Claude: %s", model, exc)
+
     cache_qid = (qid + suffix) if qid else ""
-    if cache_qid:
-        cached = _read_answer(cache_qid)
-        if cached:
-            cached["meta"] = {**(cached.get("meta") or {}), "cached": True}
-            return cached
+    hit = _cached(cache_qid)
+    if hit:
+        return hit
 
     import anthropic  # imported lazily so the app runs without the dep when unused
 
@@ -215,10 +348,7 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
             "error": "no_credentials",
             "message": "No API credentials. Set ANTHROPIC_API_KEY in backend/.env, or run `ant auth login`.",
         }
-    prompt = f"Topic: {topic}. Question: {question}"
-    if persona.strip():
-        prompt += f"\n\n(Tailor to the candidate: {persona.strip()})"
-    messages = [{"role": "user", "content": prompt}]
+    messages = [{"role": "user", "content": _prompt(question, topic, persona)}]
     # only the grounded "deep" mode searches the web; the rest are cheaper/faster
     tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 4}] if use_search else []
 

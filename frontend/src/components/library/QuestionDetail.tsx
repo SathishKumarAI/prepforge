@@ -6,6 +6,7 @@ import { Markdown } from "../Markdown";
 import { SourceDoc } from "../SourceDoc";
 import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { useFreeModes } from "../../hooks/useFreeModes";
 import { useProgress } from "../../hooks/useProgress";
 import { questionMap } from "../../hooks/useQuestions";
 import type { Question, VaultSource } from "../../lib/types";
@@ -33,10 +34,12 @@ export function QuestionDetail({
   onSelect: (id: string) => void;
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
-  // Whether the CURRENT tab was chosen deliberately. Hovering a lens switches
-  // to it for free; only a press licenses the API call behind an ungenerated
-  // one, so sweeping the row costs nothing.
+  // Whether the CURRENT tab was chosen deliberately. The press gate exists to
+  // stop a pointer sweep billing eight Anthropic calls — so it applies only to
+  // the lenses that bill. A lens a local model serves is free, and hovering
+  // generates it outright.
   const [pressed, setPressed] = useState(false);
+  const { free } = useFreeModes();
   const tabTimer = useRef<number>();
   const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
@@ -123,7 +126,7 @@ export function QuestionDetail({
           topic={q.topic}
           qid={q.id}
           controlled={tab}
-          mayGenerate={pressed}
+          mayGenerate={pressed || free.has(tab)}
         />
       )}
 

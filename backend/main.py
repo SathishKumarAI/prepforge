@@ -136,6 +136,14 @@ def generate_answer(req: GenerateReq):
     return generate_mod.generate(req.question, req.topic, req.persona, req.qid, req.mode)
 
 
+@app.get("/generate/providers")
+def generate_providers():
+    """Which lenses cost nothing right now. The UI generates those on hover and
+    keeps the press-to-confirm gate on the ones that bill. Reflects whether
+    LM Studio is running at the moment it is asked, not at startup."""
+    return {"local_model": generate_mod.local_model(), "free_modes": generate_mod.free_modes()}
+
+
 class CaptureReq(BaseModel):
     url: str
     topic: str = "AI"
