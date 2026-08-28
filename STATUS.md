@@ -3,28 +3,26 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-08-28.
-- **Newest branch:** `feat/local-lm-studio-lenses` (COD-33), stacked on
-  `feat/library-hover-lens-tabs`. Six of the seven generated lenses now run on a local model via
-  LM Studio when its server is up, for free; `deep` stays on Claude because it needs web citations.
-  **There is no confirm step on any lens** — resting on a tab for 400ms generates it, `deep`
-  included, so a sweep across the row with LM Studio off bills real Claude calls. Removed
-  deliberately; `peekTab`'s 400ms is the only brake. **Unverified against a real
-  LM Studio** — the server was not running, so the local path is proven only against the stub in
-  `backend/test_local_provider.py`. Start LM Studio (Developer → Start Server), reload Library,
-  and hover a lens: the meta row should show the local model id and `$0.0000`.
-- **Where I stopped:** Two branches of a whole-app UI/UX rebuild onto a three-zone page contract.
-  `refactor/ui-page-contract-primitives` is **PR #6, open**. `feat/ui-today-and-library` stacks on
-  it and is committed but **not pushed** — it finishes the IA, taking the nav from 11 entries to 5.
-  Content is unchanged: still **8,330 questions**, 6,353 synthetic quizzes, 1,864 with reading
-  links, from the eight repos in `backend/content/library/`.
-- **Next action:** Merge PR #6, then push `feat/ui-today-and-library` and open its PR against the
-  updated `main`. Then the three things neither branch verified: drive a **timed quiz through a
-  real 30s expiry**, exercise **Reader's PDF + web-fetch** against a real file and URL, and drive
-  **drill mode** end to end.
-- **Blocked on:** Nothing. **Plane is back up.** COD-33 covers the LM Studio branch; COD-34 files
-  the ingest-noise bug below. The two UI branches still have no work item — file them.
+- **Where I stopped:** Everything is merged. `main` is at **#14**, no open PRs, no unpushed
+  branches. The UI rebuild onto the three-zone page contract landed across #6→#12; the Library
+  master-detail pane and its lens tab row are done. Content unchanged: **8,330 questions**, 6,353
+  synthetic quizzes, 1,864 with reading links, from the eight repos in `backend/content/library/`.
+- **The newest thing, and the one trap in it (#14, COD-33):** six of the seven generated lenses now
+  run on a **local model via LM Studio** when its server is up, for free; `deep` stays on Claude
+  because it needs real web citations. **There is no confirm step on any lens** — resting on a tab
+  for 400ms generates it, `deep` included. That is deliberate, but it means that with LM Studio
+  **off**, a sweep across the tab row bills real Claude calls. `peekTab`'s 400ms in
+  `QuestionDetail.tsx` is the only brake; do not shorten it thinking it is hover polish.
+- **Next action:** **Verify the local path against a real LM Studio** — it has never run against
+  one. Start it (Developer tab → Start Server, port 1234), load a model (`openai/gpt-oss-20b` fits
+  16GB), reload Library, hover a lens: the meta row should read the local model id and `$0.0000`.
+  Until that is done the local generation is proven only against the stub server in
+  `backend/test_local_provider.py`. Then the three things still unverified from the UI rebuild:
+  a **timed quiz through a real 30s expiry**, **Reader's PDF + web-fetch** against a real file and
+  URL, and **drill mode** end to end.
+- **Blocked on:** Nothing. Plane is back up; COD-33 is Done, COD-34 is in Backlog.
 - **Found, not fixed:** the question bank contains *"What's the weather like today?"* tagged
-  `Behavioral`. Ingest noise, unrelated to the UI work. Now filed as **COD-34**.
+  `Behavioral`. Ingest noise. Filed as **COD-34**.
 
 ## The UI rebuild (read this before touching the frontend)
 
