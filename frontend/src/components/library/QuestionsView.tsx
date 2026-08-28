@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ChevronRight, ExternalLink, Search, X } from "lucide-react";
 import { QuestionCard } from "../QuestionCard";
 import { CardSkeletonGrid, Empty } from "../States";
@@ -24,7 +24,15 @@ export function QuestionsView() {
   );
   const [topic, setTopic] = useState<string | null>(null);
   const [diff, setDiff] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
+  // A link into the library can carry its search in ?q= — that is how a related
+  // question you cannot see from here (filtered out, or past the render window)
+  // gets you to the card instead of nowhere.
+  const [params] = useSearchParams();
+  const [query, setQuery] = useState(params.get("q") ?? "");
+  useEffect(() => {
+    const q = params.get("q");
+    if (q !== null) setQuery(q);
+  }, [params]);
   const searchRef = useRef<HTMLInputElement>(null);
 
   // press "/" anywhere (outside a text field) to jump to search

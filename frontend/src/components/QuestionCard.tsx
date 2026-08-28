@@ -1,9 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Bookmark,
   BookmarkCheck,
   ChevronDown,
+  ChevronRight,
   ExternalLink,
   FileText,
   Library,
@@ -44,9 +46,11 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
   return (
     <article
       id={`q-${q.id}`}
-      className={`panel scroll-mt-24 transition-colors duration-100 hover:border-surface1 ${
-        open ? "xl:col-span-2" : ""
-      }`}
+      // An open card stays in its column. Spanning both was there to feed the
+      // related-questions rail; without the rail it only bought a card twice as
+      // wide as the 68ch answer inside it — the width showed up as a gutter,
+      // not as content.
+      className="panel scroll-mt-24 transition-colors duration-100 hover:border-surface1"
     >
       <button
         onClick={() => setOpen((o) => !o)}
@@ -107,7 +111,7 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="border-t border-surface0 px-4 py-4 lg:grid lg:grid-cols-[minmax(0,1fr)_15rem] lg:gap-8">
+            <div className="border-t border-surface0 px-4 py-4">
               <div className="min-w-0">
                 {q.answer ? (
                   <CollapsibleAnswer md={q.answer} />
@@ -116,6 +120,14 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
                     No inline answer was extracted. Open the source document below, or generate one.
                   </p>
                 ) : null}
+
+                {/* The seven lenses and the related questions come straight after
+                    the answer: they are the two things you reach for once you
+                    have read it. Sources, further reading and tags are reference
+                    material and sit below them. */}
+                <DeepAnswer question={q.question} topic={q.topic} qid={q.id} />
+
+                <RelatedLinks related={q.related} onJump={jumpTo} />
 
                 {q.alt_answers && q.alt_answers.length > 0 && (
                   <div className="mt-4">
@@ -179,8 +191,6 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
 
                 <MoreToRead links={q.links} reading={q.reading} />
 
-                <DeepAnswer question={q.question} topic={q.topic} qid={q.id} />
-
                 {q.tags.length > 0 && (
                   <div className="mt-5 flex flex-wrap gap-1.5">
                     {q.tags.map((t) => (
@@ -227,8 +237,6 @@ export function QuestionCard({ q }: { q: Question; index?: number }) {
                   />
                 )}
               </div>
-
-              <RelatedRail related={q.related} onJump={jumpTo} />
             </div>
           </motion.div>
         )}
@@ -327,36 +335,64 @@ function MoreToRead({ links, reading }: { links?: DeepLink[]; reading?: DeepLink
   );
 }
 
-function RelatedRail({
+/**
+ * Related questions as plain links, not a rail: the sidebar cost a fixed 15rem
+ * of every expanded card to show six titles you mostly do not follow.
+ *
+ * Folded behind a disclosure for the same reason — six full titles open by
+ * default is a second answer's worth of height under every answer. Collapsed it
+ * costs one line; the count tells you whether opening it is worth anything.
+ *
+ * Each one is a real anchor to the library searched for that question, so
+ * middle-click and "open in new tab" behave. When the card is already on this
+ * page the click is intercepted and scrolls to it instead — no navigation for
+ * something two screens down.
+ */
+function RelatedLinks({
   related,
   onJump,
 }: {
   related?: { id: string; score: number }[];
   onJump: (id: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const map = questionMap();
   const items = (related ?? []).map((r) => ({ id: r.id, q: map.get(r.id) })).filter((x) => x.q);
   if (items.length === 0) return null;
   return (
-    <aside className="mt-8 lg:mt-0">
-      <h4 className="mb-2 border-b border-surface0 pb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
-        Related questions
-      </h4>
-      <div className="flex flex-col gap-0.5">
+    <details
+      className="mt-4"
+      open={open}
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-micro text-overlay1 marker:content-none hover:text-subtext0 [&::-webkit-details-marker]:hidden">
+        <ChevronRight
+          aria-hidden="true"
+          className={`size-3.5 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
+        />
+        <span className="font-semibold uppercase tracking-[0.14em]">Related</span>
+        <span className="tabular-nums">{items.length}</span>
+      </summary>
+      <ul className="mt-1.5 flex flex-col gap-0.5">
         {items.map(({ id, q }) => (
-          <button
-            key={id}
-            onClick={() => onJump(id)}
-            className="rounded-lg px-2 py-1.5 text-left transition-colors duration-100 hover:bg-surface0"
-          >
-            <span className="line-clamp-2 text-small text-subtext0">{q!.question}</span>
-            <span className="mt-0.5 block text-micro text-overlay0">{q!.topic}</span>
-          </button>
+          <li key={id}>
+            <Link
+              to={`/library?q=${encodeURIComponent(q!.question)}`}
+              onClick={(e) => {
+                if (!document.getElementById(`q-${id}`)) return; // let the link navigate
+                e.preventDefault();
+                onJump(id);
+              }}
+              // Quieter than a prose link on purpose: six of these per card in
+              // full accent read as an alarm, not as a list you may follow.
+              className="flex items-center gap-2 rounded-lg px-2 py-1 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+            >
+              <span className="truncate">{q!.question}</span>
+              <span className="shrink-0 text-micro text-overlay0">{q!.topic}</span>
+            </Link>
+          </li>
         ))}
-      </div>
-      <p className="mt-2 text-micro text-overlay0">
-        Linked by shared concepts — recall one, remember the rest.
-      </p>
-    </aside>
+      </ul>
+    </details>
   );
 }

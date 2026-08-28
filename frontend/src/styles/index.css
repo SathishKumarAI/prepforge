@@ -364,6 +364,9 @@ select:disabled {
     max-width: 68ch;
   }
   .prose-answer strong { @apply font-semibold text-text; }
+  /* Focus mode is the one place the measure comes off: you asked for the whole
+     screen, and a 68ch column inside a 1500px card is the gutter you can see. */
+  .focus-mode .prose-answer { max-width: none; }
   .reading-lg .prose-answer {
     font-size: 1.075rem;
     line-height: 1.85;
