@@ -7,6 +7,7 @@ import { Page } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
 import { Empty } from "../components/States";
 import { Button } from "../components/ui/button";
+import { Segmented, SegmentedPanel } from "../components/ui/segmented";
 import { useNotes } from "../hooks/useNotes";
 import { deleteClip, getClip, putClip } from "../lib/audio";
 import type { Note } from "../lib/notes";
@@ -67,34 +68,23 @@ export function Notes() {
         </Orient>
       }
     >
-      <div
-        role="tablist"
-        aria-label="Notes view"
-        className="mb-5 inline-flex rounded-lg border border-surface0 bg-mantle p-0.5"
-      >
-        {[
-          { key: "list", label: "Notes" },
-          { key: "graph", label: "Graph" },
-        ].map((v) => {
-          const active = (v.key === "graph") === asGraph;
-          return (
-            <button
-              key={v.key}
-              role="tab"
-              aria-selected={active}
-              onClick={() => setParams(v.key === "graph" ? { view: "graph" } : {}, { replace: true })}
-              className={`rounded-md px-3.5 py-1.5 text-small transition-colors duration-100 ${
-                active
-                  ? "bg-mauve font-medium text-on-accent"
-                  : "text-subtext0 hover:bg-surface0 hover:text-text"
-              }`}
-            >
-              {v.label}
-            </button>
-          );
-        })}
-      </div>
+      <Segmented
+        label="Notes view"
+        value={asGraph ? "graph" : "list"}
+        options={[
+          { value: "list", label: "Notes" },
+          { value: "graph", label: "Graph" },
+        ]}
+        onChange={(v) => setParams(v === "graph" ? { view: "graph" } : {}, { replace: true })}
+        idPrefix="notes-view"
+        panelId="notes-view-panel"
+        className="mb-5"
+      />
 
+      <SegmentedPanel
+        id="notes-view-panel"
+        labelledBy={`notes-view-tab-${asGraph ? "graph" : "list"}`}
+      >
       {asGraph && <GraphView />}
 
       <div className={`mb-2 flex flex-wrap items-center gap-2 ${asGraph ? "hidden" : ""}`}>
@@ -129,6 +119,7 @@ export function Notes() {
           ))}
         </div>
       )}
+      </SegmentedPanel>
     </Page>
   );
 }
