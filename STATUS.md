@@ -2,25 +2,77 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-08-28.
-- **Where I stopped:** Everything is merged and **no PR is open**. `main` carries fifteen PRs from
-  this session (#18-#36, minus the two that were closed in favour of #35). The board is clear:
-  COD-30, 39, 44, 45, 62-72 are Done.
-- **The bank more than doubled.** The 1,842 URLs the questions cite were fetched into the library,
-  ingested, and re-indexed: **8,330 -> 19,074 questions**, 6,685 -> **17,429** ingested cards, and
-  questions carrying reading links went **1,864 -> 3,016**. `GET /health` says 19,074.
-- **Next action:** **read some of the new cards.** 1,124 web pages became 10,744 new cards on a
-  deterministic ingest, and the sampling done here found real material (scikit-learn, Kafka, system
-  design) next to marketing sections from consultancies' pages — "Explain: Consulting services".
-  The ingest's `_is_boilerplate` was written for cloned repos, not for the open web. Decide whether
-  that noise is worth a filter or worth leaving. Then: a **timed quiz through a real 30s expiry**,
-  **Reader's PDF + web-fetch**, and **drill mode** end to end — the three still-unverified pieces of
-  the UI rebuild.
-- **Blocked on:** nothing. Port 8787 is still held by a dead listener (pid 7768) until a reboot;
-  **`PF_API_PORT=8788 ./dev.sh`** goes around it, and everything in this session was verified that
-  way.
-- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34, Backlog),
-  and the consultancy-page noise above.
+- **Last touched:** 2026-08-29.
+- **Where I stopped:** Everything is merged and **no PR is open**. `main` carries eleven PRs from
+  this session — #38-#43, then #44, #49, #46, #47, #48. Build, `tsc`, `npm run contrast` (24/24) and
+  all six backend test files are green on merged `main`.
+- **Library stopped shipping the bank.** Its first paint went **39,779,359 B -> 39,256 B** (1,013x)
+  across three changes: the shell dropped it (#38), search moved to the server (#44), and the list
+  now really pages (#46). `GET /questions` is no longer requested by Library at all.
+- **Next action:** **decide the web-ingest noise.** The damage is now measured rather than guessed —
+  see "The ingest noise, measured" below. The single highest-value rule is the duplicate-body one:
+  736 cards whose text appears verbatim on 3+ distinct pages, and every one of the top offenders is
+  unambiguous site furniture. Then the three still-unverified pieces of the UI rebuild: a **timed
+  quiz through a real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end.
+- **Blocked on:** nothing, but **the Plane board is stale.** COD-79, 82-84, 86-88 are done in code
+  and not marked Done, and the four newest changes have no work item at all — the Plane MCP server
+  was killed mid-session (see the taskkill trap below) and could not be reached again. First job
+  next session: reconcile the board against `git log`.
+- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34), the
+  web-ingest noise (COD-78), and **`Dashboard` and Notes' `GraphView` still call `useQuestions()`**
+  — both genuinely need per-question data across the whole set, so neither is a copy of the Library
+  problem, but both still pull 39.7 MB.
+
+## What shipped 2026-08-29, and the traps inside it
+
+| PR | What | The trap it leaves |
+|---|---|---|
+| #38 | **The app bar stopped pulling 17 MB to draw one badge** | `useQuestions` now has an inflight guard; `if (!cache)` alone never was one |
+| #39 | Related questions set one step below the answer | — |
+| #40 | **Hide the question list, hover the left edge to peek** | the handle lives in the page gutter; at `left-0` it ate the first 12px of every line |
+| #41 | Save / Add note right-aligned | superseded by #49, which moved them again |
+| #42 | **Three tab rows became one real tablist** | activation is MANUAL — Collections fetches on mount, so arrowing must not activate |
+| #43 | **The day boundary is local, and there is only one** | never write `toISOString().slice(0,10)`; `dayKey()` in `lib/srs.ts` is the only one |
+| #44 | **`GET /questions/browse`** — search the answers server-side | declared ABOVE `/questions/{qid}`, same trap as `/index` |
+| #49 | Save / Add note are icons, named on hover; focus mode drops the chrome | the tooltip never opens on tap, so each button keeps its own `aria-label` |
+| #46 | **Real paging** — the list was only pretending | `topics`/`links` ride on page one ONLY; a later page has neither |
+| #47 | **The question stays on screen while you read** | the sticky header must be fully opaque; at 95% the next line ghosts through |
+| #48 | A formula on its own line is not an inline chip | uses `:has()`; where unsupported it falls back to the old inline look |
+
+### The bank is fetched in three shapes now, and they are not interchangeable
+
+| Endpoint | Carries | Who asks |
+|---|---|---|
+| `GET /questions` | everything, **39.7 MB** | Dashboard, Notes' graph. Nothing else should. |
+| `GET /questions/index` | id, title, topic, difficulty — **3.0 MB** | the Ctrl+K palette |
+| `GET /questions/browse` | a **page** of index rows + `origin`, plus a snippet when searching | Library |
+| `GET /questions/{qid}` | one whole question, `related` expanded with titles | the detail pane |
+
+Two caches sit behind them, both keyed on the source files' mtimes so `POST /ingest` and
+`POST /pipeline/build` invalidate them by doing their job: `_load_questions()` (was re-reading
+~40 MB of JSON per request) and `_searchable()` (was lowercasing every answer per request).
+Together those took `browse q=kafka` from **1.1s to 0.017s** in-process.
+
+### The ingest noise, measured
+
+Of **10,763** web-derived cards (62% of the 17,446 ingested):
+
+| Signal | Cards | Share |
+|---|---|---|
+| Body repeated verbatim on **3+ distinct pages** — site furniture | **736** | 6.8% |
+| From 51 careers / about / newsletter pages | 566 | 5.3% |
+| Answer under 25 words (a stub) | 2,176 | 20.2% |
+| **Answer 60+ words — real material** | **6,324** | **58.8%** |
+
+A duplicate-body + junk-page + stub filter would cut ~24%, with ~251 substantial cards as
+collateral. The duplicate-body rule is the one worth building: it needs no wordlist and generalises
+to any site. Its top hits are arXiv's "NASA ADS · Google Scholar" (154 pages), the arXivLabs blurb
+(154), "View PDF · TeX Source" (152) and "Subscribe to unlock full access" (32).
+
+**The canonical example in the old note was diagnosed wrong and is worth correcting**: "Explain:
+Consulting services" is *not* a good card with a leaked title. It is a 15-word pitch stub — "Engage
+Chris to create a microservices adoption roadmap" — repeated on 11 microservices.io pages. That is
+exactly what the duplicate-body rule catches.
 
 ## What shipped 2026-08-28, and the traps inside it
 
@@ -193,8 +245,8 @@ cd backend
 ./.venv/Scripts/python.exe fetch_reading.py --retry-failed  # plain re-try (the UA is better now)
 ./.venv/Scripts/python.exe fetch_reading.py --render        # re-try through headless Chrome
 ./.venv/Scripts/python.exe test_fetch_reading.py            # 6/6, no network
-curl -X POST localhost:8788/ingest?mode=deterministic       # library -> cards
-curl -X POST localhost:8788/pipeline/build                  # -> related + reading indexes
+curl -X POST localhost:8792/ingest?mode=deterministic       # library -> cards
+curl -X POST localhost:8792/pipeline/build                  # -> related + reading indexes
 ```
 
 Traps worth knowing before the next pass:
@@ -234,11 +286,12 @@ cd backend && ./.venv/Scripts/python.exe -m uvicorn main:app --port 8787   # Win
 cd frontend && npm run dev
 ```
 
-**If 8787 is taken** — which it is on this machine, by a dead listener — use the override, which
-moves the backend and the dev proxy together:
+**8787, 8788 and 8791 are all dead listeners on this machine** and stay that way until a reboot.
+Use the override, which moves the backend and the dev proxy together, and pick a port none of them
+has burned:
 
 ```bash
-PF_API_PORT=8788 ./dev.sh
+PF_API_PORT=8792 ./dev.sh     # 8792 is what the 2026-08-29 session ended on
 ```
 
 Both venv (`backend/.venv`, Windows layout) and `node_modules` were rebuilt on 2026-08-27 and work.
