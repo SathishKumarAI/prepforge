@@ -257,7 +257,10 @@ export function QuestionDetail({
         </div>
       )}
 
-      <div className="mt-5 flex items-center gap-1 border-t border-surface0 pt-4">
+      {/* Right-aligned: these act on the question you have just finished
+          reading, and the answer's last line is where your eye already is —
+          not back at the left margin it left several paragraphs ago. */}
+      <div className="mt-5 flex items-center justify-end gap-1 border-t border-surface0 pt-4">
         <Button
           variant="ghost"
           size="sm"
