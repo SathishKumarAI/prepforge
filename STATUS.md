@@ -144,6 +144,11 @@ Library's header and from the Ctrl+K palette.
 
 **Traps:**
 
+- **There is exactly one day boundary and it is `dayKey()` in `lib/srs.ts`.** Never write
+  `new Date().toISOString().slice(0, 10)` — that is a *UTC* day, and this app's calendar is the
+  reader's. `srs.ts` used to hold both conventions at once (`today()` UTC, `addDays()` local), which
+  east of UTC made `addDays(d, 1)` return `d`. `storage.todayStr()` delegates here; so do Today's
+  strip, Progress's streak and `nextAction`.
 - **`text-base` sets a font size as well as a colour** — `base` exists in both the colour scale and
   Tailwind's `fontSize`. Use `text-crust` on accent fills.
 - **Sticky page chrome parks against `--app-bar-h`**, which `Layout.tsx` measures and publishes.
