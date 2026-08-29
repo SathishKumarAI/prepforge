@@ -6,6 +6,7 @@ import { Markdown } from "../Markdown";
 import { SourceDoc } from "../SourceDoc";
 import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useProgress } from "../../hooks/useProgress";
 import { useProviders } from "../../hooks/useProviders";
 import { fetchCachedModes } from "../../lib/api";
@@ -119,6 +120,57 @@ export function QuestionDetail({
           <TopicBadge topic={q.topic} />
           <DifficultyBadge difficulty={q.difficulty} />
           {q.origin && <span className="text-micro text-overlay0">{q.origin.label}</span>}
+          {/* Top right, level with the metadata rather than below the answer.
+              Icon-only: two words repeated on every question is a label you stop
+              reading after the third card, and the pair is always in the same
+              corner, which is what you actually navigate by.
+
+              One provider for both, so moving between them does not charge the
+              open delay twice. Radix opens a tooltip on keyboard FOCUS as well
+              as hover — but never on tap, which is why each button carries its
+              own aria-label rather than relying on the tooltip to name it. */}
+          <TooltipProvider delayDuration={250} skipDelayDuration={400}>
+            <div className="ml-auto flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleBookmark(q.id)}
+                    aria-pressed={bookmarked}
+                    aria-label={bookmarked ? "Saved — remove bookmark" : "Save this question"}
+                    className={bookmarked ? "text-text" : undefined}
+                  >
+                    {bookmarked ? (
+                      <BookmarkCheck aria-hidden="true" />
+                    ) : (
+                      <Bookmark aria-hidden="true" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="px-2 py-1 text-micro text-subtext0">
+                  {bookmarked ? "Saved" : "Save"}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setNoteOpen((n) => !n)}
+                    aria-expanded={noteOpen}
+                    aria-label={note ? "Edit your note" : "Add a note"}
+                    className={note ? "text-text" : undefined}
+                  >
+                    <PencilLine aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="px-2 py-1 text-micro text-subtext0">
+                  {note ? "Edit note" : "Add note"}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
         <h2 className="font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
       </header>
@@ -257,32 +309,6 @@ export function QuestionDetail({
           ))}
         </div>
       )}
-
-      {/* Right-aligned: these act on the question you have just finished
-          reading, and the answer's last line is where your eye already is —
-          not back at the left margin it left several paragraphs ago. */}
-      <div className="mt-5 flex items-center justify-end gap-1 border-t border-surface0 pt-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => toggleBookmark(q.id)}
-          aria-pressed={bookmarked}
-          className={bookmarked ? "text-text" : undefined}
-        >
-          {bookmarked ? <BookmarkCheck aria-hidden="true" /> : <Bookmark aria-hidden="true" />}
-          {bookmarked ? "Saved" : "Save"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setNoteOpen((n) => !n)}
-          aria-expanded={noteOpen}
-          className={note ? "text-text" : undefined}
-        >
-          <PencilLine aria-hidden="true" />
-          {note ? "Edit note" : "Add note"}
-        </Button>
-      </div>
 
       {noteOpen && (
         <textarea
