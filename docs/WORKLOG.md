@@ -1,5 +1,91 @@
 # Worklog
 
+## 2026-08-29 — Library stopped shipping the bank; eleven PRs merged
+
+**Summary:** A UI sweep that turned into a payload story. Library's first paint went
+**39,779,359 B → 39,256 B (1,013×)** across three changes, and along the way the sweep
+turned up an a11y defect, a scheduler bug that made one day equal zero east of UTC, and
+a reading-context problem on long answers. Eleven PRs merged to `main` (#38–#43, then
+#44, #49, #46, #47, #48). Build, `tsc`, `npm run contrast` 24/24 and all six backend
+test files green on merged `main`.
+
+**Changes:**
+
+- `frontend` shell (#38) — `Layout` and `SettingsPanel` both called `useQuestions()` and
+  both mount on *every* route, so the first paint of any page fetched the whole bank —
+  including Today, whose entire point since #32 was to read the 3 MB index. The nav's due
+  badge is counted over `progress.srs` (a due date is a property of a graded card) and
+  needs no request; SettingsPanel takes the index, and only once open. Measuring exposed a
+  second cause: `useQuestions` guarded with `if (!cache)`, which is not a guard — four
+  consumers mounting in one tick each started a copy. Added the inflight promise
+  `useQuestionIndex` always had.
+- `backend` (#44) — `GET /questions/browse`: rows, topic list and deduped "go deeper"
+  links in one call, with search over **answer** text. That capability was the only reason
+  Library held 39.7 MB, since `/questions/index` carries titles only. Scoring is exact, not
+  fuzzy: AND across terms, title hits outrank body hits, and each row carries the line the
+  match was found on rather than the card's opening sentence.
+- `backend` (#44) — `GET /questions/{qid}` expands each `related` entry with its index
+  fields, additively, so the detail pane names its neighbours without holding a bank.
+- `backend` (#46) — `offset` on `browse`. The whole filtered result is ordered once and
+  sliced, so a page is a window on one ranking. `topics`/`links` describe the match rather
+  than the slice, so they ride on page one only (38,713 B → 22,043 B for page two).
+- `frontend` Library (#44, #46) — the client keeps an accumulator, not a render window.
+  `SavedView` fetches its bookmarked ids instead of filtering the bank; Library's orient
+  bar uses `limit=0` (179 B) to count.
+- `frontend` a11y (#42) — one `components/ui/segmented.tsx` replaces three hand-rolled tab
+  rows that announced `role="tablist"` without arrow keys, roving tabindex or a panel.
+  Fixed `useHotkeys` at the root while there: it claimed Enter/Space even when a button had
+  focus, which is why Enter on Study's mode tab started a session instead of switching mode.
+- `frontend` srs (#43) — `lib/srs.ts` held both halves of a contradiction: `today()` was a
+  UTC day, `addDays()` local midnight. East of UTC `addDays(d, 1)` returned `d`.
+- `frontend` reading (#47, #48) — the detail pane's header is sticky, the list column is
+  `overscroll-contain`, and a paragraph that is only a code span now sets as a display
+  formula rather than a 14px chip.
+
+**Measured:**
+
+| | Before | After |
+|---|---|---|
+| `/` (Today) API bytes | 161,694,548 | 3,020,072 |
+| `/library?view=questions` API bytes | 39,779,359 | **39,256** |
+| `/library?view=saved` | 39,668,619 | 676 |
+| `browse q=kafka` in-process | 1.1 s | 0.017 s |
+| `addDays("2026-08-29", 1)` at UTC+5:30 | `2026-08-29` | `2026-08-30` |
+| question heading, scrolled 954 px | −421 px (off screen) | 109 px |
+| tab stops per tab row | 4 / 3 / 2 | 1 |
+
+**Decisions:**
+
+- **Manual tab activation, not automatic.** ARIA prefers automatic, but Library's
+  Collections view fetches `/sources` on mount and Notes' graph indexes every question —
+  arrowing past them would fire that work per keystroke.
+- **The peek overlays, it never pushes.** Reflowing the paragraph under the cursor is what
+  makes the push version of a hover-reveal unusable.
+- **Hover is always an accelerator, never the only way in.** Every hover affordance added
+  this session sits on a real button and is reachable by keyboard.
+- **Caches keyed on mtimes, not a TTL**, so ingest and pipeline invalidate them by doing
+  their job rather than by remembering to.
+
+**Corrections made against measurement** (each was wrong when first written):
+
+- The leading was never uneven around inline code — `line-height` measured 28.875 px with
+  and without it. The defect was box height (24 px in a 28.875 px line) and horizontal lurch.
+- "Explain: Consulting services" is not a good card with a leaked title; it is a 15-word
+  pitch stub repeated on 11 pages.
+- Force-killing uvicorn leaks the port whether or not the kill is broad. The first note
+  blamed only the broad form.
+
+**Follow-ups:**
+
+- [ ] **Reconcile the Plane board** — COD-79, 82-84, 86-88 are done in code and unmarked,
+      and #46-#49 have no work item. The MCP server was killed mid-session.
+- [ ] Build the duplicate-body ingest filter (736 cards, no wordlist needed) — COD-78/34.
+- [ ] `Dashboard` and Notes' `GraphView` still hold the full bank.
+- [ ] The sticky question header costs 142 px on a three-line question; a condensed stuck
+      state would win most of it back and needs a sentinel.
+- [ ] Still unverified end to end: timed quiz through a real 30s expiry, Reader's PDF and
+      web-fetch, drill mode.
+
 ## 2026-07-13 21:47 — UI redesign completed (59/59) + Quiz roadmap shipped
 
 **Summary:** Closed out the entire UI-REDESIGN-BACKLOG (59/59) and the QUIZ-BACKLOG
