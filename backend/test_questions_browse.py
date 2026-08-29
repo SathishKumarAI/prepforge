@@ -89,6 +89,63 @@ def test_no_snippet_when_nothing_was_searched():
     assert all("snippet" not in r for r in rows[:200])
 
 
+def test_pages_tile_the_result_exactly():
+    """The defect paging exists to avoid: a row served twice, or never.
+
+    Pages are a window on ONE ordering, so walking the whole result in slices
+    must reproduce it exactly — same ids, same order, no gaps, no repeats.
+    """
+    whole = main.questions_browse(q="kafka", limit=10_000)
+    ids = [r["id"] for r in whole["questions"]]
+    assert len(ids) > 60, f"only {len(ids)} hits — need enough to page"
+
+    walked, offset = [], 0
+    while True:
+        page = main.questions_browse(q="kafka", limit=25, offset=offset)
+        walked += [r["id"] for r in page["questions"]]
+        if not page["has_more"]:
+            break
+        offset += 25
+        assert offset < 10_000, "has_more never went false"
+
+    assert walked == ids, (
+        f"paged walk differs: {len(walked)} vs {len(ids)}, "
+        f"{len(set(walked))} distinct vs {len(set(ids))}"
+    )
+
+
+def test_has_more_is_false_on_the_last_page():
+    total = main.questions_browse(q="kafka")["total"]
+    last = main.questions_browse(q="kafka", limit=25, offset=(total // 25) * 25)
+    assert last["has_more"] is False, (total, last["offset"], len(last["questions"]))
+    first = main.questions_browse(q="kafka", limit=25, offset=0)
+    assert first["has_more"] is True
+
+
+def test_later_pages_drop_the_whole_match_payload():
+    """topics and links describe the match, not the slice. Resending 200 links
+    with page four is 40 kB of something the client already holds."""
+    first = main.questions_browse(q="kafka", limit=25, offset=0)
+    later = main.questions_browse(q="kafka", limit=25, offset=25)
+    assert first["topics"] and "links" in first
+    assert "topics" not in later and "links" not in later, sorted(later)
+    # ...but the paging fields are on every page, or the client cannot continue.
+    for page in (first, later):
+        assert {"questions", "total", "offset", "has_more"} <= set(page)
+
+
+def test_offset_past_the_end_is_empty_not_an_error():
+    page = main.questions_browse(q="kafka", limit=25, offset=1_000_000)
+    assert page["questions"] == []
+    assert page["has_more"] is False
+
+
+def test_negative_offset_is_clamped():
+    a = main.questions_browse(q="kafka", limit=5, offset=-50)
+    b = main.questions_browse(q="kafka", limit=5, offset=0)
+    assert [r["id"] for r in a["questions"]] == [r["id"] for r in b["questions"]]
+
+
 def test_related_is_expanded_with_titles():
     """The detail pane names its related questions. It used to resolve the ids
     against the full bank it was holding; it no longer holds one."""

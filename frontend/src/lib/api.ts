@@ -14,11 +14,18 @@ export async function fetchQuestions(): Promise<{ questions: Question[]; topics:
 
 export interface Browse {
   questions: QuestionRowLite[];
-  /** Matches BEFORE `limit` — so the list can say "200 of 4,812" honestly. */
+  /** Matches across the whole filter, not this page — so counts stay honest. */
   total: number;
-  topics: string[];
-  links: (DeepLink & { count: number })[];
-  link_count: number;
+  offset: number;
+  has_more: boolean;
+  /**
+   * These describe the whole match rather than the page, so the server sends
+   * them on the FIRST page only. Optional for that reason, not because a first
+   * page might omit them.
+   */
+  topics?: string[];
+  links?: (DeepLink & { count: number })[];
+  link_count?: number;
 }
 
 /**
@@ -33,14 +40,17 @@ export async function fetchBrowse(params: {
   topic?: string | null;
   difficulty?: string | null;
   limit?: number;
+  offset?: number;
 }): Promise<Browse> {
   const qs = new URLSearchParams();
   if (params.q) qs.set("q", params.q);
   if (params.topic) qs.set("topic", params.topic);
   if (params.difficulty) qs.set("difficulty", params.difficulty);
-  // `!== undefined`, not truthiness: limit=0 is the "just the counts" call, and
-  // a falsy check silently dropped it and fetched the default 200 rows instead.
+  // `!== undefined`, not truthiness: limit=0 is the "just the counts" call and
+  // offset=0 is the first page, and a falsy check drops both. That bug already
+  // shipped once — it made the counts call quietly fetch 200 rows.
   if (params.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params.offset !== undefined) qs.set("offset", String(params.offset));
   return get(`/questions/browse?${qs}`);
 }
 

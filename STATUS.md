@@ -252,11 +252,14 @@ route existed on disk and its tests passed, while the running server still serve
 **Restart the backend after a backend edit, and check the log line count if a change seems to have
 no effect.**
 
-**Dead listeners accumulate, and `taskkill //F //IM python.exe //T` is how.** 8787 has been held by
-a dead listener since before this session; 8788 joined it on 2026-08-29 the same way. The socket
-stays `LISTENING` against a pid that no longer exists and cannot be killed — only a reboot frees it.
-Kill the *specific* pid on the port (`netstat -ano | grep ":8788 "`), never every `python.exe`:
-the broad form also takes down the Plane MCP server, which is a Python process.
+**Dead listeners accumulate every time uvicorn is force-killed.** 8787, 8788 and 8791 are all held
+by sockets whose pid no longer exists; `taskkill` reports "process not found" while `netstat` still
+shows `LISTENING`, and only a reboot frees them. This is not specific to the broad kill — killing
+the *one* pid on the port does it too. Stop the backend with Ctrl+C where you can, and expect to
+move to a fresh `PF_API_PORT` when you cannot.
+
+**Never `taskkill //F //IM python.exe //T`.** Beyond burning the port, it takes down the Plane MCP
+server, which is a Python process — the board then silently stops accepting updates mid-session.
 
 **Backend port is 8787, not 8000**, and it is now overridable with `PF_API_PORT`. The browser
 extension's `host_permissions` is still locked to `127.0.0.1:8787`, so the extension cannot follow

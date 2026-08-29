@@ -12,7 +12,7 @@ import { useQuestion } from "../../hooks/useQuestion";
 import { fetchBrowse, type Browse } from "../../lib/api";
 import { isDue } from "../../lib/srs";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
-import type { DeepLink } from "../../lib/types";
+import type { DeepLink, QuestionRowLite } from "../../lib/types";
 
 const DIFFS = ["easy", "medium", "hard"];
 
@@ -28,8 +28,12 @@ const PEEK_MS = 250;
 /** The list parks under the app bar, whose height Layout measures and publishes. */
 const UNDER_APP_BAR = { top: "calc(var(--app-bar-h, 0px) + 0.5rem)" } as const;
 
-/** How many rows the server hands back per filter. The list windows below this. */
-const LIMIT = 400;
+/**
+ * Rows per page. Small on purpose: this is now a real page from the server, not
+ * a window onto rows already in memory, so the first screen costs one page and
+ * the rest arrive only if you scroll to them.
+ */
+const PAGE = 60;
 
 /**
  * Long enough that typing "kafka" is one request rather than five, short enough
@@ -86,20 +90,27 @@ export function QuestionsView() {
    * "the backend is not answering" look identical otherwise, and one of them is
    * a lie the reader cannot tell from the truth.
    */
-  const [browse, setBrowse] = useState<Browse | null>(null);
+  const [rows, setRows] = useState<QuestionRowLite[]>([]);
+  /** What the whole match looks like: total, topic list, links. Page one only. */
+  const [meta, setMeta] = useState<Browse | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [paging, setPaging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
 
+  // Page one, debounced. Changing the filter restarts the walk from the top —
+  // keeping the old rows while a new filter loads would show results that do not
+  // match what the box says.
   useEffect(() => {
     let live = true;
-    // Only the FIRST load is a skeleton. Blanking the list on every keystroke
-    // makes typing feel like the page is being rebuilt under you.
-    setBrowse((b) => (b ? b : null));
     const timer = window.setTimeout(() => {
-      fetchBrowse({ q: query.trim(), topic, difficulty: diff, limit: LIMIT })
+      fetchBrowse({ q: query.trim(), topic, difficulty: diff, limit: PAGE, offset: 0 })
         .then((res) => {
           if (!live) return;
-          setBrowse(res);
+          setRows(res.questions);
+          setMeta(res);
+          setHasMore(res.has_more);
           setError(null);
         })
         .catch((e) => live && setError(String(e)))
@@ -111,17 +122,41 @@ export function QuestionsView() {
     };
   }, [query, topic, diff]);
 
-  const filtered = browse?.questions ?? [];
-  const total = browse?.total ?? 0;
-  const topics = browse?.topics ?? [];
+  /**
+   * The next page, appended.
+   *
+   * `paging` is the guard that makes this safe to call from an observer: the
+   * sentinel can intersect several times while a request is in flight, and
+   * without it the same offset would be fetched three times and appended three
+   * times. The offset comes from `rows.length` rather than a counter, so a
+   * failed page is retried rather than skipped.
+   */
+  const loadMore = useCallback(() => {
+    if (paging || !hasMore) return;
+    setPaging(true);
+    fetchBrowse({
+      q: query.trim(),
+      topic,
+      difficulty: diff,
+      limit: PAGE,
+      offset: rows.length,
+    })
+      .then((res) => {
+        setRows((prev) => {
+          // Belt and braces: an id already held is dropped rather than rendered
+          // twice, so a duplicate can never become a duplicate React key.
+          const seen = new Set(prev.map((r) => r.id));
+          return [...prev, ...res.questions.filter((r) => !seen.has(r.id))];
+        });
+        setHasMore(res.has_more);
+      })
+      .catch(() => setHasMore(false))
+      .finally(() => setPaging(false));
+  }, [paging, hasMore, query, topic, diff, rows.length]);
 
-  // Windowed rendering — a filter can still match thousands, so we render a
-  // growing slice and extend it as a sentinel scrolls into view. Keeps the DOM
-  // small and scrolling smooth without mounting everything at once.
-  const PAGE = 48;
-  const [visible, setVisible] = useState(PAGE);
-  const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => setVisible(PAGE), [query, topic, diff]); // reset window when the filter changes
+  const filtered = rows;
+  const total = meta?.total ?? 0;
+  const topics = meta?.topics ?? [];
 
   // ---- selection ---------------------------------------------------------
   // Which question the detail pane is showing. In the URL so a refresh, a back
@@ -207,25 +242,38 @@ export function QuestionsView() {
     if (on) revealTimer.current = window.setTimeout(() => setPeeking(true), PEEK_MS);
     else setPeeking(false);
   }
+  // 800px of lead time, so the next page is usually already there by the time
+  // you reach the bottom rather than being a wait you watch.
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      (entries) => entries[0]?.isIntersecting && setVisible((v) => v + PAGE),
+      (entries) => entries[0]?.isIntersecting && loadMore(),
       { rootMargin: "800px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [filtered.length]);
-  const shown = filtered.slice(0, visible);
-  // The row drives the list's own state (which one is highlighted, what the
-  // arrow keys step through). The detail pane needs the WHOLE question, which is
-  // one small request for the one you are actually reading.
+  }, [loadMore]);
+  // Everything loaded so far. There is no separate render window any more: the
+  // server decides what exists, and a row on screen is a row that was fetched.
+  const shown = filtered;
+  // The row drives the list's own state — which one is highlighted, and what the
+  // arrow keys step through. It exists only if that question is on a page that
+  // has been fetched.
   const selectedRow = useMemo(
-    () => filtered.find((q) => q.id === selectedId) ?? filtered[0] ?? null,
+    () => filtered.find((q) => q.id === selectedId) ?? null,
     [filtered, selectedId],
   );
-  const { question: selected } = useQuestion(selectedRow?.id ?? null);
+  /**
+   * The detail follows the URL, NOT the loaded rows.
+   *
+   * Falling back to `filtered[0]` when the id is not in the list was survivable
+   * while the client held every matching row; with real paging it is a silent
+   * lie — a shared link to question 900 would open question 1 and say nothing.
+   * The id is asked for directly, and the list highlights it if and when its
+   * page arrives.
+   */
+  const { question: selected } = useQuestion(selectedId ?? filtered[0]?.id ?? null);
 
   // Arrow keys walk the list, so the whole surface is reachable without a mouse
   // and without tabbing through 48 rows to reach the 49th.
@@ -279,19 +327,24 @@ export function QuestionsView() {
           />
         ))}
       </ul>
-      {visible < filtered.length ? (
-        <div ref={sentinel} className="py-6 text-center text-micro text-overlay0">
-          <span className="tabular-nums">{shown.length}</span> of{" "}
-          <span className="tabular-nums">{total.toLocaleString()}</span> — keep scrolling
+      {/* The sentinel is also the counter, so the thing that says how far you
+          are is the thing that fetches the rest. It only exists while there is
+          more, which is what stops the observer firing at the end of the list. */}
+      {hasMore ? (
+        <div
+          ref={sentinel}
+          className="py-6 text-center text-micro text-overlay0"
+          aria-live="polite"
+        >
+          <span className="tabular-nums">{filtered.length}</span> of{" "}
+          <span className="tabular-nums">{total.toLocaleString()}</span>
+          {paging ? " — loading more" : " — keep scrolling"}
         </div>
       ) : (
-        // The server caps a page at LIMIT rows. Saying "400 of 400" when 4,812
-        // matched would read as a complete list, so the cap says so out loud
-        // rather than silently truncating — narrowing is the way to see the rest.
-        total > filtered.length && (
+        filtered.length > 0 &&
+        total > PAGE && (
           <div className="py-6 text-center text-micro text-overlay0">
-            showing the first <span className="tabular-nums">{filtered.length}</span> of{" "}
-            <span className="tabular-nums">{total.toLocaleString()}</span> — narrow it to see the rest
+            all <span className="tabular-nums">{total.toLocaleString()}</span> loaded
           </div>
         )
       )}
@@ -416,8 +469,8 @@ export function QuestionsView() {
       </StickyChrome>
 
       <DeepStudyLinks
-        links={browse?.links ?? []}
-        total={browse?.link_count ?? 0}
+        links={meta?.links ?? []}
+        total={meta?.link_count ?? 0}
         label={topic ?? (query.trim() ? "these results" : "everything")}
       />
 
