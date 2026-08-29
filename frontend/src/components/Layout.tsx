@@ -24,7 +24,6 @@ import { SettingsPanel } from "./SettingsPanel";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Button } from "./ui/button";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
 import { useNotes } from "../hooks/useNotes";
 import { useScrollDirection } from "../hooks/useScrollDirection";
 import { isDue } from "../lib/srs";
@@ -71,7 +70,6 @@ export function Layout({ children }: { children: ReactNode }) {
     return window.matchMedia("(min-width: 768px)").matches;
   });
   const [focus, setFocus] = useState(false);
-  const { questions } = useQuestions();
   const { progress } = useProgress();
   const { notes } = useNotes();
   const barRef = useRef<HTMLElement>(null);
@@ -165,13 +163,13 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Counted over the SRS cards, not over the bank. A due count is a property of
+  // what you have graded, and every graded card already carries its own due
+  // date — so the shell needs no questions at all, and the badge is right on the
+  // first frame instead of after 17 MB of answers land.
   const dueCount = useMemo(
-    () =>
-      questions.filter((q) => {
-        const c = progress.srs[q.id];
-        return c && c.seen && isDue(c);
-      }).length,
-    [questions, progress.srs],
+    () => Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
+    [progress.srs],
   );
 
   function navBadge(to: string): number | null {
