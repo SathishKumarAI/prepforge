@@ -1,4 +1,5 @@
-import { useQuestions } from "../hooks/useQuestions";
+import { useMemo } from "react";
+import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { useSettings } from "../hooks/useSettings";
@@ -11,7 +12,15 @@ const DIFFS: ("easy" | "medium" | "hard")[] = ["easy", "medium", "hard"];
 
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { settings, update, reset } = useSettings();
-  const { topics } = useQuestions();
+  // The index, and only once the panel is open. Layout renders this component
+  // on every route, so a hook that fetched unconditionally would pull the whole
+  // bank on first paint for a dialog nobody had asked for — and the only thing
+  // wanted here is the topic names, which the 1.17 MB projection carries.
+  const { rows, loading } = useQuestionIndex(open);
+  const topics = useMemo(
+    () => [...new Set(rows.map((r) => r.topic))].sort((a, b) => a.localeCompare(b)),
+    [rows],
+  );
 
   function toggleInterest(t: string) {
     const has = settings.interests.includes(t);
@@ -72,7 +81,11 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
           <Field label="Interests (drives the deep-answer persona & study mix)">
             <div className="flex flex-wrap gap-2">
-              {topics.length === 0 && <span className="text-sm text-overlay0">Load questions first.</span>}
+              {topics.length === 0 && (
+                <span className="text-small text-overlay0">
+                  {loading ? "Reading the topic list…" : "No topics yet — add a source in Library."}
+                </span>
+              )}
               {topics.map((t) => (
                 <Chip key={t} active={settings.interests.includes(t)} onClick={() => toggleInterest(t)} label={t} className="capitalize" />
               ))}

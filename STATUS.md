@@ -254,6 +254,29 @@ that rebuild the seed collections are in the README under "Seeding from public q
 **No API key is needed.** All curated answers are committed Markdown served cache-first, and the
 default ingest tier is `deterministic` — zero tokens, no model.
 
+## Verified 2026-08-29 — the shell stopped holding the bank (COD-82)
+
+Measured in a real headless Chrome against the running app, summing
+`Network.loadingFinished` `encodedDataLength` over every `/api` request of one page load:
+
+| Page load | Before | After |
+|---|---|---|
+| `/` (Today) | **161,694,548 B** — `/questions` ×4 at 39,668,619 plus the index | **3,020,072 B** — the index alone |
+| `/library?view=questions` | 158,674,476 B — `/questions` ×4 | **39,668,619 B** — one copy |
+
+Two separate causes, both real:
+
+- **`Layout.tsx` and `SettingsPanel.tsx` called `useQuestions()`.** Both mount on *every* route, so
+  the whole bank came down on the first paint of every page — including Today, whose entire point
+  since #32 was to read the 3 MB index instead. The nav's due badge is now counted over
+  `progress.srs` (a due date is a property of a graded card, not of the bank) and needs no fetch at
+  all; SettingsPanel takes the index, and only once it is open.
+- **`useQuestions` had no inflight guard.** `if (!cache)` is not one: every consumer mounting in the
+  same tick sees a null cache and starts its own request. `useQuestionIndex` has always had the
+  guard; this one did not, which is where the ×4 came from.
+
+`npm run build` → exit 0, `tsc` clean. Main chunk 344.14 → 344.26 kB.
+
 ## Verified 2026-08-28
 
 Everything here is a command's output from this session, not an estimate.
@@ -296,7 +319,9 @@ Same three as before this session — nothing here touched them.
 - Only 1,864 of 8,330 questions have reading links, and that is honest. Lowering `BORROW_SCORE`
   (`pipeline.py`) would raise coverage and lower precision — at 0.12 it offered "ACID transactions"
   as further reading on "AI vs ML vs deep learning".
-- `GET /questions` → 15 MB. Both Library and the Ctrl+K palette hold it. A slim index endpoint is
-  filed in `docs/BACKLOG.md` Phase 5.
+- `GET /questions` → 39.7 MB now the bank is 19,074. **Only Library, Study, Progress and Notes'
+  graph hold it, and only one copy** — the app shell was a fifth holder until COD-82, and
+  `useQuestions` had no inflight guard, so four consumers mounting in one tick fetched four copies.
+  Both fixed and measured; see "Verified 2026-08-29".
 - `docs/BACKLOG.md` has a new **Phase 5** section listing exactly what this session left undone and
   what would have to be true to do it. `docs/WORKLOG.md` 2026-08-28 has the decisions and the why.
