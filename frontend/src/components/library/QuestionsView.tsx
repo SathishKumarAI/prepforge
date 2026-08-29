@@ -1,4 +1,3 @@
-import Fuse from "fuse.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
@@ -9,10 +8,11 @@ import { StickyChrome } from "../page/StickyChrome";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
-import { useQuestions } from "../../hooks/useQuestions";
+import { useQuestion } from "../../hooks/useQuestion";
+import { fetchBrowse, type Browse } from "../../lib/api";
 import { isDue } from "../../lib/srs";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
-import type { Question } from "../../lib/types";
+import type { DeepLink } from "../../lib/types";
 
 const DIFFS = ["easy", "medium", "hard"];
 
@@ -28,12 +28,24 @@ const PEEK_MS = 250;
 /** The list parks under the app bar, whose height Layout measures and publishes. */
 const UNDER_APP_BAR = { top: "calc(var(--app-bar-h, 0px) + 0.5rem)" } as const;
 
+/** How many rows the server hands back per filter. The list windows below this. */
+const LIMIT = 400;
+
+/**
+ * Long enough that typing "kafka" is one request rather than five, short enough
+ * that the list feels like it is keeping up. Not PEEK_MS — that is hover intent,
+ * a different question with a different right answer.
+ */
+const TYPING_MS = 180;
+
 export function QuestionsView() {
-  const { questions, topics, loading, error } = useQuestions();
   const { progress } = useProgress();
+  // Counted over the graded cards, not over the bank — a due date is a property
+  // of a card you have graded, so this needs no questions at all. Same reasoning
+  // as the nav badge in Layout.
   const dueCount = useMemo(
-    () => questions.filter((q) => { const c = progress.srs[q.id]; return c && c.seen && isDue(c); }).length,
-    [questions, progress.srs]
+    () => Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
+    [progress.srs],
   );
   const [topic, setTopic] = useState<string | null>(null);
   const [diff, setDiff] = useState<string | null>(null);
@@ -62,26 +74,50 @@ export function QuestionsView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const fuse = useMemo(
-    () =>
-      new Fuse(questions, {
-        keys: ["question", "answer", "tags", "topic"],
-        threshold: 0.35,
-        ignoreLocation: true,
-      }),
-    [questions]
-  );
+  /**
+   * The rows, the topic list and the "go deeper" links, from one call.
+   *
+   * This used to be a client-side Fuse index over the whole 39.7 MB bank, and
+   * the ONLY reason the bank had to be here was that Fuse searched `answer`
+   * text — which `/questions/index` does not carry. Moving the search to the
+   * server removes the reason, so the answers never come down at all.
+   *
+   * `error` is kept separate from an empty result: "nothing matches kafka" and
+   * "the backend is not answering" look identical otherwise, and one of them is
+   * a lie the reader cannot tell from the truth.
+   */
+  const [browse, setBrowse] = useState<Browse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = useMemo(() => {
-    let list = query.trim() ? fuse.search(query).map((r) => r.item) : questions;
-    if (topic) list = list.filter((q) => q.topic === topic);
-    if (diff) list = list.filter((q) => q.difficulty === diff);
-    return list;
-  }, [questions, fuse, query, topic, diff]);
+  useEffect(() => {
+    let live = true;
+    // Only the FIRST load is a skeleton. Blanking the list on every keystroke
+    // makes typing feel like the page is being rebuilt under you.
+    setBrowse((b) => (b ? b : null));
+    const timer = window.setTimeout(() => {
+      fetchBrowse({ q: query.trim(), topic, difficulty: diff, limit: LIMIT })
+        .then((res) => {
+          if (!live) return;
+          setBrowse(res);
+          setError(null);
+        })
+        .catch((e) => live && setError(String(e)))
+        .finally(() => live && setLoading(false));
+    }, TYPING_MS);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+    };
+  }, [query, topic, diff]);
 
-  // Windowed rendering — the bank is 1700+ cards, each expandable/animated, so we
-  // render a growing slice and extend it as a sentinel scrolls into view. Keeps the
-  // DOM small and scrolling smooth without mounting everything at once.
+  const filtered = browse?.questions ?? [];
+  const total = browse?.total ?? 0;
+  const topics = browse?.topics ?? [];
+
+  // Windowed rendering — a filter can still match thousands, so we render a
+  // growing slice and extend it as a sentinel scrolls into view. Keeps the DOM
+  // small and scrolling smooth without mounting everything at once.
   const PAGE = 48;
   const [visible, setVisible] = useState(PAGE);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -182,10 +218,14 @@ export function QuestionsView() {
     return () => io.disconnect();
   }, [filtered.length]);
   const shown = filtered.slice(0, visible);
-  const selected = useMemo(
+  // The row drives the list's own state (which one is highlighted, what the
+  // arrow keys step through). The detail pane needs the WHOLE question, which is
+  // one small request for the one you are actually reading.
+  const selectedRow = useMemo(
     () => filtered.find((q) => q.id === selectedId) ?? filtered[0] ?? null,
     [filtered, selectedId],
   );
+  const { question: selected } = useQuestion(selectedRow?.id ?? null);
 
   // Arrow keys walk the list, so the whole surface is reachable without a mouse
   // and without tabbing through 48 rows to reach the 49th.
@@ -194,7 +234,7 @@ export function QuestionsView() {
       if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
       const el = document.activeElement;
       if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
-      const i = shown.findIndex((q) => q.id === selected?.id);
+      const i = shown.findIndex((q) => q.id === selectedRow?.id);
       if (i === -1) return;
       const next = shown[i + (e.key === "ArrowDown" ? 1 : -1)];
       if (!next) return;
@@ -203,7 +243,7 @@ export function QuestionsView() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shown, selected, select]);
+  }, [shown, selectedRow, select]);
 
   if (loading) return <CardSkeletonGrid count={6} />;
   if (error)
@@ -239,11 +279,21 @@ export function QuestionsView() {
           />
         ))}
       </ul>
-      {visible < filtered.length && (
+      {visible < filtered.length ? (
         <div ref={sentinel} className="py-6 text-center text-micro text-overlay0">
           <span className="tabular-nums">{shown.length}</span> of{" "}
-          <span className="tabular-nums">{filtered.length}</span> — keep scrolling
+          <span className="tabular-nums">{total.toLocaleString()}</span> — keep scrolling
         </div>
+      ) : (
+        // The server caps a page at LIMIT rows. Saying "400 of 400" when 4,812
+        // matched would read as a complete list, so the cap says so out loud
+        // rather than silently truncating — narrowing is the way to see the rest.
+        total > filtered.length && (
+          <div className="py-6 text-center text-micro text-overlay0">
+            showing the first <span className="tabular-nums">{filtered.length}</span> of{" "}
+            <span className="tabular-nums">{total.toLocaleString()}</span> — narrow it to see the rest
+          </div>
+        )
       )}
     </>
   );
@@ -359,7 +409,8 @@ export function QuestionsView() {
       </StickyChrome>
 
       <DeepStudyLinks
-        questions={filtered}
+        links={browse?.links ?? []}
+        total={browse?.link_count ?? 0}
         label={topic ?? (query.trim() ? "these results" : "everything")}
       />
 
@@ -471,27 +522,28 @@ export function QuestionsView() {
   );
 }
 
-// Every "go deeper" link the current filter's questions carry, deduped and ranked by
-// how many questions cite it — the reading list for whatever you are looking at.
-function DeepStudyLinks({ questions, label }: { questions: Question[]; label: string }) {
+/**
+ * Every "go deeper" link the matched questions cite, deduped and ranked by how
+ * many of them cite it — the reading list for whatever you are looking at.
+ *
+ * Deduped and counted on the SERVER now. It used to walk every question's
+ * `links` and `reading` arrays in the browser, which meant this one disclosure
+ * was a second reason the whole bank had to be in memory: those arrays are not
+ * in the index projection either.
+ */
+function DeepStudyLinks({
+  links,
+  total,
+  label,
+}: {
+  links: (DeepLink & { count: number })[];
+  /** Distinct links before the server's cap, so the count does not lie. */
+  total: number;
+  label: string;
+}) {
   const [open, setOpen] = useState(false);
-  const links = useMemo(() => {
-    const seen = new Map<string, { title: string; url: string; count: number }>();
-    for (const q of questions) {
-      // own links + authored citations; borrowed ones (`via`) are already counted
-      // under the question they came from, so counting them again would inflate
-      const cited = [...(q.links ?? []), ...(q.reading ?? []).filter((l) => !l.via)];
-      for (const l of cited) {
-        const hit = seen.get(l.url);
-        if (hit) hit.count += 1;
-        else seen.set(l.url, { ...l, count: 1 });
-      }
-    }
-    return [...seen.values()].sort((a, b) => b.count - a.count || a.title.localeCompare(b.title));
-  }, [questions]);
-
   if (links.length === 0) return null;
-  const shown = open ? links.slice(0, 200) : links.slice(0, 6);
+  const shown = open ? links : links.slice(0, 6);
 
   // A quiet disclosure, not a titled card: this is a side door off the deck.
   // Giving it card chrome gave six links the same weight as the deck itself.
@@ -508,8 +560,8 @@ function DeepStudyLinks({ questions, label }: { questions: Question[]; label: st
         />
         <span className="font-semibold uppercase tracking-[0.14em]">Go deeper</span>
         <span>
-          <span className="tabular-nums">{links.length}</span> link
-          {links.length !== 1 ? "s" : ""} the sources cite for {label}
+          <span className="tabular-nums">{total.toLocaleString()}</span> link
+          {total !== 1 ? "s" : ""} the sources cite for {label}
         </span>
       </summary>
       <ul className="mt-2 flex flex-col gap-0.5">

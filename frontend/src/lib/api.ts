@@ -1,4 +1,4 @@
-import type { GeneratedAnswer, Question, Resource } from "./types";
+import type { DeepLink, GeneratedAnswer, Question, QuestionRowLite, Resource } from "./types";
 
 const BASE = "/api";
 
@@ -10,6 +10,43 @@ async function get<T>(path: string): Promise<T> {
 
 export async function fetchQuestions(): Promise<{ questions: Question[]; topics: string[] }> {
   return get("/questions");
+}
+
+export interface Browse {
+  questions: QuestionRowLite[];
+  /** Matches BEFORE `limit` — so the list can say "200 of 4,812" honestly. */
+  total: number;
+  topics: string[];
+  links: (DeepLink & { count: number })[];
+  link_count: number;
+}
+
+/**
+ * Everything Library's questions view puts on screen, in one call: the rows, the
+ * topic list and the "go deeper" links for whatever is matched.
+ *
+ * The search runs on the server because it searches ANSWER text, and that is the
+ * single reason this page used to hold all 39.7 MB.
+ */
+export async function fetchBrowse(params: {
+  q?: string;
+  topic?: string | null;
+  difficulty?: string | null;
+  limit?: number;
+}): Promise<Browse> {
+  const qs = new URLSearchParams();
+  if (params.q) qs.set("q", params.q);
+  if (params.topic) qs.set("topic", params.topic);
+  if (params.difficulty) qs.set("difficulty", params.difficulty);
+  // `!== undefined`, not truthiness: limit=0 is the "just the counts" call, and
+  // a falsy check silently dropped it and fetched the default 200 rows instead.
+  if (params.limit !== undefined) qs.set("limit", String(params.limit));
+  return get(`/questions/browse?${qs}`);
+}
+
+/** One question, whole — answer, sources, and `related` expanded with titles. */
+export async function fetchQuestion(id: string): Promise<Question> {
+  return get(`/questions/${encodeURIComponent(id)}`);
 }
 
 export async function fetchResources(): Promise<{ resources: Resource[] }> {

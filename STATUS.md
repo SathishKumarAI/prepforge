@@ -245,6 +245,19 @@ Both venv (`backend/.venv`, Windows layout) and `node_modules` were rebuilt on 2
 
 ## Environment traps
 
+**`uvicorn --reload` does NOT pick up backend edits on this machine.** It starts once and never
+restarts — `grep -c "Started server process"` in the dev log stays at 1 no matter how many times
+`main.py` changes. Every "the endpoint is broken" moment in the 2026-08-29 session was this: the
+route existed on disk and its tests passed, while the running server still served the old module.
+**Restart the backend after a backend edit, and check the log line count if a change seems to have
+no effect.**
+
+**Dead listeners accumulate, and `taskkill //F //IM python.exe //T` is how.** 8787 has been held by
+a dead listener since before this session; 8788 joined it on 2026-08-29 the same way. The socket
+stays `LISTENING` against a pid that no longer exists and cannot be killed — only a reboot frees it.
+Kill the *specific* pid on the port (`netstat -ano | grep ":8788 "`), never every `python.exe`:
+the broad form also takes down the Plane MCP server, which is a Python process.
+
 **Backend port is 8787, not 8000**, and it is now overridable with `PF_API_PORT`. The browser
 extension's `host_permissions` is still locked to `127.0.0.1:8787`, so the extension cannot follow
 an override — that is a real limit of the workaround, not an oversight.

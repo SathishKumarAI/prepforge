@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { QuestionCard } from "../QuestionCard";
 import { Empty, Loader } from "../States";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
-import { useQuestions } from "../../hooks/useQuestions";
+import { fetchQuestion } from "../../lib/api";
+import type { Question } from "../../lib/types";
 
 /**
  * Slot table
@@ -23,9 +24,44 @@ import { useQuestions } from "../../hooks/useQuestions";
 type Scope = "saved" | "noted";
 
 export function SavedView() {
-  const { questions, loading } = useQuestions();
   const { progress } = useProgress();
   const [scope, setScope] = useState<Scope>("saved");
+
+  /**
+   * Fetched by id, not filtered out of the whole bank.
+   *
+   * This used to hold all 39.7 MB to find the handful of ids you bookmarked,
+   * which is the same defect COD-79 fixed next door in the questions view — and
+   * it is worse here, because the set is usually under fifty.
+   */
+  const ids = useMemo(() => {
+    const wanted = new Set([...progress.bookmarks, ...Object.keys(progress.notes)]);
+    return [...wanted];
+  }, [progress.bookmarks, progress.notes]);
+
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(ids.length > 0);
+
+  useEffect(() => {
+    if (ids.length === 0) {
+      setQuestions([]);
+      setLoading(false);
+      return;
+    }
+    let live = true;
+    setLoading(true);
+    Promise.all(ids.map((id) => fetchQuestion(id).catch(() => null)))
+      .then((got) => {
+        if (!live) return;
+        // A bookmark whose question no longer exists is dropped rather than
+        // rendered as a blank card — the bank is rebuilt by ingest, so ids can go.
+        setQuestions(got.filter((q): q is Question => Boolean(q && q.id)));
+      })
+      .finally(() => live && setLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [ids]);
 
   const saved = useMemo(
     () => questions.filter((q) => progress.bookmarks.includes(q.id)),

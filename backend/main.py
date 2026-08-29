@@ -62,7 +62,41 @@ def _origin(q: dict, kind: str) -> dict:
     return {"kind": "library", "label": collection or "Captured pages"}
 
 
+_BANK_FILES = ("questions.json", "generated.json", "vault_questions.json", "related.json")
+
+# Assembled bank, keyed by the mtimes of the files it was built from.
+_bank_cache: tuple[tuple[float, ...], list[dict]] | None = None
+
+
+def _bank_stamp() -> tuple[float, ...]:
+    out = []
+    for name in _BANK_FILES:
+        p = CONTENT / name
+        out.append(p.stat().st_mtime if p.exists() else 0.0)
+    return tuple(out)
+
+
 def _load_questions() -> list[dict]:
+    """The whole bank, assembled once and kept until a source file changes.
+
+    Every route calls this, and it re-read and re-joined ~40 MB of JSON on each
+    one. That was tolerable while the only caller that mattered fetched the bank
+    once per page load; it is not tolerable now that a search runs on the server,
+    where it costs 1.2s per keystroke.
+
+    Keyed on mtimes rather than a TTL, so `POST /ingest` and `POST /pipeline/build`
+    invalidate it by doing their job — nothing has to remember to clear it.
+    """
+    global _bank_cache
+    stamp = _bank_stamp()
+    if _bank_cache and _bank_cache[0] == stamp:
+        return _bank_cache[1]
+    qs = _assemble_questions()
+    _bank_cache = (stamp, qs)
+    return qs
+
+
+def _assemble_questions() -> list[dict]:
     # curated bank + ingested markdown + source-tagged vault questions
     banks = (
         ("curated", _read_bank(CONTENT / "questions.json")),
@@ -122,10 +156,170 @@ def questions_index():
     return {"questions": rows, "count": len(rows)}
 
 
+_search_cache: tuple[tuple[float, ...], list[tuple[dict, str, str]]] | None = None
+
+
+def _searchable() -> list[tuple[dict, str, str]]:
+    """Every question with its title and full text pre-lowercased.
+
+    Lowercasing the answers per request is ~40 MB of string work, which measured
+    at 1.1s a call — most of the endpoint's latency, and all of it repeated. Built
+    once alongside the bank and invalidated by the same mtime stamp.
+    """
+    global _search_cache
+    stamp = _bank_stamp()
+    if _search_cache and _search_cache[0] == stamp:
+        return _search_cache[1]
+    rows = []
+    for q in _load_questions():
+        title = (q.get("question") or "").lower()
+        hay = " ".join(
+            (title, (q.get("answer") or "").lower(), " ".join(q.get("tags") or []).lower(), (q.get("topic") or "").lower())
+        )
+        rows.append((q, title, hay))
+    _search_cache = (stamp, rows)
+    return rows
+
+
+def _snippet(answer: str, terms: list[str], width: int = 160) -> str:
+    """The line the match was found on, not the first line of the answer.
+
+    A result list that shows every card's opening sentence cannot tell you WHY
+    the card matched, which for a body search is the only thing you want to know.
+    """
+    body = " ".join((answer or "").split())
+    low = body.lower()
+    at = min((low.find(t) for t in terms if low.find(t) >= 0), default=-1)
+    if at < 0:
+        return body[:width]
+    start = max(0, at - width // 3)
+    return ("…" if start else "") + body[start : start + width] + ("…" if start + width < len(body) else "")
+
+
+@app.get("/questions/browse")
+def questions_browse(
+    q: str = "",
+    topic: str = "",
+    difficulty: str = "",
+    limit: int = 200,
+):
+    """One round trip for everything Library's questions view puts on screen.
+
+    Declared ABOVE /questions/{qid} for the same reason /questions/index is —
+    FastAPI matches in definition order, so below it "browse" is a question id.
+
+    Library used to hold the whole 39.7 MB bank purely so a client-side Fuse
+    index could search ANSWER text, which the /index projection does not carry.
+    That is the one thing that kept the biggest page in the app on the biggest
+    payload. Searching here instead means the client never needs the answers, so
+    it returns the rows, the topic list and the "go deeper" links together rather
+    than making the page assemble them from three calls.
+
+    Scoring is deliberately not fuzzy. Fuse's edit-distance matching over 19,000
+    answers is what made this expensive in the first place, and for a technical
+    bank an exact term is what you actually type: "kafka" should not rank
+    "krafta" at all.
+    """
+    terms = [t for t in q.lower().split() if t]
+    rows: list[tuple[int, dict]] = []
+    for item, title, hay in _searchable():
+        if topic and item.get("topic") != topic:
+            continue
+        if difficulty and item.get("difficulty") != difficulty:
+            continue
+        if not terms:
+            rows.append((0, item))
+            continue
+        # AND across terms: every word you typed has to appear somewhere.
+        if not all(t in hay for t in terms):
+            continue
+        # A term in the title is worth more than the same term buried in a
+        # 900-word answer, and the whole phrase in the title outranks both.
+        score = sum(3 for t in terms if t in title) + len(terms)
+        if q.lower().strip() in title:
+            score += 5
+        rows.append((score, item))
+
+    total = len(rows)
+    if terms:
+        rows.sort(key=lambda pair: -pair[0])
+
+    # limit=0 asks only "how many, and what topics are there" — the orient bar's
+    # question. Skipping the rows AND the link aggregation makes that a ~1 kB
+    # answer instead of a 60 kB one nobody reads.
+    if limit <= 0:
+        return {
+            "questions": [],
+            "total": total,
+            "topics": sorted({i["topic"] for i in _load_questions() if i.get("topic")}),
+            "links": [],
+            "link_count": 0,
+        }
+
+    out = []
+    for score, item in rows[:limit]:
+        row = {k: item.get(k, "") for k in INDEX_FIELDS}
+        # The list shows a provenance icon per row, which /questions/index does
+        # not carry — the palette has no use for it and 19,000 copies of it is a
+        # quarter of that payload. Here the page is capped at `limit` rows.
+        row["origin"] = item.get("origin")
+        if terms:
+            row["snippet"] = _snippet(item.get("answer") or "", terms)
+        out.append(row)
+
+    # Every "go deeper" link the MATCHED questions cite, deduped and ranked by
+    # how many of them cite it. Borrowed links (`via`) are already counted under
+    # the question they came from, so counting them again would inflate.
+    links: dict[str, dict] = {}
+    for _, item in rows:
+        cited = list(item.get("links") or []) + [
+            l for l in (item.get("reading") or []) if not l.get("via")
+        ]
+        for link in cited:
+            url = link.get("url")
+            if not url:
+                continue
+            hit = links.get(url)
+            if hit:
+                hit["count"] += 1
+            else:
+                links[url] = {**link, "count": 1}
+    ranked = sorted(links.values(), key=lambda l: (-l["count"], l.get("title") or ""))
+
+    all_qs = _load_questions()
+    return {
+        "questions": out,
+        "total": total,
+        "topics": sorted({item["topic"] for item in all_qs if item.get("topic")}),
+        "links": ranked[:200],
+        "link_count": len(ranked),
+    }
+
+
 @app.get("/questions/{qid}")
 def question(qid: str):
-    for q in _load_questions():
+    """One question, with its related list expanded enough to render.
+
+    `related` from the pipeline is `[{id, score}]` — ids alone, which used to be
+    fine because the client held the whole bank and could look each one up. It
+    no longer does, so each entry is ADDED to (never replaced), carrying the
+    four index fields alongside the id and score. Call sites that still resolve
+    by id keep working.
+    """
+    qs = _load_questions()
+    for q in qs:
         if q.get("id") == qid:
+            rel = q.get("related")
+            if rel:
+                by_id = {x.get("id"): x for x in qs}
+                q = {
+                    **q,
+                    "related": [
+                        {**r, **{k: by_id[r["id"]].get(k, "") for k in INDEX_FIELDS}}
+                        for r in rel
+                        if r.get("id") in by_id
+                    ],
+                }
             return q
     return {"error": "not found"}
 

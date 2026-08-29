@@ -47,8 +47,25 @@ export interface Question {
   sources?: VaultSource[];
   alt_answers?: AltAnswer[];
   from_vault?: boolean;
-  // zero-token TF-IDF memory index — related question ids
-  related?: { id: string; score: number }[];
+  /**
+   * Zero-token TF-IDF memory index. `GET /questions/{qid}` ADDS the index fields
+   * to each entry so the detail pane can name them; the pipeline itself only
+   * writes `{id, score}`, and anything reading these off `GET /questions` still
+   * gets just those two. Optional for that reason, not because they are absent
+   * on the route that matters.
+   */
+  related?: { id: string; score: number; question?: string; topic?: string; difficulty?: string }[];
+}
+
+/** A row from `/questions/index` or `/questions/browse` — never carries an answer. */
+export interface QuestionRowLite {
+  id: string;
+  question: string;
+  topic: string;
+  difficulty: string;
+  origin?: Origin;
+  /** Only on `/questions/browse`, and only when something was searched. */
+  snippet?: string;
 }
 
 export interface Source {

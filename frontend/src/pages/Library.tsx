@@ -10,8 +10,7 @@ import { SavedView } from "../components/library/SavedView";
 import { CollectionsView } from "../components/library/CollectionsView";
 import { FeedView } from "../components/library/FeedView";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
-import { fetchSources } from "../lib/api";
+import { fetchBrowse, fetchSources } from "../lib/api";
 import { isDue } from "../lib/srs";
 
 /**
@@ -56,8 +55,22 @@ export function Library() {
   const [params, setParams] = useSearchParams();
   const view = toView(params.get("view"));
 
-  const { questions } = useQuestions();
   const { progress } = useProgress();
+  // How many questions exist, without the questions. `limit=0` answers exactly
+  // the orient bar's question and nothing else — this used to hold the whole
+  // 39.7 MB bank to print one number.
+  const [bankSize, setBankSize] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchBrowse({ limit: 0 })
+      .then((d) => live && setBankSize(d.total))
+      .catch(() => {
+        /* the orient bar renders an em dash, which is the honest value */
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
   const [library, setLibrary] = useState<{ collections: number; docs: number; cards: number } | null>(
     null,
   );
@@ -80,18 +93,17 @@ export function Library() {
     };
   }, [view, library]);
 
-  const counts = useMemo(() => {
-    const due = questions.filter((q) => {
-      const c = progress.srs[q.id];
-      return c && c.seen && isDue(c);
-    }).length;
-    return {
-      questions: questions.length,
-      due,
+  const counts = useMemo(
+    () => ({
+      questions: bankSize,
+      // A due date is a property of a card you have graded, so this needs no
+      // questions at all — same reasoning as the nav badge in Layout.
+      due: Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
       saved: progress.bookmarks.length,
       noted: Object.keys(progress.notes).length,
-    };
-  }, [questions, progress]);
+    }),
+    [bankSize, progress],
+  );
 
   /**
    * The orient bar is part of what the view switch filters. A segmented control
@@ -101,7 +113,13 @@ export function Library() {
   const facts: Record<View, ReactNode> = {
     questions: (
       <Orient>
-        <Fact label="questions" value={counts.questions || null} emphasis={counts.questions > 0} />
+        {/* null until the count lands — an em dash, not a 0. A zero here would
+            say the bank is empty during the half-second before it answers. */}
+        <Fact
+          label="questions"
+          value={counts.questions || null}
+          emphasis={(counts.questions ?? 0) > 0}
+        />
         <Fact label="due for review" value={counts.due || null} />
       </Orient>
     ),
