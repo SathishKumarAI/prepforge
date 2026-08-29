@@ -200,14 +200,20 @@ export function QuestionDetail({
           </h3>
           {/* Selecting, not navigating: the whole value of two panes is that a
               related question swaps the pane you are reading and leaves the list
-              you were working through exactly where it was. */}
-          <ul className="flex flex-col gap-0.5">
+              you were working through exactly where it was.
+
+              Set one step BELOW the answer, not level with it. At `small` these
+              six rows are the same size as the prose above them, so a question
+              with a short answer ends up with its suggestions as the tallest
+              thing on screen — content weight for something that is a place to
+              go next. `micro` is the step the scale already has for that. */}
+          <ul className="flex flex-col">
             {related.map((r) => (
               <li key={r.id}>
                 <button
                   type="button"
                   onClick={() => onSelect(r.id)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1 text-left text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-0.5 text-left text-micro text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
                 >
                   <span className="min-w-0 flex-1 truncate">{r.question}</span>
                   <span className="shrink-0 text-micro text-overlay0">{r.topic}</span>

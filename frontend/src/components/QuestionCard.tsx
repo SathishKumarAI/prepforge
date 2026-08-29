@@ -442,7 +442,7 @@ function RelatedLinks({
           moving along the list previews instantly after the first one opens,
           instead of charging 300ms per link. */}
       <TooltipProvider delayDuration={300} skipDelayDuration={400}>
-        <ul className="mt-1.5 flex flex-col gap-0.5">
+        <ul className="mt-1.5 flex flex-col">
           {items.map(({ id, q }) => (
             <li key={id}>
               <Tooltip>
@@ -456,7 +456,9 @@ function RelatedLinks({
                     }}
                     // Quieter than a prose link on purpose: six of these per card in
                     // full accent read as an alarm, not as a list you may follow.
-                    className="flex items-center gap-2 rounded-lg px-2 py-1 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
+                    // And one step below the answer's size for the same reason the
+                    // detail pane is — see the note there.
+                    className="flex items-center gap-2 rounded-md px-2 py-0.5 text-micro text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
                   >
                     <span className="truncate">{q!.question}</span>
                     <span className="shrink-0 text-micro text-overlay0">{q!.topic}</span>
