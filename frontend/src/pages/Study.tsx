@@ -8,6 +8,7 @@ import { Empty, Loader } from "../components/States";
 import { StudyCard } from "../components/study/StudyCard";
 import { Button } from "../components/ui/button";
 import { Chip } from "../components/ui/chip";
+import { Segmented, SegmentedPanel } from "../components/ui/segmented";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
@@ -325,27 +326,17 @@ export function Study() {
       review={<RecentSessions />}
       aside
     >
-      <div
-        role="tablist"
-        aria-label="Study mode"
-        className="mb-5 inline-flex rounded-lg border border-surface0 bg-mantle p-0.5"
-      >
-        {MODE_ORDER.map((m) => (
-          <button
-            key={m}
-            role="tab"
-            aria-selected={m === mode}
-            onClick={() => setParams({ mode: m }, { replace: true })}
-            className={`rounded-md px-3.5 py-1.5 text-small transition-colors duration-100 ${
-              m === mode
-                ? "bg-mauve font-medium text-on-accent"
-                : "text-subtext0 hover:bg-surface0 hover:text-text"
-            }`}
-          >
-            {MODES[m].label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Study mode"
+        value={mode}
+        options={MODE_ORDER.map((m) => ({ value: m, label: MODES[m].label }))}
+        onChange={(m) => setParams({ mode: m }, { replace: true })}
+        idPrefix="study-mode"
+        panelId="study-mode-panel"
+        className="mb-5"
+      />
+
+      <SegmentedPanel id="study-mode-panel" labelledBy={`study-mode-tab-${mode}`}>
       <p className="mb-6 max-w-prose text-small text-overlay1">{spec.blurb}</p>
 
       <div className="mb-5 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -428,6 +419,7 @@ export function Study() {
           <Spine total={12} position={-1} outcomes={[]} />
         </Empty>
       )}
+      </SegmentedPanel>
     </Page>
   );
 }

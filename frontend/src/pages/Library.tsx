@@ -4,6 +4,7 @@ import { BookOpen } from "lucide-react";
 import { Page } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
 import { Button } from "../components/ui/button";
+import { Segmented, SegmentedPanel } from "../components/ui/segmented";
 import { QuestionsView } from "../components/library/QuestionsView";
 import { SavedView } from "../components/library/SavedView";
 import { CollectionsView } from "../components/library/CollectionsView";
@@ -146,32 +147,22 @@ export function Library() {
         </Button>
       }
     >
-      <div
-        role="tablist"
-        aria-label="Library view"
-        className="mb-6 inline-flex rounded-lg border border-surface0 bg-mantle p-0.5"
-      >
-        {VIEW_ORDER.map((v) => (
-          <button
-            key={v}
-            role="tab"
-            aria-selected={v === view}
-            onClick={() => setParams({ view: v }, { replace: true })}
-            className={`rounded-md px-3.5 py-1.5 text-small transition-colors duration-100 ${
-              v === view
-                ? "bg-mauve font-medium text-on-accent"
-                : "text-subtext0 hover:bg-surface0 hover:text-text"
-            }`}
-          >
-            {VIEW_LABEL[v]}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Library view"
+        value={view}
+        options={VIEW_ORDER.map((v) => ({ value: v, label: VIEW_LABEL[v] }))}
+        onChange={(v) => setParams({ view: v }, { replace: true })}
+        idPrefix="library-view"
+        panelId="library-view-panel"
+        className="mb-6"
+      />
 
-      {view === "questions" && <QuestionsView />}
-      {view === "saved" && <SavedView />}
-      {view === "collections" && <CollectionsView />}
-      {view === "feed" && <FeedView onCounts={onFeedCounts} />}
+      <SegmentedPanel id="library-view-panel" labelledBy={`library-view-tab-${view}`}>
+        {view === "questions" && <QuestionsView />}
+        {view === "saved" && <SavedView />}
+        {view === "collections" && <CollectionsView />}
+        {view === "feed" && <FeedView onCounts={onFeedCounts} />}
+      </SegmentedPanel>
     </Page>
   );
 }
