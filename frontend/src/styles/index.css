@@ -301,8 +301,38 @@ select:disabled {
   }
   .reading-lg .prose-answer p { @apply my-4; }
   .prose-answer :is(h1, h2, h3, h4)[id] { scroll-margin-top: 1rem; }
-  .prose-answer code {
-    @apply rounded border border-surface0 bg-crust px-1.5 py-0.5 font-mono text-[0.85em] text-subtext0;
+  /* Inline code, which in this bank is mostly a VARIABLE — `g(n)`, `h`, `n` —
+     sitting inside a sentence, not a snippet.
+
+     A border plus 6.19px of side padding is 14.4px of chrome around one
+     character, and the chip stood 24px tall inside a 28.875px line — under 5px
+     of slack, so every variable crowded its own line and the sentence lurched
+     horizontally at each one. (The leading itself was never wrong: the
+     paragraph's line-height already held it. Measured, not assumed.)
+
+     So: no border, padding in em so it scales with the step, and no vertical
+     padding — the tint alone says "symbol, not prose". 14.4px -> 8.1px of
+     chrome, 24px -> 19px tall. */
+  .prose-answer :not(pre) > code {
+    @apply rounded bg-crust font-mono text-[0.88em] text-subtext0;
+    padding: 0 0.28em;
+  }
+
+  /* A paragraph that is ONLY a code span is a display formula, not an inline
+     mention — `f(n) = g(n) + h(n)` on its own line is the thing the sentence
+     above just promised. Setting it as a 0.88em tinted chip gives the reader's
+     eye no reason to stop at it, which is the whole failure: it read as an
+     aside when it is the point.
+
+     Centred and unboxed, at full size. Distinct from a <pre> block, which is
+     code you would run rather than a relation you would read. */
+  .prose-answer p:has(> code:only-child) {
+    @apply my-5 text-center;
+  }
+  .prose-answer p:has(> code:only-child) > code {
+    @apply bg-transparent text-[1.15em] text-text;
+    padding: 0;
+    letter-spacing: 0.01em;
   }
   .prose-answer ul { @apply my-2 list-disc space-y-1 pl-5; }
   .prose-answer ol { @apply my-2 list-decimal space-y-1 pl-5; }
