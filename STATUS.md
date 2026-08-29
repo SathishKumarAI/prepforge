@@ -137,6 +137,18 @@ the change → file table, the accent rule, and the traps.
 incoming query string. Nothing 404s; bookmarks and the browser extension's links keep working. As of
 #18 the app itself no longer uses those redirects — only outside links do.
 
+**Library's question list can be put away (`pf-library-list-hidden`), and hovering the left edge
+peeks it back.** Three things about that are deliberate and should stay:
+
+- **It overlays, it never pushes.** Reflowing the paragraph under the cursor is what makes the
+  push version of this unusable. Measured: the answer stays 1237px wide while the peek is open.
+- **Hover is an accelerator, not the way in.** The handle is a real `<button>` and the view's chrome
+  carries a real `Hide list` / `Show list` toggle, so a keyboard or a touch screen never has to
+  hover anything. `canHover` gates the hover path.
+- **The handle lives in the page gutter, not at the grid's left edge.** At `left-0` it sat on the
+  answer's first glyph and its hover box ate the first 12px of every line, so you could not select
+  from the start of a paragraph.
+
 **The Reader is deliberately not a Library view.** The four views are collections of material at
 different granularities and are the same kind of thing; the Reader is a tool that opens one file.
 Mixing them is the IA failure this restructure exists to fix. It keeps `/reader` and is linked from

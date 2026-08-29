@@ -1,7 +1,7 @@
 import Fuse from "fuse.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChevronRight, ExternalLink, Search, X } from "lucide-react";
+import { ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
@@ -15,6 +15,18 @@ import { ACCENT_DOT, topicColor } from "../../lib/topics";
 import type { Question } from "../../lib/types";
 
 const DIFFS = ["easy", "medium", "hard"];
+
+/** Whether the list pane is put away. Same shape as Layout's `pf-sidebar-open`. */
+const LIST_HIDDEN_KEY = "pf-library-list-hidden";
+
+/**
+ * Hover intent, for both the row peek and the list peek. One number, because
+ * two hover delays on one screen is two different feels for the same gesture.
+ */
+const PEEK_MS = 250;
+
+/** The list parks under the app bar, whose height Layout measures and publishes. */
+const UNDER_APP_BAR = { top: "calc(var(--app-bar-h, 0px) + 0.5rem)" } as const;
 
 export function QuestionsView() {
   const { questions, topics, loading, error } = useQuestions();
@@ -83,6 +95,18 @@ export function QuestionsView() {
   // and this says which one you are looking at.
   const [detailOnly, setDetailOnly] = useState(false);
   const peekTimer = useRef<number>();
+
+  // ---- the list pane, put away -------------------------------------------
+  // Above lg the two panes are fixed, so a long answer is capped at whatever
+  // width the list leaves it even once you have finished choosing. Hidden, the
+  // answer takes the whole column and the list comes back on a hover — as an
+  // OVERLAY, never a push: reflowing the paragraph under the cursor is what
+  // makes the push version of this unusable.
+  const [listHidden, setListHidden] = useState(
+    () => localStorage.getItem(LIST_HIDDEN_KEY) === "1",
+  );
+  const [peeking, setPeeking] = useState(false);
+  const revealTimer = useRef<number>();
   // Hover selects on a real pointer only. On touch, mouseenter fires from the
   // tap that is already selecting, so honouring it would do the work twice.
   const canHover = window.matchMedia("(hover: hover)").matches;
@@ -112,9 +136,41 @@ export function QuestionsView() {
   function peek(on: boolean, id: string) {
     window.clearTimeout(peekTimer.current);
     if (!canHover || !on) return;
-    peekTimer.current = window.setTimeout(() => setSelectedId(id), 250);
+    peekTimer.current = window.setTimeout(() => setSelectedId(id), PEEK_MS);
   }
   useEffect(() => () => window.clearTimeout(peekTimer.current), []);
+
+  useEffect(() => {
+    localStorage.setItem(LIST_HIDDEN_KEY, listHidden ? "1" : "0");
+    // Showing the list for real ends the peek, or the overlay would sit on top
+    // of the column it is a stand-in for.
+    if (!listHidden) setPeeking(false);
+  }, [listHidden]);
+
+  useEffect(() => () => window.clearTimeout(revealTimer.current), []);
+
+  // Escape closes the peek. It is an overlay over the thing you were reading,
+  // so it needs the same way out as every other overlay in the app.
+  useEffect(() => {
+    if (!peeking) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setPeeking(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [peeking]);
+
+  /**
+   * Hover is an accelerator here, never the only way in: the handle it sits on
+   * is a real button, and the chrome carries a real toggle. A pointer that
+   * cannot hover simply never calls this.
+   */
+  function peekList(on: boolean) {
+    window.clearTimeout(revealTimer.current);
+    if (!canHover) return;
+    if (on) revealTimer.current = window.setTimeout(() => setPeeking(true), PEEK_MS);
+    else setPeeking(false);
+  }
   useEffect(() => {
     const el = sentinel.current;
     if (!el) return;
@@ -166,6 +222,31 @@ export function QuestionsView() {
     );
 
   const activeFilters = Boolean(topic || diff || query.trim());
+
+  // The rows themselves, so the in-grid column and the hover peek render the
+  // same list rather than two that drift apart. Only ever one is mounted, so
+  // the sentinel ref still has exactly one owner.
+  const listPane = (
+    <>
+      <ul className="flex flex-col gap-0.5">
+        {shown.map((q) => (
+          <QuestionRow
+            key={q.id}
+            q={q}
+            selected={q.id === selectedId}
+            onSelect={() => select(q.id)}
+            onPeek={(on) => peek(on, q.id)}
+          />
+        ))}
+      </ul>
+      {visible < filtered.length && (
+        <div ref={sentinel} className="py-6 text-center text-micro text-overlay0">
+          <span className="tabular-nums">{shown.length}</span> of{" "}
+          <span className="tabular-nums">{filtered.length}</span> — keep scrolling
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -253,6 +334,27 @@ export function QuestionsView() {
               Clear filters
             </Button>
           )}
+          {/* lg-only: below it the panes never share the screen, so `detailOnly`
+              already owns this and a second control would contradict it. */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto hidden lg:inline-flex"
+            onClick={() => setListHidden((v) => !v)}
+            aria-pressed={listHidden}
+            title={
+              listHidden
+                ? "Show the question list"
+                : "Hide the question list — hover the left edge to peek at it"
+            }
+          >
+            {listHidden ? (
+              <PanelLeftOpen aria-hidden="true" />
+            ) : (
+              <PanelLeftClose aria-hidden="true" />
+            )}
+            {listHidden ? "Show list" : "Hide list"}
+          </Button>
         </div>
       </StickyChrome>
 
@@ -281,36 +383,75 @@ export function QuestionsView() {
       ) : (
         // Two panes above lg, one below it. The grid's second track is
         // minmax(0,1fr) so the detail takes every pixel the list does not — the
-        // point of the layout is that nothing on this screen is empty.
-        <div className="lg:grid lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)] lg:gap-6">
+        // point of the layout is that nothing on this screen is empty. Hidden,
+        // the list's track goes entirely rather than collapsing to zero: a
+        // zero-width track still owns the gap beside it.
+        <div
+          className={`relative lg:grid lg:gap-6 ${
+            listHidden
+              ? "lg:grid-cols-[minmax(0,1fr)]"
+              : "lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
+          }`}
+        >
           {/* The list scrolls inside itself and parks under the app bar, so
               reading a long answer never scrolls the list away from you. Its
               offset is --app-bar-h, the same measured value StickyChrome uses;
               a constant here and the two would overlap by exactly one notch. */}
-          <div
-            style={{ top: "calc(var(--app-bar-h, 0px) + 0.5rem)" }}
-            className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:pr-1 ${
-              detailOnly ? "hidden lg:block" : ""
-            }`}
-          >
-            <ul className="flex flex-col gap-0.5">
-              {shown.map((q) => (
-                <QuestionRow
-                  key={q.id}
-                  q={q}
-                  selected={q.id === selectedId}
-                  onSelect={() => select(q.id)}
-                  onPeek={(on) => peek(on, q.id)}
-                />
-              ))}
-            </ul>
-            {visible < filtered.length && (
-              <div ref={sentinel} className="py-6 text-center text-micro text-overlay0">
-                <span className="tabular-nums">{shown.length}</span> of{" "}
-                <span className="tabular-nums">{filtered.length}</span> — keep scrolling
+          {!listHidden && (
+            <div
+              style={UNDER_APP_BAR}
+              className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:pr-1 ${
+                detailOnly ? "hidden lg:block" : ""
+              }`}
+            >
+              {listPane}
+            </div>
+          )}
+
+          {/* The peek. One element owns both the handle and the panel, and it
+              is the element that grows — so moving from the handle onto the
+              list never crosses a gap that would count as leaving.
+
+              Parked in the page gutter (`lg:px-10` on main), not at the grid's
+              left edge. At left-0 the handle sat on the answer's first glyph and
+              its hover box swallowed the first 12px of every line, so you could
+              not select from the start of a paragraph. */}
+          {listHidden && (
+            <div
+              onMouseEnter={() => peekList(true)}
+              onMouseLeave={() => peekList(false)}
+              className={`absolute inset-y-0 -left-6 z-20 hidden lg:block ${
+                peeking ? "w-[22rem]" : "w-6"
+              }`}
+            >
+              <div style={UNDER_APP_BAR} className="sticky">
+                {peeking ? (
+                  <div className="panel ml-1 max-h-[calc(100vh-var(--app-bar-h,0px)-2rem)] overflow-y-auto p-2 shadow-pop">
+                    <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                      <span className="text-micro text-overlay1">
+                        <span className="tabular-nums">{filtered.length}</span> question
+                        {filtered.length === 1 ? "" : "s"}
+                      </span>
+                      <Button variant="ghost" size="sm" onClick={() => setListHidden(false)}>
+                        Keep open
+                      </Button>
+                    </div>
+                    {listPane}
+                  </div>
+                ) : (
+                  // Visible, so the hover zone is discoverable rather than a
+                  // secret. A button, so it also answers a click and a Tab.
+                  <button
+                    type="button"
+                    onClick={() => setListHidden(false)}
+                    aria-label="Show the question list"
+                    title="Show the question list"
+                    className="ml-2 h-24 w-1.5 rounded-full bg-surface0 transition-colors duration-100 hover:bg-surface2"
+                  />
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className={detailOnly ? "" : "hidden lg:block"}>
             {selected ? (
