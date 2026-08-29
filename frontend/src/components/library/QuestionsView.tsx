@@ -315,8 +315,15 @@ export function QuestionsView() {
 
       {/* Search and filters slide away while you read the deck and come back
           the moment you scroll up. They are wanted for two seconds and pinned
-          for the whole session otherwise. */}
-      <StickyChrome className="mb-5 py-2">
+          for the whole session otherwise.
+
+          In focus mode they go entirely. Focus mode's whole promise is that the
+          screen holds the thing you are reading and nothing else — it already
+          takes the app bar and the nav, and leaving a search box and eleven
+          topic chips pinned above the answer breaks that promise on the one page
+          where most reading happens. `focus-mode` is set on an ancestor by
+          Layout, so this reads it rather than being told. */}
+      <StickyChrome className="mb-5 py-2 [.focus-mode_&]:hidden">
         <div className="relative mb-2.5 max-w-xl">
           <Search
             aria-hidden="true"
@@ -549,7 +556,9 @@ function DeepStudyLinks({
   // Giving it card chrome gave six links the same weight as the deck itself.
   return (
     <details
-      className="mb-5 border-b border-surface0 pb-3"
+      // Also gone in focus mode: it sits in the same band as the search box and
+      // is the same kind of thing — a side door off the deck, not the reading.
+      className="mb-5 border-b border-surface0 pb-3 [.focus-mode_&]:hidden"
       open={open}
       onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
     >
