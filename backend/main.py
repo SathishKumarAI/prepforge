@@ -202,6 +202,7 @@ def questions_browse(
     topic: str = "",
     difficulty: str = "",
     limit: int = 200,
+    offset: int = 0,
 ):
     """One round trip for everything Library's questions view puts on screen.
 
@@ -219,6 +220,14 @@ def questions_browse(
     answers is what made this expensive in the first place, and for a technical
     bank an exact term is what you actually type: "kafka" should not rank
     "krafta" at all.
+
+    Paged on `offset`. The filter's whole result is ordered here and sliced, so a
+    page is a window on ONE ranking rather than a fresh query per page — which is
+    what stops rows appearing twice or going missing as you scroll.
+
+    `topics` and `links` describe the whole match, not the page, so they ride
+    along only on the FIRST page. Resending 200 links with page four is 40 kB of
+    something the client already has and would only overwrite with itself.
     """
     terms = [t for t in q.lower().split() if t]
     rows: list[tuple[int, dict]] = []
@@ -251,13 +260,17 @@ def questions_browse(
         return {
             "questions": [],
             "total": total,
+            "offset": 0,
+            "has_more": False,
             "topics": sorted({i["topic"] for i in _load_questions() if i.get("topic")}),
             "links": [],
             "link_count": 0,
         }
 
+    offset = max(0, offset)
+    page = rows[offset : offset + limit]
     out = []
-    for score, item in rows[:limit]:
+    for score, item in page:
         row = {k: item.get(k, "") for k in INDEX_FIELDS}
         # The list shows a provenance icon per row, which /questions/index does
         # not carry — the palette has no use for it and 19,000 copies of it is a
@@ -266,6 +279,19 @@ def questions_browse(
         if terms:
             row["snippet"] = _snippet(item.get("answer") or "", terms)
         out.append(row)
+
+    page_only = {
+        "questions": out,
+        "total": total,
+        "offset": offset,
+        "has_more": offset + len(out) < total,
+    }
+    # Everything below describes the whole match rather than this slice of it, so
+    # a later page does not carry it. Walking 19,000 questions' link arrays to
+    # rebuild a list the client already holds is the expensive half of this
+    # endpoint, and page four has no use for the answer.
+    if offset > 0:
+        return page_only
 
     # Every "go deeper" link the MATCHED questions cite, deduped and ranked by
     # how many of them cite it. Borrowed links (`via`) are already counted under
@@ -288,8 +314,7 @@ def questions_browse(
 
     all_qs = _load_questions()
     return {
-        "questions": out,
-        "total": total,
+        **page_only,
         "topics": sorted({item["topic"] for item in all_qs if item.get("topic")}),
         "links": ranked[:200],
         "link_count": len(ranked),
