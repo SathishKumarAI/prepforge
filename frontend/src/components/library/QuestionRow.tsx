@@ -1,6 +1,6 @@
 import { Bookmark, FileText, Library } from "lucide-react";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
-import type { Question } from "../../lib/types";
+import type { QuestionRowLite } from "../../lib/types";
 
 /**
  * One line in the question list. Owns being scannable and nothing else — no
@@ -16,7 +16,8 @@ export function QuestionRow({
   onSelect,
   onPeek,
 }: {
-  q: Question;
+  /** An index row, never a whole question — the answer is not in this list. */
+  q: QuestionRowLite;
   selected: boolean;
   onSelect: () => void;
   /** Hover with intent. `null` cancels a pending peek. */
@@ -42,6 +43,7 @@ export function QuestionRow({
         />
         <span className="min-w-0 flex-1 truncate text-small leading-snug">{q.question}</span>
         {q.origin && <OriginIcon kind={q.origin.kind} />}
+
         <span
           className={`shrink-0 text-micro tabular-nums ${
             selected ? "text-subtext0" : "text-overlay0"

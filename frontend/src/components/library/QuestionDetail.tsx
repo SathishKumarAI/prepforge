@@ -8,7 +8,6 @@ import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { useProgress } from "../../hooks/useProgress";
 import { useProviders } from "../../hooks/useProviders";
-import { questionMap } from "../../hooks/useQuestions";
 import { fetchCachedModes } from "../../lib/api";
 import type { Question, VaultSource } from "../../lib/types";
 
@@ -71,8 +70,10 @@ export function QuestionDetail({
   const isBilled = (v: "answer" | Mode) => providersKnown && !isFree(v);
   const bookmarked = progress.bookmarks.includes(q.id);
   const note = progress.notes[q.id] ?? "";
-  const map = questionMap();
-  const related = (q.related ?? []).map((r) => map.get(r.id)).filter(Boolean) as Question[];
+  // `GET /questions/{qid}` expands each related entry with its title and topic,
+  // so this no longer resolves ids against a full bank held in memory — that
+  // lookup was one of the two reasons Library carried all 39.7 MB.
+  const related = (q.related ?? []).filter((r) => r.question);
 
   // A new question starts on its own answer. Keeping the lens tab across a
   // selection change would fire a generation for a question you only glanced at.
