@@ -21,14 +21,37 @@ export function newCard(): SrsCard {
   return { ef: 2.5, interval: 0, reps: 0, lapses: 0, due: today(), stage: "new", seen: false };
 }
 
-export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * The app's ONE day boundary, and it is the reader's local midnight.
+ *
+ * This file used to hold both halves of a contradiction: `today()` sliced an
+ * ISO string, which is a UTC day, while `addDays()` parsed `"...T00:00:00"`,
+ * which is LOCAL midnight. So the day a card was scheduled from and the day it
+ * was compared against were not the same calendar, and east of UTC `addDays`
+ * came back a day short — local midnight is the previous day in UTC.
+ *
+ * Built by hand rather than through `toLocaleDateString`, so no locale or ICU
+ * build can decide to hand back a different order.
+ *
+ * Everything that asks "what day is it" goes through here: `storage.todayStr`,
+ * Today's fortnight strip, Progress's streak, and `nextAction`. A second way to
+ * name a day is how the first contradiction got in.
+ */
+export function dayKey(d: Date): string {
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
 }
 
+export function today(): string {
+  return dayKey(new Date());
+}
+
+/** `n` days after an existing key, on the same local calendar it came from. */
 function addDays(iso: string, days: number): string {
   const d = new Date(iso + "T00:00:00");
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return dayKey(d);
 }
 
 export function isDue(card: SrsCard, ref = today()): boolean {

@@ -16,6 +16,7 @@ import { Button } from "../components/ui/button";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestions } from "../hooks/useQuestions";
 import { useThemeColors } from "../hooks/useThemeColors";
+import { dayKey, today } from "../lib/srs";
 
 /**
  * Slot table
@@ -37,9 +38,9 @@ function computeStreak(days: string[]): number {
   const set = new Set(days);
   let streak = 0;
   const d = new Date();
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = today();
   for (;;) {
-    const key = d.toISOString().slice(0, 10);
+    const key = dayKey(d);
     if (set.has(key)) {
       streak++;
       d.setDate(d.getDate() - 1);
@@ -94,7 +95,10 @@ export function Dashboard() {
       orient={
         <Orient>
           <Fact
-            label={stats.streak === 1 ? "day streak" : "day streak"}
+            // Not pluralised, and the ternary that pretended to was identical on
+            // both branches. "day streak" is a compound — "5 day streak" is the
+            // correct English, so there is nothing here to vary.
+            label="day streak"
             value={stats.streak || null}
             emphasis={stats.streak > 0}
           />

@@ -23,7 +23,7 @@ export function save<T>(key: string, value: T): void {
 
 export type FlashState = "new" | "learning" | "known";
 
-import type { SrsCard } from "./srs";
+import { today, type SrsCard } from "./srs";
 
 export interface Progress {
   // per-question flashcard bucket (legacy quick-grade)
@@ -75,6 +75,11 @@ export function saveProgress(p: Progress): void {
   save("progress", p);
 }
 
+/**
+ * Delegates rather than repeating the expression. This used to be its own copy
+ * of the UTC slice, which meant the day a study session was RECORDED under and
+ * the day the scheduler compared against could differ by one.
+ */
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return today();
 }

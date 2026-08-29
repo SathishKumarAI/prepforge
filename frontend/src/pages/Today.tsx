@@ -8,7 +8,7 @@ import { useNotes } from "../hooks/useNotes";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { suggestActions } from "../lib/nextAction";
-import { isDue } from "../lib/srs";
+import { dayKey, isDue } from "../lib/srs";
 
 /**
  * Slot table
@@ -115,7 +115,7 @@ function StudyStrip({ days }: { days: string[] }) {
   const cells = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (13 - i));
-    const key = d.toISOString().slice(0, 10);
+    const key = dayKey(d);
     return { key, studied: set.has(key), isToday: i === 13 };
   });
 

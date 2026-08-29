@@ -10,7 +10,7 @@
  * Pure functions over progress + questions. No React, no formatting decisions —
  * the page decides how to render these, this file decides which one wins.
  */
-import { isDue } from "./srs";
+import { isDue, today } from "./srs";
 import type { Progress } from "./storage";
 import type { Question } from "./types";
 
@@ -45,7 +45,7 @@ export function suggestActions(questions: Pick<Question, "id">[], progress: Prog
   // nobody revisits, and the one thing Study has no way to surface.
   const savedUnstudied = progress.bookmarks.filter((id) => !progress.srs[id]?.seen).length;
 
-  const studiedToday = progress.studyDays.includes(new Date().toISOString().slice(0, 10));
+  const studiedToday = progress.studyDays.includes(today());
   const streak = progress.studyDays.length;
 
   if (due > 0) {
