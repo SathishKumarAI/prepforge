@@ -15,6 +15,15 @@ import { useScrollDirection } from "../../hooks/useScrollDirection";
  * offset is wrong by exactly the notch on the devices where a mis-parked
  * element is hardest to recover from.
  */
+/**
+ * The offset anything sticky parks at, half a rem below the app bar.
+ *
+ * Lives here because this file already owns "park against the bar's MEASURED
+ * height, never a constant". Two call sites had their own copy of the same
+ * expression, which is exactly how one of them ends up a notch out.
+ */
+export const UNDER_APP_BAR = { top: "calc(var(--app-bar-h, 0px) + 0.5rem)" } as const;
+
 export function StickyChrome({
   children,
   className = "",

@@ -4,6 +4,7 @@ import { DifficultyBadge, TopicBadge } from "../Badge";
 import { DeepAnswer, LENS_TABS, type Mode } from "../DeepAnswer";
 import { Markdown } from "../Markdown";
 import { SourceDoc } from "../SourceDoc";
+import { UNDER_APP_BAR } from "../page/StickyChrome";
 import { Button } from "../ui/button";
 import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -115,7 +116,22 @@ export function QuestionDetail({
         </Button>
       )}
 
-      <header className="mb-4">
+      {/* The question stays put while its answer scrolls.
+          Measured before this existed: on a long answer, scrolling to read it
+          put the heading at -421px — off screen entirely — so half way down an
+          answer there was nothing on the page saying what it was answering.
+          Parks against --app-bar-h like every other sticky thing here; in focus
+          mode Layout measures the hidden bar at 0 and this rises to meet it. */}
+      <header
+        style={UNDER_APP_BAR}
+        // Fully opaque, not bg-base/95. Content scrolls UNDER a sticky header,
+        // so the header has to occlude it — at 95% the next line of the answer
+        // ghosted through and sat bisected across the boundary, which reads as a
+        // rendering fault rather than as a header. The hairline then makes the
+        // edge deliberate: it says the text continues below, rather than looking
+        // like the answer was cut off.
+        className="sticky z-10 -mx-1 mb-4 border-b border-surface0 bg-base px-1 pb-2.5"
+      >
         <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <TopicBadge topic={q.topic} />
           <DifficultyBadge difficulty={q.difficulty} />

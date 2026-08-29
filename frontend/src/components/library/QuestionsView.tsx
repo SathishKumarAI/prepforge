@@ -4,7 +4,7 @@ import { ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, X } 
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
-import { StickyChrome } from "../page/StickyChrome";
+import { StickyChrome, UNDER_APP_BAR } from "../page/StickyChrome";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
@@ -25,8 +25,6 @@ const LIST_HIDDEN_KEY = "pf-library-list-hidden";
  */
 const PEEK_MS = 250;
 
-/** The list parks under the app bar, whose height Layout measures and publishes. */
-const UNDER_APP_BAR = { top: "calc(var(--app-bar-h, 0px) + 0.5rem)" } as const;
 
 /**
  * Rows per page. Small on purpose: this is now a real page from the server, not
@@ -511,7 +509,12 @@ export function QuestionsView() {
           {!listHidden && (
             <div
               style={UNDER_APP_BAR}
-              className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:pr-1 ${
+              // `overscroll-contain`: reaching the end of the list must not hand
+              // the rest of the wheel gesture to the page. Without it, scrolling
+              // the questions carries on into the document and takes the answer
+              // you were reading off the top — you scrolled one pane and lost
+              // the other. It is the whole point of a pane that scrolls itself.
+              className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 ${
                 detailOnly ? "hidden lg:block" : ""
               }`}
             >
