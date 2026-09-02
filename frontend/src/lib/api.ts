@@ -91,10 +91,32 @@ export interface QuestionLite {
   question: string;
   topic: string;
   difficulty: string;
+  /**
+   * Whether an answer / a multiple-choice payload exists — not the thing itself.
+   * Study's mode eligibility is exactly these two predicates, so carrying the
+   * booleans is what lets it plan a session without the bank behind them.
+   */
+  has_answer?: boolean;
+  has_quiz?: boolean;
 }
 
 export async function fetchQuestionIndex(): Promise<{ questions: QuestionLite[] }> {
   return get("/questions/index");
+}
+
+/**
+ * The handful of whole questions a session is about, in the order asked for.
+ *
+ * One request rather than N: a browser runs six connections at a time, so forty
+ * separate `/questions/{qid}` calls is seven serial rounds before the first card
+ * can be drawn.
+ */
+export async function fetchQuestionBatch(ids: string[]): Promise<Question[]> {
+  if (ids.length === 0) return [];
+  const res = await get<{ questions: Question[] }>(
+    `/questions/batch?ids=${ids.map(encodeURIComponent).join(",")}`,
+  );
+  return res.questions;
 }
 
 export interface Providers {

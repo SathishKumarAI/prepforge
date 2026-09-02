@@ -11,7 +11,8 @@ import { Chip } from "../components/ui/chip";
 import { Segmented, SegmentedPanel } from "../components/ui/segmented";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
+import { useQuestionIndex } from "../hooks/useQuestionIndex";
+import { fetchQuestionBatch, type QuestionLite } from "../lib/api";
 import { isDue, type Rating } from "../lib/srs";
 import { MODES, MODE_ORDER, toStudyMode, type StudyMode } from "../lib/studyModes";
 import type { Question } from "../lib/types";
@@ -51,13 +52,13 @@ interface Session {
 }
 
 /** Round-robin across topics so two consecutive cards are rarely alike. */
-function interleave(items: Question[]): Question[] {
-  const lanes = new Map<string, Question[]>();
+function interleave(items: QuestionLite[]): QuestionLite[] {
+  const lanes = new Map<string, QuestionLite[]>();
   for (const q of items) {
     if (!lanes.has(q.topic)) lanes.set(q.topic, []);
     lanes.get(q.topic)!.push(q);
   }
-  const out: Question[] = [];
+  const out: QuestionLite[] = [];
   const queues = [...lanes.values()];
   for (let more = true; more; ) {
     more = false;
@@ -77,7 +78,19 @@ export function Study() {
   const mode = toStudyMode(params.get("mode"));
   const spec = MODES[mode];
 
-  const { questions, topics, loading } = useQuestions();
+  /**
+   * The index plans the session; the bank only supplies the cards you will see.
+   *
+   * Everything on the setup screen — the three counts, the topic chips, the
+   * planned size — is a question of which ids exist and which of them your local
+   * SRS state says are due. None of it needs an answer, and the answers are 92%
+   * of the payload. Session setup used to fetch all 38,573,654 B of them so it
+   * could evaluate `Boolean(q.answer)`; the index carries that as a boolean now.
+   *
+   * The same index Today and the Ctrl+K palette already load, so arriving here
+   * from either of them costs nothing at all.
+   */
+  const { rows: questions, loading } = useQuestionIndex(true);
   const { progress, getCard, markSeen, rateCard, setFlash, addQuiz } = useProgress();
 
   const prefs = useMemo(() => {
@@ -97,10 +110,20 @@ export function Study() {
   const [more, setMore] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [remaining, setRemaining] = useState(TIMED_SECONDS);
+  // Starting a session is a request now. It is one request for at most 40 cards,
+  // but it can be slow and it can fail, and a primary button that does nothing
+  // visible is the failure mode that makes people press it twice.
+  const [starting, setStarting] = useState(false);
+  const [cardsFailed, setCardsFailed] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ size, topic, weakFirst, timed }));
   }, [size, topic, weakFirst, timed]);
+
+  const topics = useMemo(
+    () => [...new Set(questions.map((q) => q.topic).filter(Boolean))].sort(),
+    [questions],
+  );
 
   // Eligibility and readiness come from the registry, so adding a mode never
   // means hunting for the places that filter.
@@ -126,29 +149,43 @@ export function Study() {
       ? Math.min(size, ready.length + Math.min(NEW_PER_SESSION, fresh.length))
       : Math.min(size, ready.length);
 
-  const isWeak = (q: Question) =>
+  const isWeak = (q: QuestionLite) =>
     progress.flash[q.id] !== "known" && progress.srs[q.id]?.stage !== "mastered";
 
-  function start() {
-    if (plannedSize === 0) return;
-    let queue: Question[];
+  /** The queue as ids — ordering only, which never needed an answer to decide. */
+  function planQueue(): QuestionLite[] {
     if (mode === "recall") {
       // Reviews before new material: retrieval first, encoding with what is left.
-      queue = [
-        ...interleave(ready),
-        ...interleave(fresh).slice(0, NEW_PER_SESSION),
-      ].slice(0, size);
-    } else {
-      // Deterministic order (no Math.random), rotated by how much you have
-      // already done so a second session is not the same ten cards.
-      const ordered = [...ready].sort((a, b) => a.id.localeCompare(b.id));
-      const offset = Object.keys(progress.srs).length % Math.max(1, ordered.length);
-      let rotated = [...ordered.slice(offset), ...ordered.slice(0, offset)];
-      if (weakFirst) rotated = [...rotated].sort((a, b) => Number(isWeak(b)) - Number(isWeak(a)));
-      queue = rotated.slice(0, size);
+      return [...interleave(ready), ...interleave(fresh).slice(0, NEW_PER_SESSION)].slice(0, size);
     }
-    setSession({ mode, queue, pos: 0, outcomes: [], revealed: false, picked: null, correct: 0 });
-    setRemaining(TIMED_SECONDS);
+    // Deterministic order (no Math.random), rotated by how much you have
+    // already done so a second session is not the same ten cards.
+    const ordered = [...ready].sort((a, b) => a.id.localeCompare(b.id));
+    const offset = Object.keys(progress.srs).length % Math.max(1, ordered.length);
+    let rotated = [...ordered.slice(offset), ...ordered.slice(0, offset)];
+    if (weakFirst) rotated = [...rotated].sort((a, b) => Number(isWeak(b)) - Number(isWeak(a)));
+    return rotated.slice(0, size);
+  }
+
+  /**
+   * The one place the whole questions are fetched, and it is at most `size` of
+   * them — 40 at the largest setting, against 18,284 before. The order the plan
+   * decided is the order the batch returns, so the topic interleave survives.
+   */
+  async function start() {
+    if (plannedSize === 0 || starting) return;
+    const planned = planQueue();
+    setStarting(true);
+    try {
+      const queue = await fetchQuestionBatch(planned.map((q) => q.id));
+      if (queue.length === 0) return; // the bank was rebuilt out from under us
+      setSession({ mode, queue, pos: 0, outcomes: [], revealed: false, picked: null, correct: 0 });
+      setRemaining(TIMED_SECONDS);
+    } catch {
+      setCardsFailed(true);
+    } finally {
+      setStarting(false);
+    }
   }
 
   const current = session && session.pos < session.queue.length ? session.queue[session.pos] : null;
@@ -394,9 +431,14 @@ export function Study() {
 
       {plannedSize > 0 ? (
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="primary" size="lg" onClick={start}>
-            {spec.cta}
+          <Button variant="primary" size="lg" onClick={start} disabled={starting}>
+            {starting ? "Getting your cards…" : spec.cta}
           </Button>
+          {cardsFailed && (
+            <span role="alert" className="text-small text-red">
+              Could not load the cards. Check the backend is running, then try again.
+            </span>
+          )}
           <span className="text-small text-overlay1">
             <span className="tabular-nums text-subtext0">{plannedSize}</span> card
             {plannedSize !== 1 ? "s" : ""}
