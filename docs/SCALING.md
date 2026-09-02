@@ -5,13 +5,21 @@ questions sourced from PDFs, Markdown, HTML, and YouTube — while keeping LLM t
 
 ## Where the current design breaks
 
+Updated 2026-09-02. Two rows have been retired since this was written — recorded here rather than
+deleted, because the replacements are themselves bounded and the bound is the interesting number.
+
 | Component | Now | Breaks at |
 |---|---|---|
-| `main._load_questions()` | reads **all** JSON into memory every request | ~50k questions |
+| `main._load_questions()` | ~~reads all JSON into memory every request~~ → assembled once, cached, keyed on the content files' mtimes | still **holds the whole bank in one process's RAM**: ~50k questions |
 | Answer cache | one `.md` file per (question × lens) → 100M×8 = **800M files** | filesystem dies (~10^6 files) |
 | `/vault/read` | re-parses the PDF on every open | slow, repeated CPU |
-| Search | `Fuse.js` over the full set in the browser | ~10k questions |
+| Search | ~~`Fuse.js` over the full set in the browser~~ → substring + term scoring server-side over a pre-lowercased cache (`_searchable()`) | a **linear scan** of every answer per query: ~200k questions on one box |
+| The client's copy | the index projection (id/title/topic/difficulty/flags) in IndexedDB, ~3.5 MB at 18k questions | ~500k questions before the browser copy is the problem |
 | Dedup | in-memory dict per ingest run | one machine's RAM |
+
+The 2026-09-02 work moved the ceiling without changing its shape: nothing streams, nothing is
+indexed, and every layer still assumes the whole bank fits in one process. The lakehouse design
+below is still the answer past ~100k.
 
 The prototype's instinct is right — **parse once, generate once, serve from a file** — it just needs
 real storage, indexing, and a batch pipeline behind it.
