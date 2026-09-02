@@ -100,6 +100,15 @@ Update this when you STOP working, not when you start.
   `RelatedLinks` resolved each id through `questionMap()` — the whole bank, held in memory by
   whichever page last fetched it. Once nothing fetched the bank the map was always empty, so the
   list was always empty and the component returned null. No error, no empty state, no request.
+- **`/questions/batch` expands `related` on request** (`&expand=related`), which is what let Saved
+  stop fetching its bookmarks one at a time: 48 bookmarks went from **48 requests / 97 ms** to
+  **1 request / 11 ms**, same bytes. It is **opt-in** because Study fetches up to 40 cards it never
+  renders a related list for, and expansion measured **+48%** on a batch of 8.
+- **A plain function under a route decorator becomes the route.** Adding `_with_related` between
+  `@app.get("/questions/batch")` and `def questions_batch` bound the decorator to the helper, and
+  FastAPI answered every batch request with `422` asking for `q` and `by_id` in the body. The tests
+  passed the whole time — they call `main.questions_batch()` directly, which never goes through the
+  decorator. Only the running app showed it.
 - **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34). The
   web-ingest noise (COD-78) is fixed and merged (#51) — see "The ingest noise, decided" below.
   Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`

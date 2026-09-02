@@ -7,7 +7,7 @@ import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
 import { useUserCards } from "../../hooks/useUserCards";
 import { toast } from "../ui/sonner";
-import { fetchQuestion } from "../../lib/api";
+import { fetchQuestionBatch } from "../../lib/api";
 import { toQuestion } from "../../lib/userCards";
 import type { Question } from "../../lib/types";
 
@@ -71,13 +71,20 @@ export function SavedView() {
     }
     let live = true;
     setLoading(true);
-    Promise.all(ids.map((id) => fetchQuestion(id).catch(() => null)))
+    // ONE request, not one per bookmark. This used to be N calls to
+    // /questions/{qid} — 48 bookmarks meant 48 round trips, and a browser runs
+    // six at a time, so the list appeared in eight visible waves. `related` is
+    // expanded server-side because every card here renders its Related section;
+    // without that this view was the reason batch could not be used at all.
+    fetchQuestionBatch(ids, { related: true })
       .then((got) => {
         if (!live) return;
         // A bookmark whose question no longer exists is dropped rather than
-        // rendered as a blank card — the bank is rebuilt by ingest, so ids can go.
+        // rendered as a blank card — the bank is rebuilt by ingest, so ids can
+        // go. The route skips unknown ids, so they simply do not come back.
         setQuestions(got.filter((q): q is Question => Boolean(q && q.id)));
       })
+      .catch(() => live && setQuestions([]))
       .finally(() => live && setLoading(false));
     return () => {
       live = false;

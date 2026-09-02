@@ -131,12 +131,43 @@ export async function fetchQuestionIndex(
  * separate `/questions/{qid}` calls is seven serial rounds before the first card
  * can be drawn.
  */
-export async function fetchQuestionBatch(ids: string[]): Promise<Question[]> {
+/**
+ * How many ids ride in one URL. A batch is a GET, so the ids are the query
+ * string: at ~14 characters each, 100 of them is about 1.5 kB, which is inside
+ * what every proxy and server between here and the app will carry. Study never
+ * asks for more than 40; Saved can ask for every bookmark you have ever made.
+ */
+const BATCH_IDS = 100;
+
+/**
+ * Whole questions by id, in the order asked for.
+ *
+ * `related` is expanded only on request. Study fetches up to 40 cards it shows
+ * one at a time and never renders a related list, and expanding for it would
+ * add ~6 objects per card — measured at +48% on a batch of 8 — to a payload
+ * whose entire point is that it is small. Saved renders a Related section under
+ * every card and would otherwise have to fetch each question separately, which
+ * is what it used to do.
+ */
+export async function fetchQuestionBatch(
+  ids: string[],
+  opts: { related?: boolean } = {},
+): Promise<Question[]> {
   if (ids.length === 0) return [];
-  const res = await get<{ questions: Question[] }>(
-    `/questions/batch?ids=${ids.map(encodeURIComponent).join(",")}`,
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += BATCH_IDS) chunks.push(ids.slice(i, i + BATCH_IDS));
+  const expand = opts.related ? "&expand=related" : "";
+  // Promise.all keeps the chunks in order, and each chunk keeps the order it
+  // was asked in, so the whole result is still the caller's order — which is
+  // what Study's topic interleave depends on.
+  const pages = await Promise.all(
+    chunks.map((chunk) =>
+      get<{ questions: Question[] }>(
+        `/questions/batch?ids=${chunk.map(encodeURIComponent).join(",")}${expand}`,
+      ),
+    ),
   );
-  return res.questions;
+  return pages.flatMap((p) => p.questions);
 }
 
 export interface Providers {
