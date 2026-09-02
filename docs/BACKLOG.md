@@ -50,7 +50,14 @@ personal prep tool, not a bloated product.
 - [ ] `P2` **Highlight-to-flashcard** from ingested books/PDFs (idea from RemNote) — tighten read→recall.
 - [ ] `P2` **FSRS scheduler** option (20–30% fewer reviews than SM-2; competitors moved to it).
 - [ ] `P2` Draggable sticky board (positions persisted, clamp on resize) + graph pan/zoom + mobile list fallback.
-- [ ] `P2` Export/import all progress + notes as one JSON (backup/restore).
+- [x] `P2` Export/import all progress + notes as one JSON (backup/restore). **Shipped 2026-09-02**
+      (COD-112). Settings → Your data. One file carries SM-2 state, flash buckets, bookmarks,
+      per-question notes, sticky/voice notes, settings and the voice audio out of IndexedDB as
+      `data:` URLs. Restore asks **merge or replace**; merge is a union where **local wins every
+      collision**, because nothing in an SM-2 card records when it was last reviewed, so "newer" can
+      only be guessed. Refuses a file from a newer build whole rather than importing half a
+      schedule; drops and counts cards whose numeric fields are strings. `lib/backup.ts` is pure —
+      no storage, no blobs — so `npm test` (`scripts/test-backup.mjs`, 9 cases) can run it in Node.
 - [ ] `P3` Mock-interview chat (adaptive, graded) over a topic.
 - [ ] `P3` Runnable SQL/Python cells inside DS/analytics answers (idea from StrataScratch).
 - [ ] `P3` PWA / offline install · cost-budget guard (running total, monthly cap).

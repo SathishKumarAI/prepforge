@@ -20,6 +20,7 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
 | **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
+| **A way out of the browser** | Settings → Your data: one JSON file with every card, note, setting and voice clip, and a merge-or-replace restore |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
 | **Your own content** | Obsidian vault ingest, Markdown/PDF library ingest, URL → quiz |
@@ -65,6 +66,26 @@ key is the `ETag`, so every client copy is invalidated by the same act.
 the network is consulted; progress has always been `localStorage`. Today, Study's setup screen,
 Progress and the notes graph all render with the server stopped. Only the screens that need an
 *answer* need it running.
+
+### Backup and restore
+
+Local-first means nothing else has a copy. Clearing site data, switching browsers, or a profile that
+never syncs takes every due date with it, and the app would not even know it had happened.
+
+**Settings → Your data → Download backup** writes one JSON file: SM-2 state, flashcard buckets,
+bookmarks, per-question notes, sticky and voice notes, settings, and the voice-clip audio out of
+IndexedDB as `data:` URLs. **Restore from file** reads one back and asks which way:
+
+| | |
+|---|---|
+| **Merge** | Union. Where both copies hold the same card, **this browser wins** — nothing in an SM-2 card records when it was last reviewed, so "newer" cannot be computed, only guessed. Losing an import is recoverable; overwriting eight weeks of live scheduling is not. |
+| **Replace** | This browser's history is thrown away for the file's. |
+
+A file chosen from a picker is untrusted input, so `lib/backup.ts` validates rather than trusts: a
+backup from a newer build is refused whole (half a schedule looks like it worked), a card whose `ef`
+is the string `"2.5"` is dropped and counted in the summary — `"2.5" * 6` is concatenation, and SM-2
+would have scheduled it centuries out in silence — and only `data:` audio survives, so a restored
+note can never point at someone else's server. `npm test` is the guard.
 
 ## Answer variants
 
@@ -227,7 +248,8 @@ frontend/src/
                useSettings · useHotkeys · theme hooks
   lib/         api.ts · indexCache.ts (the index in IndexedDB) · routeChunks.ts (lazy routes,
                prefetched on hover) · srs.ts (SM-2) · studyModes.ts (the mode registry) ·
-               storage.ts · notes.ts · graph.ts (hand-rolled force layout) ·
+               storage.ts · notes.ts · backup.ts (export/restore, pure) ·
+               graph.ts (hand-rolled force layout) ·
                audio.ts (IndexedDB) · rehype-highlight-lite.ts (lazy) · theme.ts ·
                topics.ts · types.ts
 extension/     local-only page clipper

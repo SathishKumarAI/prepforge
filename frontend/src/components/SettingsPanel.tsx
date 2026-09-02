@@ -6,6 +6,7 @@ import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
 import { DENSITIES, TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { BackupControls } from "./BackupControls";
 
 const SENIORITY: Settings["seniority"][] = ["junior", "mid", "senior", "staff"];
 const DIFFS: ("easy" | "medium" | "hard")[] = ["easy", "medium", "hard"];
@@ -102,6 +103,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
 
           <Field label="Companies you're prepping for">
             <input value={settings.companies} maxLength={200} onChange={(e) => update({ companies: e.target.value })} placeholder="e.g. OpenAI, Anthropic, a Series-B startup" className="input" />
+          </Field>
+
+          <Field label="Your data">
+            <BackupControls />
           </Field>
         </div>
 

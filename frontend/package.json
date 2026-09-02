@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "contrast": "node scripts/check-contrast.mjs",
+    "test": "node scripts/test-backup.mjs",
     "preview": "vite preview",
     "shoot": "node scripts/shoot.mjs"
   },
