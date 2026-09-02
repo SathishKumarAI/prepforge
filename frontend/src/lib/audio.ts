@@ -36,6 +36,28 @@ export async function getClip(id: string): Promise<Blob | null> {
   return blob;
 }
 
+/**
+ * Every clip at once, keyed the way notes reference them. Only the backup wants
+ * this — a screen that showed all recordings at once would be pulling megabytes
+ * of audio to draw a list.
+ */
+export async function allClips(): Promise<Record<string, Blob>> {
+  const db = await open();
+  const out = await new Promise<Record<string, Blob>>((resolve, reject) => {
+    const acc: Record<string, Blob> = {};
+    const req = db.transaction(STORE, "readonly").objectStore(STORE).openCursor();
+    req.onsuccess = () => {
+      const cur = req.result;
+      if (!cur) return resolve(acc);
+      acc[String(cur.key)] = cur.value as Blob;
+      cur.continue();
+    };
+    req.onerror = () => reject(req.error);
+  });
+  db.close();
+  return out;
+}
+
 export async function deleteClip(id: string): Promise<void> {
   const db = await open();
   await new Promise<void>((resolve) => {
