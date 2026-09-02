@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { prefetchRoute } from "../lib/routeChunks";
 import {
   useEffect,
   useLayoutEffect,
@@ -229,6 +230,14 @@ export function Layout({ children }: { children: ReactNode }) {
                     <NavLink
                       to={item.to}
                       end={item.to === "/"}
+                      // The few hundred milliseconds between a pointer landing
+                      // on a link and the click that follows is enough to have
+                      // the route's chunk in memory before it renders, so the
+                      // Suspense fallback never appears. `onFocus` as well as
+                      // hover: tabbing to a link is the same intent, and a
+                      // keyboard user should not be the one who waits.
+                      onMouseEnter={() => prefetchRoute(item.to)}
+                      onFocus={() => prefetchRoute(item.to)}
                       className={({ isActive }) =>
                         `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-100 ${
                           isActive

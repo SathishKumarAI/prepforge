@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useApplyTheme } from "./hooks/useApplyTheme";
 import { primeQuestionIndex } from "./hooks/useQuestionIndex";
+import { ROUTE_CHUNKS } from "./lib/routeChunks";
 import { Layout } from "./components/Layout";
 import { Loader } from "./components/States";
 import { Button } from "./components/ui/button";
@@ -11,13 +12,18 @@ import { Today } from "./pages/Today";
 
 // Today stays in the main bundle: it is where the app opens, and lazy-loading
 // the first screen only moves the wait. Everything else is split — Library and
-// Study between them pull the markdown renderer, the syntax highlighter, fuse
-// and framer-motion, none of which the landing page uses.
-const Library = lazy(() => import("./pages/Library").then((m) => ({ default: m.Library })));
-const Study = lazy(() => import("./pages/Study").then((m) => ({ default: m.Study })));
-const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
-const Notes = lazy(() => import("./pages/Notes").then((m) => ({ default: m.Notes })));
-const Reader = lazy(() => import("./pages/Reader").then((m) => ({ default: m.Reader })));
+// Study between them pull the markdown renderer, fuse and framer-motion, none of
+// which the landing page uses.
+//
+// The thunks come from `lib/routeChunks` so that hovering a nav link and
+// actually navigating to it reference the SAME chunk. Two `import()` calls for
+// one module resolve to one chunk only because the bundler can see they are the
+// same specifier — writing the specifier once is how that stays true.
+const Library = lazy(() => ROUTE_CHUNKS["/library"]().then((m) => ({ default: (m as typeof import("./pages/Library")).Library })));
+const Study = lazy(() => ROUTE_CHUNKS["/study"]().then((m) => ({ default: (m as typeof import("./pages/Study")).Study })));
+const Dashboard = lazy(() => ROUTE_CHUNKS["/progress"]().then((m) => ({ default: (m as typeof import("./pages/Dashboard")).Dashboard })));
+const Notes = lazy(() => ROUTE_CHUNKS["/notes"]().then((m) => ({ default: (m as typeof import("./pages/Notes")).Notes })));
+const Reader = lazy(() => ROUTE_CHUNKS["/reader"]().then((m) => ({ default: (m as typeof import("./pages/Reader")).Reader })));
 
 /**
  * Retired destinations, not retired features. Every one of these is now a mode
