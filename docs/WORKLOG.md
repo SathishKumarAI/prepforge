@@ -1,5 +1,85 @@
 # Worklog
 
+## 2026-09-02 (last) — a local model answers the 99 questions that had none
+
+**Summary:** 99 of the 18,284 questions in the bank had a question and no answer — vault-ingested SQL
+and PL/SQL cards that `has_answer: false` kept out of Study and left with a blank Answer tab. All 99
+are answered now, by `openai/gpt-oss-20b` running in LM Studio, for **$0** and about **13 minutes**,
+cached as Markdown and served by the API. PRs #81, #82.
+
+---
+
+### What was built
+
+| Piece | What it is |
+|---|---|
+| `generate.local_only()` | Generation with **no billed path at all**. `generate()` falls back to Claude when LM Studio hiccups — right for one hover, wrong for a run of hundreds where one flaky moment starts spending money nobody decided to spend |
+| `answer_missing.py` | The batch. Resumable by construction: answers cache under `<qid>__local.md`, the same Markdown the interactive lenses already write, and a question that has one is skipped |
+| `eval_answers.py` | The gate. Deterministic checks plus an optional `--judge` pass |
+| `_fill_missing_answers()` | The half that makes it visible: `GET /questions/{id}` serves a generated answer for a question that has none |
+| `test_local_answers.py` | 13 tests over the parts that fail quietly |
+
+### The numbers
+
+| | |
+|---|---|
+| Attempted / written | 96 → 94, then 2 retried → **99 of 99** |
+| Time · cost | ~13 min · **$0** |
+| Deterministic eval | **99 answers, 0 failing** |
+| Judge (`--judge`, 97 answers) | mean **4.80**, median **5.00**, min **4.00**, 1 unparsable |
+| Backend suite | nine files, all pass |
+
+The two that failed the first time returned an empty completion and succeeded on the retry, which is
+what the resumable design is for: re-running cost 0.2 minutes and nothing else was touched.
+
+### Three properties, each because the failure is silent
+
+- **It cannot bill.** The fallback that is correct interactively is a liability in a loop.
+- **It only ever fills a gap.** A question that has an answer keeps it, so unreviewed prose can never
+  shadow something curated or ingested.
+- **It says what it is.** Every generated answer ends with *"Written by … running locally.
+  Machine-generated, not reviewed."* — in the body, not a schema field, so it survives the detail
+  pane, a study card, an export and a grep.
+
+### The evaluation caught one thing, and it was the evaluation
+
+`restates_question` flagged *"Is Python case-sensitive?"*, whose answer was good: *"Yes — Python
+identifiers are case-sensitive"*, then four sentences about `train_df` vs `Train_Df` breaking a
+pipeline. The check read only the FIRST sentence, so it punished the exact shape the system prompt
+asks for — *lead with the crisp answer, then the nuance*. It now requires that **every distinct
+sentence** be a restatement. `--delete-failures` would have deleted that answer.
+
+### The judge inflates, measurably
+
+Over 97 of its own answers: **mean 4.80, median 5.00, nothing below 4.00** — including one it
+described as *"does not directly address the unclear question"* and scored 4.0. The default floor was
+3.0, which **would never have fired once**. A gate that cannot fire is a decoration that makes a run
+look inspected; the floor is 4.5 now and the measurement is in the docstring and the README so the
+number is not read as a grade.
+
+What the judge *is* good for: the `why` line, and the ranking. Its four lowest are the four a human
+would also pick out — three of which are barely questions.
+
+### What this exposed, and did not fix
+
+Some of these are not questions. *"2 Should you read this book?"* is a heading from a book blurb, and
+the model answered it with a confident recommendation of *Accelerate* and an invented 2019 migration
+story. *"will be created in all ?"* is half a sentence split across two cards. Several are
+multiple-choice stubs whose choices did not survive ingest.
+
+The pipeline answers all of them plausibly, and the judge scores those answers well, because it
+grades the answer and not the question. `ingest._drop_repeated_bodies` filters junk *bodies* by
+repetition; there is no equivalent for junk *questions* — **COD-132**.
+
+### The cost this added, measured
+
+The answers directory is now part of the bank's version stamp, because a file written there changes
+what the API serves. Writing any answer therefore costs one **0.59s** re-assembly of 18,284 questions
+on the next request, plus a client index revalidation. `_bank_stamp` says so, and says when a
+narrower marker would be worth the extra mechanism.
+
+---
+
 ## 2026-09-02 (later) — the stack landed, four features off the backlog, and a UI bug hunt
 
 **Summary:** started with **eleven unmerged PRs** and a `main` carrying none of the perf work. Ended
