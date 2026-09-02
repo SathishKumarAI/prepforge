@@ -14,17 +14,27 @@ import { questionMap } from "./useQuestions";
  */
 let cache: QuestionLite[] | null = null;
 let inflight: Promise<void> | null = null;
+/**
+ * A failed fetch resolves to an empty list rather than staying pending, because
+ * `loading` below is derived from `rows.length` — without this, an API that is
+ * down leaves every consumer spinning forever, which is the one state a user
+ * cannot tell from "still working" and cannot escape by waiting.
+ */
+let failed = false;
 const listeners = new Set<(rows: QuestionLite[]) => void>();
 
 function load(): Promise<void> {
   if (inflight) return inflight;
+  failed = false; // a retry is loading again, not still broken
   inflight = fetchQuestionIndex()
     .then((d) => {
       cache = d.questions;
       listeners.forEach((fn) => fn(cache!));
     })
     .catch(() => {
-      /* the surface that asked shows its own empty state */
+      // the surface that asked shows its own empty state
+      failed = true;
+      listeners.forEach((fn) => fn([]));
     })
     .finally(() => {
       inflight = null;
@@ -55,5 +65,5 @@ export function useQuestionIndex(enabled: boolean): { rows: QuestionLite[]; load
     };
   }, [enabled]);
 
-  return { rows, loading: enabled && rows.length === 0 };
+  return { rows, loading: enabled && rows.length === 0 && !failed };
 }
