@@ -1,13 +1,15 @@
 """PrepForge backend — FastAPI. Serves the Q&A bank and the aggregated resource feed."""
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from pathlib import Path
 
 import yaml
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
 try:
     from dotenv import load_dotenv  # optional
@@ -41,6 +43,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# Everything this API returns is JSON, and JSON of this shape — the same twenty
+# keys repeated 18,000 times — is the best case there is for deflate. Measured on
+# the real bank: /questions 33.1 MB -> 7.76 MB, /questions/index 3.07 MB ->
+# 508 kB. Added AFTER CORS so it sits outside it and compresses the final body.
+# minimum_size skips the many sub-kB replies, where the header costs more than
+# the saving.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 def _read_bank(path: Path) -> list[dict]:
@@ -74,6 +83,36 @@ def _bank_stamp() -> tuple[float, ...]:
         p = CONTENT / name
         out.append(p.stat().st_mtime if p.exists() else 0.0)
     return tuple(out)
+
+
+def _bank_etag() -> str:
+    """A version for the bank, derived from the same mtimes the caches key on.
+
+    So `POST /ingest` and `POST /pipeline/build` bump it by doing their job, and
+    nothing has to remember to invalidate anything.
+    """
+    return '"' + hashlib.sha1(repr(_bank_stamp()).encode()).hexdigest()[:16] + '"'
+
+
+def _not_modified(request: Request | None, response: Response | None) -> Response | None:
+    """Stamp the reply with the bank's ETag; return a 304 if the client has it.
+
+    `no-cache` is not "do not cache" — it is "cache it, but ask me first". The
+    browser keeps the body and revalidates, so an unchanged bank costs one
+    conditional request and no payload at all instead of 7.76 MB. Which matters
+    because the bank changes on ingest, not on a timer, so any max-age is either
+    too short to help or long enough to serve stale cards.
+
+    Both arguments are optional so the route functions stay directly callable
+    from the test files, which have no Request to hand.
+    """
+    etag = _bank_etag()
+    if request is not None and request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"ETag": etag, "Cache-Control": "no-cache"})
+    if response is not None:
+        response.headers["ETag"] = etag
+        response.headers["Cache-Control"] = "no-cache"
+    return None
 
 
 def _load_questions() -> list[dict]:
@@ -133,7 +172,10 @@ def health():
 
 
 @app.get("/questions")
-def questions():
+def questions(request: Request = None, response: Response = None):
+    stale = _not_modified(request, response)
+    if stale is not None:
+        return stale
     qs = _load_questions()
     topics = sorted({q["topic"] for q in qs})
     return {"questions": qs, "topics": topics, "count": len(qs)}
@@ -143,7 +185,7 @@ INDEX_FIELDS = ("id", "question", "topic", "difficulty")
 
 
 @app.get("/questions/index")
-def questions_index():
+def questions_index(request: Request = None, response: Response = None):
     """Titles only — what a jump box needs, without the 15 MB.
 
     GET /questions carries every answer, source and related list: ~15 MB, and
@@ -157,6 +199,9 @@ def questions_index():
     instead of the bank — the presence of a 900-word answer, not the answer.
     Measured: +11,668 B gzipped on 18,284 rows, against the 38 MB they replace.
     """
+    stale = _not_modified(request, response)
+    if stale is not None:
+        return stale
     qs = _load_questions()
     rows = [
         {
