@@ -16,7 +16,7 @@ import type { Question } from "./types";
 
 export interface Suggestion {
   /** Stable key, also used to explain why this was chosen. */
-  id: "due" | "saved" | "unseen" | "lapsing" | "start";
+  id: "due" | "saved" | "mine" | "unseen" | "lapsing" | "start";
   /** Verb-first, naming the outcome. Rendered as the button. */
   cta: string;
   /** One line of why. Rendered beside the button. */
@@ -31,7 +31,17 @@ export interface Suggestion {
  * and the ordering here is not actually contentious: overdue recall decays, and
  * everything else can wait a day.
  */
-export function suggestActions(questions: Pick<Question, "id">[], progress: Progress): Suggestion[] {
+export function suggestActions(
+  questions: Pick<Question, "id">[],
+  progress: Progress,
+  /**
+   * Cards you wrote from a highlight. Passed in rather than read here because
+   * they are not part of the bank and this file has no business knowing where
+   * they are stored — but leaving them out entirely is what made a deck you
+   * built by hand invisible from the page whose whole job is "what now".
+   */
+  ownCards: Pick<Question, "id">[] = [],
+): Suggestion[] {
   const out: Suggestion[] = [];
 
   const due = questions.filter((q) => {
@@ -65,6 +75,21 @@ export function suggestActions(questions: Pick<Question, "id">[], progress: Prog
       detail: "You set these aside and have not come back to them.",
       to: "/library?view=saved",
       count: savedUnstudied,
+    });
+  }
+
+  // A card you wrote and never studied is the strongest signal on this page:
+  // you read something, decided it was worth remembering, and stopped there.
+  // Ranked above generic new material for that reason, and below what is due,
+  // because a card you wrote yesterday does not decay today.
+  const ownUnseen = ownCards.filter((c) => !progress.srs[c.id]?.seen).length;
+  if (ownUnseen > 0) {
+    out.push({
+      id: "mine",
+      cta: `Study ${ownUnseen} card${ownUnseen === 1 ? "" : "s"} you wrote`,
+      detail: "You highlighted these and never came back to them.",
+      to: "/study?mode=recall&topic=" + encodeURIComponent("My cards"),
+      count: ownUnseen,
     });
   }
 

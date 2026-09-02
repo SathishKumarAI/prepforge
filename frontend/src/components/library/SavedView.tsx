@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { QuestionCard } from "../QuestionCard";
 import { Empty, Loader } from "../States";
 import { Button } from "../ui/button";
@@ -32,7 +32,13 @@ export function SavedView() {
   // of their own: this view is already "the things you personally set aside",
   // and one more surface for a handful of cards is a surface to maintain.
   const { cards: userCards, remove, restore } = useUserCards();
-  const [scope, setScope] = useState<Scope>("saved");
+  // `?scope=mine` is how the palette and Today link straight to the cards you
+  // wrote. Read once, as the initial value: after that the chips own it, and a
+  // URL that fought the chips would reset your view on every re-render.
+  const [params] = useSearchParams();
+  const [scope, setScope] = useState<Scope>(() =>
+    params.get("scope") === "mine" ? "mine" : "saved",
+  );
 
   /**
    * Fetched by id, not filtered out of the whole bank.
@@ -119,6 +125,18 @@ export function SavedView() {
     return (
       <>
         {chips}
+        {userCards.length === 0 && (
+          // Reachable with no cards at all: ?scope=mine is a link, and the chip
+          // that would normally gate it is hidden until the first card exists.
+          <Empty
+            title="No cards of your own yet. Select a passage while reading and press c — the passage becomes the answer, you write the question."
+            action={
+              <Button asChild variant="secondary" size="sm">
+                <Link to="/reader">Open the reader</Link>
+              </Button>
+            }
+          />
+        )}
         <div className="pf-deck flex flex-col gap-3">
           {userCards.map((c) => (
             <article key={c.id} className="panel p-4">

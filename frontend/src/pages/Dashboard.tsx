@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Page, Band } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
@@ -269,6 +269,11 @@ function Leeches({
 }: {
   rows: { id: string; question: string; topic: string; lapses: number }[];
 }) {
+  // Collapsed by default so the band stays a summary, but "and 14 more" with no
+  // way to reach the 14 is a dead end — the whole point of the list is that you
+  // can act on what is in it.
+  const [all, setAll] = useState(false);
+
   if (rows.length === 0) {
     return (
       <p className="text-small text-overlay1">
@@ -280,7 +285,7 @@ function Leeches({
   return (
     <>
       <ul className="flex flex-col">
-        {rows.slice(0, LEECHES_SHOWN).map((r) => (
+        {(all ? rows : rows.slice(0, LEECHES_SHOWN)).map((r) => (
           <li key={r.id} className="border-b border-surface0 last:border-0">
             <Link
               to={`/library?id=${encodeURIComponent(r.id)}`}
@@ -295,9 +300,14 @@ function Leeches({
         ))}
       </ul>
       {rows.length > LEECHES_SHOWN && (
-        <p className="mt-2 text-micro text-overlay0">
-          and {rows.length - LEECHES_SHOWN} more.
-        </p>
+        <button
+          type="button"
+          onClick={() => setAll((v) => !v)}
+          aria-expanded={all}
+          className="mt-2 text-micro text-overlay1 underline-offset-2 hover:text-subtext0 hover:underline"
+        >
+          {all ? "Show fewer" : `Show all ${rows.length}`}
+        </button>
       )}
     </>
   );

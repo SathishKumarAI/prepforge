@@ -105,6 +105,10 @@ per surface. **`c` opens the composer** while a selection is live, so the whole 
 pointer, and deleting a card offers **Undo** — which puts it back under its original id, so the
 SM-2 schedule returns with the text.
 
+They are not a side pocket: Today ranks *"Study N cards you wrote"* above generic new material and
+counts them in the due total and the forecast, and Ctrl+K searches them alongside the bank
+(`/library?view=saved&scope=mine` is the deep link).
+
 Ids are `u-` prefixed and cannot collide with the bank's. That matters more than it looks:
 `progress.srs` is keyed by question id alone, so a collision would not be a duplicate card, it would
 be your schedule for one question quietly attached to another. Deleting a card leaves its SM-2 row,

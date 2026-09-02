@@ -6,6 +6,7 @@ import { Loader } from "../components/States";
 import { Button } from "../components/ui/button";
 import { useNotes } from "../hooks/useNotes";
 import { useProgress } from "../hooks/useProgress";
+import { useUserCards } from "../hooks/useUserCards";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { suggestActions } from "../lib/nextAction";
 import { dayKey, dueForecast, FORECAST_DAYS, isDue, type ForecastDay } from "../lib/srs";
@@ -33,9 +34,10 @@ export function Today() {
   const { rows: questions, loading } = useQuestionIndex(true);
   const { progress } = useProgress();
   const { notes } = useNotes();
+  const { cards: ownCards } = useUserCards();
 
   const { suggestions, due, unseen, forecast } = useMemo(() => {
-    const suggestions = suggestActions(questions, progress);
+    const suggestions = suggestActions(questions, progress, ownCards);
     // One pass for all three, and the due dates the forecast needs come out of
     // it — a card the bank no longer carries must not be counted, which is the
     // reason this walks `questions` rather than `progress.srs`.
@@ -51,8 +53,19 @@ export function Today() {
       dueDates.push(card.due);
       if (isDue(card)) due++;
     }
+    // Cards you wrote are scheduled by the same SM-2 state, so they belong in
+    // the forecast and the due count exactly as the bank's do.
+    for (const c of ownCards) {
+      const card = progress.srs[c.id];
+      if (!card?.seen) {
+        unseen++;
+        continue;
+      }
+      dueDates.push(card.due);
+      if (isDue(card)) due++;
+    }
     return { suggestions, due, unseen, forecast: dueForecast(dueDates) };
-  }, [questions, progress]);
+  }, [questions, progress, ownCards]);
 
   if (loading) return <Loader label="Working out what is due" />;
 
