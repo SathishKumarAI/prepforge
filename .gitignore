@@ -78,3 +78,15 @@ backend/content/related.json
 
 # Screenshots from scripts/shoot.mjs — evidence for a human, regenerated on demand
 frontend/scripts/.shots/
+
+# The impeccable design hook's working directory. Two of the three files in it
+# are this machine's: `config.local.json` is a per-machine consent flag, and
+# `hook.cache.json` is a 15 kB cache keyed by ABSOLUTE paths and session ids —
+# neither means anything in another clone, and both change on almost every edit.
+#
+# `config.json` does hold a real project decision (the Fraunces exemption, with
+# its reasoning). That decision is not lost with it: the font choice and why it
+# was made are in docs/SESSION-LOG.md and docs/UI-REDESIGN-BACKLOG.md, which is
+# where a reader would look for it anyway. If the tool's own config ever needs
+# to travel with the repo, un-ignore that one file rather than the folder.
+.impeccable/
