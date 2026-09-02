@@ -66,6 +66,39 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
+## Bugs fixed 2026-09-02 — the URL said one thing, the screen showed another
+
+Reported as "the question that stays on screen while you scroll is wrong". Three instances of one
+defect, all found by driving the app rather than reading it (COD-120).
+
+| Where | What you saw |
+|---|---|
+| `QuestionsView` `?id=` | Pick a question in Ctrl+K **while already on the questions view**: the URL became `?id=q002`, the search box updated, the list highlighted the new row — and the answer pane kept showing the previous question |
+| `QuestionsView` `detailOnly` | On a phone, a shared `?id=` link showed the **list of 18,284** and never the answer. The sticky question header could not be wrong because it was never rendered |
+| `SavedView` `?scope=` | "Library — cards I made" in the palette, while already on Saved, changed the URL and left you on Bookmarked |
+
+**Why it happened.** All three are `useState(params.get("x"))` — the URL read **once**, at mount. That
+looks correct in every test a developer runs while building the feature, because those tests arrive
+from another route, which unmounts and remounts the component and re-runs the initialiser. The one
+path that does *not* remount is a **same-route navigation** — the palette, or any link from the page
+to itself — and that is the path nobody clicks while building the thing. `?q=` got a sync effect
+back in #46, when real paging made a stale search obvious; `?id=` sat one line above it and never
+did.
+
+**The rule this leaves:** if a piece of state can be named in the URL, the URL is its source of
+truth *after* mount too, not only at it. `useState(param)` without a matching effect is the bug.
+
+- [x] `?id=` opens the question you asked for, even when you were already in Library — **fixed**.
+- [x] A `?id=` link on a phone opens the answer, with the back button, instead of the list —
+      **fixed** (`detailOnly` starts from the URL; before, only a tap could set it, so the one entry
+      point that cannot tap was the one that did not work).
+- [x] `?scope=mine` selects the chip it names — **fixed**.
+- [x] Study's `?topic=` now follows the URL too. Nothing in the UI links Study→Study with a
+      different topic today, so this was latent — but the back button does exactly that, and it is
+      the same defect.
+- [ ] There is no automated guard for this class. The three node test scripts cover pure modules;
+      URL-to-state wiring is only checked by driving the app.
+
 ## Accessibility & input
 - [x] Global `:focus-visible` rings on all interactive elements — keyboard users can see focus.
 - [x] Respect `prefers-reduced-motion` — disable framer-motion/CSS animation for users who ask.

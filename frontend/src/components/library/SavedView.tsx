@@ -39,6 +39,14 @@ export function SavedView() {
   const [scope, setScope] = useState<Scope>(() =>
     params.get("scope") === "mine" ? "mine" : "saved",
   );
+  // And it keeps following the URL. Reading it once looks right every time you
+  // arrive from another route — the component remounts — and fails on the only
+  // path that matters: picking "Library — cards I made" in the palette while
+  // you are already looking at Saved. Same defect as ?id= next door.
+  useEffect(() => {
+    const wanted = params.get("scope");
+    if (wanted === "mine" || wanted === "saved" || wanted === "noted") setScope(wanted);
+  }, [params]);
 
   /**
    * Fetched by id, not filtered out of the whole bank.
