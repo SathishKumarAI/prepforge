@@ -14,7 +14,7 @@ import { Orient, Fact } from "../components/page/Orient";
 import { Loader } from "../components/States";
 import { Button } from "../components/ui/button";
 import { useProgress } from "../hooks/useProgress";
-import { useQuestions } from "../hooks/useQuestions";
+import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { useThemeColors } from "../hooks/useThemeColors";
 import { dayKey, today } from "../lib/srs";
 
@@ -52,25 +52,35 @@ function computeStreak(days: string[]): number {
 }
 
 export function Dashboard() {
-  const { questions, topics, loading } = useQuestions();
+  // The index, not the bank. Every number on this page is a count of question
+  // IDs grouped by topic, and the id and the topic are two of the four fields
+  // the index carries — the answers, sources and related lists that make up the
+  // other 35 MB never appear on this screen in any form. 38.6 MB -> 2.9 MB.
+  const { rows: questions, loading } = useQuestionIndex(true);
   const { progress } = useProgress();
   const theme = useThemeColors();
 
   const stats = useMemo(() => {
     const known = Object.values(progress.flash).filter((s) => s === "known").length;
     const seen = Object.values(progress.srs).filter((c) => c.seen).length;
-    const mastery = topics
-      .map((t) => {
-        const total = questions.filter((q) => q.topic === t).length;
-        const done = questions.filter(
-          (q) =>
-            q.topic === t &&
-            (progress.flash[q.id] === "known" || progress.srs[q.id]?.stage === "mastered"),
-        ).length;
-        return { topic: t, total, done, pct: total ? Math.round((done / total) * 100) : 0 };
-      })
-      .filter((m) => m.total > 0)
-      .sort((a, b) => a.pct - b.pct); // weakest first: that is the actionable end
+    // One pass, not two filters per topic: at 18,000 questions the old shape ran
+    // ~80 full scans of the bank to fill 40 rows.
+    const byTopic = new Map<string, { total: number; done: number }>();
+    for (const q of questions) {
+      if (!q.topic) continue;
+      const row = byTopic.get(q.topic) ?? { total: 0, done: 0 };
+      row.total++;
+      if (progress.flash[q.id] === "known" || progress.srs[q.id]?.stage === "mastered") row.done++;
+      byTopic.set(q.topic, row);
+    }
+    const mastery = [...byTopic.entries()]
+      .map(([topic, { total, done }]) => ({
+        topic,
+        total,
+        done,
+        pct: total ? Math.round((done / total) * 100) : 0,
+      }))
+      .sort((a, b) => a.pct - b.pct || a.topic.localeCompare(b.topic)); // weakest first: that is the actionable end
     const quizSeries = progress.quizzes.map((r, i) => ({
       name: `#${i + 1}`,
       score: Math.round((r.correct / r.total) * 100),
@@ -83,7 +93,7 @@ export function Dashboard() {
         )
       : null;
     return { known, seen, mastery, quizSeries, avgQuiz, streak: computeStreak(progress.studyDays) };
-  }, [questions, topics, progress]);
+  }, [questions, progress]);
 
   if (loading) return <Loader label="Reading your progress" />;
 
