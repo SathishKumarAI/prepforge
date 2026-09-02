@@ -50,5 +50,15 @@ export function useNotes() {
     set(shared.filter((n) => n.id !== id));
   }, []);
 
-  return { notes, create, update, remove };
+  /**
+   * Back with its original id, and in date order rather than at the end: a note
+   * that reappears at the bottom of the board reads as a new note, and its
+   * `[[wikilinks]]` are resolved by id everywhere else.
+   */
+  const restore = useCallback((note: Note) => {
+    if (shared.some((n) => n.id === note.id)) return;
+    set([...shared, note].sort((a, b) => a.created.localeCompare(b.created)));
+  }, []);
+
+  return { notes, create, update, remove, restore };
 }

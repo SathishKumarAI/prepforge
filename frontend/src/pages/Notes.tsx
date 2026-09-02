@@ -8,6 +8,7 @@ import { Orient, Fact } from "../components/page/Orient";
 import { Empty } from "../components/States";
 import { Button } from "../components/ui/button";
 import { Segmented, SegmentedPanel } from "../components/ui/segmented";
+import { toast } from "../components/ui/sonner";
 import { useNotes } from "../hooks/useNotes";
 import { deleteClip, getClip, putClip } from "../lib/audio";
 import type { Note } from "../lib/notes";
@@ -32,7 +33,7 @@ export function Notes() {
   // the same objects, laid out by their links instead of in a grid. Making it a
   // peer nav entry implied it held different content.
   const asGraph = params.get("view") === "graph";
-  const { notes, create, update, remove } = useNotes();
+  const { notes, create, update, remove, restore } = useNotes();
   const [recording, setRecording] = useState(false);
 
   const voice = notes.filter((n) => n.kind === "voice").length;
@@ -52,9 +53,31 @@ export function Notes() {
     setRecording(false);
   }
 
+  /**
+   * The clip is read out of IndexedDB BEFORE it is deleted, and held for as long
+   * as the toast lives. Without that, Undo would restore a voice note whose
+   * recording is gone — a note that looks whole and plays nothing.
+   *
+   * A note with no title, no body and no audio deletes itself on blur (sticky
+   * behaviour), and gets no toast: there is nothing to undo, and a toast for
+   * every abandoned empty sticky is noise on the one action that cannot lose
+   * anything.
+   */
   async function del(n: Note) {
+    const clip = n.audioId ? await getClip(n.audioId) : null;
     if (n.audioId) await deleteClip(n.audioId);
     remove(n.id);
+    if (!n.title.trim() && !n.body.trim() && !n.audioId) return;
+    toast(n.kind === "voice" ? "Voice note deleted" : "Note deleted", {
+      description: n.title.trim() || n.body.trim().slice(0, 80) || undefined,
+      action: {
+        label: "Undo",
+        onClick: async () => {
+          if (n.audioId && clip) await putClip(n.audioId, clip);
+          restore(n);
+        },
+      },
+    });
   }
 
   return (

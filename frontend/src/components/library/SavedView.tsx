@@ -6,6 +6,7 @@ import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
 import { useUserCards } from "../../hooks/useUserCards";
+import { toast } from "../ui/sonner";
 import { fetchQuestion } from "../../lib/api";
 import { toQuestion } from "../../lib/userCards";
 import type { Question } from "../../lib/types";
@@ -30,7 +31,7 @@ export function SavedView() {
   // Cards you wrote out of a highlight. They live here rather than on a route
   // of their own: this view is already "the things you personally set aside",
   // and one more surface for a handful of cards is a surface to maintain.
-  const { cards: userCards, remove } = useUserCards();
+  const { cards: userCards, remove, restore } = useUserCards();
   const [scope, setScope] = useState<Scope>("saved");
 
   /**
@@ -105,6 +106,15 @@ export function SavedView() {
     </div>
   );
 
+  /** The card is captured before it goes, so Undo has something to put back. */
+  function del(card: (typeof userCards)[number]) {
+    remove(card.id);
+    toast("Card deleted", {
+      description: card.question,
+      action: { label: "Undo", onClick: () => restore(card) },
+    });
+  }
+
   if (scope === "mine") {
     return (
       <>
@@ -120,8 +130,9 @@ export function SavedView() {
                 </span>
                 {/* Deleting the card does not touch its SM-2 row: an id that no
                     longer resolves is already dropped everywhere, and keeping
-                    the history means remaking the card does not erase it. */}
-                <Button variant="danger" size="sm" onClick={() => remove(c.id)}>
+                    the history means remaking the card does not erase it — and
+                    it is what makes Undo restore the schedule with the text. */}
+                <Button variant="danger" size="sm" onClick={() => del(c)}>
                   Delete
                 </Button>
               </div>
