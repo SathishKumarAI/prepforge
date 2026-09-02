@@ -294,6 +294,11 @@ select:disabled {
   /* Focus mode is the one place the measure comes off: you asked for the whole
      screen, and a 68ch column inside a 1500px card is the gutter you can see. */
   .focus-mode .prose-answer { max-width: none; }
+
+  /* Reading an answer with the question list away: the answer IS the page, so
+     the shell's 84rem measure is a gutter beside the only thing on screen.
+     Set on <html> by QuestionsView, the same way Layout sets .focus-mode. */
+  .reading-wide main { max-width: none; }
   .reading-lg .prose-answer {
     font-size: 1.075rem;
     line-height: 1.85;
