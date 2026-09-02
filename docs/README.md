@@ -1,11 +1,27 @@
 # PrepForge Docs
 
+Start here, then read `../STATUS.md` — that is where you stopped, what to do next, and the traps.
+
 | Doc | What's inside |
 |---|---|
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | What the app is, the pieces, request flow, directory map, design decisions |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | The pieces, **the five shapes the bank is fetched in**, request flow, what loads when, directory map, design decisions |
 | [PIPELINE.md](./PIPELINE.md) | The learning pipeline — the science, the four stages, the SM-2 scheduler |
+| [CONTENT-PIPELINE.md](./CONTENT-PIPELINE.md) | How outside material becomes cards: ingest, dedupe, MCQ synthesis, deep links |
 | [PROMPTS.md](./PROMPTS.md) | Every LLM prompt the app/build uses, why it exists, what it outputs |
+| [DESIGN-THEMES.md](./DESIGN-THEMES.md) | The two themes and how their contrast is measured (`npm run contrast`) |
+| [SCALING.md](./SCALING.md) | Where this design breaks and what replaces it at 100M questions. Forward-looking; not what is built |
 | [BACKLOG.md](./BACKLOG.md) | Feature backlog — shipped, next up, ideas. **We work from here.** |
+| [WORKLOG.md](./WORKLOG.md) | Dated session entries: what shipped, what it measured, what was found on the way |
+
+`AUDIT-BACKLOG.md`, `QUIZ-BACKLOG.md`, `UI-REDESIGN-BACKLOG.md`, `UIUX-BACKLOG.md`, `UI-BUTTONS.md`,
+`RESEARCH-obsidian-notes.md` and `SESSION-LOG.md` are historical — read them for reasoning, not for
+what is true today.
+
+## The one thing to know before adding a screen
+
+**`GET /questions` is 38.6 MB and no page in the app requests it.** Reaching for it from a component
+is almost always the wrong shape; there are four narrower ones. See
+[ARCHITECTURE.md](./ARCHITECTURE.md#the-bank-is-fetched-in-five-shapes-and-they-are-not-interchangeable).
 
 ## The 30-second version
 

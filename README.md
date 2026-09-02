@@ -14,9 +14,9 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | | |
 |---|---|
 | **100 curated questions** | `backend/content/questions.json`, tagged by topic / difficulty |
-| **+ any question bank you clone** | e.g. three public GitHub repos → ~5,400 more cards, see [seeding](#seeding-from-public-question-banks) |
-| **700 pre-authored answers** | 7 variants per question, as readable `.md` — see [Answer variants](#answer-variants) |
-| **11 pages** | Learn · Browse · Flashcards · Quiz · **Sources** · Resources · Reader · Notes · Graph · Dashboard · Bookmarks |
+| **+ any question bank you clone** | eight public GitHub repos currently seed 16,639 more cards, see [seeding](#seeding-from-public-question-banks) |
+| **703 pre-authored answers** | 7 variants per question, as readable `.md` — see [Answer variants](#answer-variants) |
+| **Six routes** | Today · Study · Library · Notes · Progress · Reader. Every older route still resolves — `/flashcards`, `/quiz`, `/bookmarks`, `/graph` and the rest redirect carrying their intent. |
 | **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
 | **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
@@ -48,14 +48,23 @@ Or `./dev.sh` from the repo root, which starts both. It resolves `.venv/bin` vs 
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes — see `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, Recharts, react-markdown, fuse.js |
+| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes — see `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, react-markdown, fuse.js |
 | Backend | Python + FastAPI + uvicorn; httpx, BeautifulSoup, feedparser, pypdf, youtube-transcript-api |
-| Storage | Flat JSON + Markdown on disk. Progress/notes in `localStorage`; voice-note audio in IndexedDB |
+| Storage | Flat JSON + Markdown on disk. Progress/notes in `localStorage`; the question index and voice-note audio in IndexedDB |
 | Optional | Anthropic SDK — only for generating *new* answers; unused when the cache hits |
 
+No charting library. The one chart is hand-drawn SVG — recharts was 397 kB to draw it, 96% of that
+route's JavaScript.
+
 No database. The dataset is small and read-mostly, so flat files stay inspectable, diffable and
-trivial to back up. `/questions` re-reads from disk every call, so dropping in new content or
-running an ingest needs no restart.
+trivial to back up. The server holds the assembled bank in memory keyed on the content files'
+mtimes, so dropping in new content or running an ingest is picked up with no restart — and the same
+key is the `ETag`, so every client copy is invalidated by the same act.
+
+**The app opens without the backend.** The question index lives in IndexedDB and is painted before
+the network is consulted; progress has always been `localStorage`. Today, Study's setup screen,
+Progress and the notes graph all render with the server stopped. Only the screens that need an
+*answer* need it running.
 
 ## Answer variants
 
@@ -151,10 +160,19 @@ down. Install instructions: [`extension/README.md`](./extension/README.md).
 
 ## API
 
+The bank is served in five shapes and they are **not** interchangeable. `GET /questions` is 38.6 MB
+and no page in the app requests it — see
+[ARCHITECTURE.md](./docs/ARCHITECTURE.md#the-bank-is-fetched-in-five-shapes-and-they-are-not-interchangeable)
+for which surface uses which, and why. `index`, `browse` and `batch` must stay declared **above**
+`/questions/{qid}`: FastAPI matches in definition order, so below it each literal is read as an id.
+
 ```
 GET  /health                  counts
-GET  /questions               curated + ingested + vault, with the related-question index attached
-GET  /questions/{id}
+GET  /questions               everything — 9.19 MB gzipped. Useful from a script; unused by the app
+GET  /questions/index         id, title, topic, difficulty, has_answer, has_quiz — 495 kB gzipped
+GET  /questions/browse        a page of index rows; searches ANSWER text server-side
+GET  /questions/batch?ids=    whole questions, in the order asked for — a study session's cards
+GET  /questions/{id}          one question, `related` expanded with titles
 GET  /resources               aggregated feed
 POST /scrape/refresh          run RSS + YouTube + HTML scrapers, dedupe, persist
 POST /generate/answer         cache-first; mode = deep|star|eli5|first_principles|thinking|faang|aws
@@ -195,15 +213,24 @@ backend/
   config/vault.yaml      vault path + include rules
   data/resources.json    scraper output (git-ignored)
 frontend/src/
-  pages/       the 11 pages (Sources.tsx = the library + "add a source" box)
-  components/  Layout · QuestionCard · DeepAnswer · ReadingPane · ArticleReader · SourceDoc ·
-               VoiceRecorder · SettingsPanel · ui/ (Radix wrappers)
-  hooks/       useQuestions · useProgress · useNotes · useSettings · useHotkeys · theme hooks
-  lib/         srs.ts (SM-2) · storage.ts · notes.ts · graph.ts (hand-rolled force layout) ·
-               audio.ts (IndexedDB) · api.ts · theme.ts · topics.ts · types.ts
+  pages/       Today · Study · Library · Notes · Dashboard (route /progress) · Reader
+  components/  Layout · QuestionCard · DeepAnswer · Markdown · ReadingPane · ArticleReader ·
+               SourceDoc · VoiceRecorder · SettingsPanel · library/ · notes/ · study/ ·
+               page/ (the three-zone page contract) · ui/ (Radix wrappers)
+  hooks/       useQuestionIndex (the one that matters) · useProgress · useNotes ·
+               useSettings · useHotkeys · theme hooks
+  lib/         api.ts · indexCache.ts (the index in IndexedDB) · routeChunks.ts (lazy routes,
+               prefetched on hover) · srs.ts (SM-2) · studyModes.ts (the mode registry) ·
+               storage.ts · notes.ts · graph.ts (hand-rolled force layout) ·
+               audio.ts (IndexedDB) · rehype-highlight-lite.ts (lazy) · theme.ts ·
+               topics.ts · types.ts
 extension/     local-only page clipper
-docs/          ARCHITECTURE · PIPELINE · PROMPTS · CONTENT-PIPELINE · backlogs · WORKLOG
+docs/          ARCHITECTURE · PIPELINE · PROMPTS · CONTENT-PIPELINE · SCALING · backlogs · WORKLOG
 ```
+
+`hooks/useQuestions.ts` still exists but its hook has no consumers, and **`questionMap()` is always
+empty** — it was the whole bank held in memory by whichever page had last fetched it, and no page
+fetches it. Anything reading it renders nothing, silently.
 
 ## Docs
 
@@ -217,5 +244,11 @@ four study stages and the SM-2 scheduler, [`PROMPTS.md`](./docs/PROMPTS.md) for 
 - HTML scraping is best-effort — JS-only and paywalled pages extract partially.
 - Vault PDF extraction is heuristic (heading / `?`-line parsing); some extracted questions are noisy
   fragments. Dedup and source-tagging are solid; better parsing is a backlog item.
-- After a vault ingest, reload the app — the question cache is in-memory on the client.
+- **After an ingest, reload the app.** The client revalidates the question index once per page load,
+  not per navigation, so a tab that was already open keeps the copy it started with. The reload is
+  correct rather than merely fresh: the ingest changes the content files' mtimes, which changes the
+  `ETag`, which is what makes the browser and IndexedDB copies stale.
 - The graph uses a static layout (no pan/zoom yet) and the sticky-note board isn't draggable.
+- The learning graph draws at most 240 nodes. Filter by topic to see the rest.
+- `SavedView` still fetches its bookmarks one `GET /questions/{qid}` at a time. `/questions/batch`
+  exists but does not expand `related`, which that view needs.

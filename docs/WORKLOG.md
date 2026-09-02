@@ -1,5 +1,81 @@
 # Worklog
 
+## 2026-09-02 — Nothing fetches the bank any more, and the app opens offline
+
+**Summary:** The brief was "lazy loading". Route splitting was already done in #32, so the weight
+was never chunks — it was **data**. Three surfaces still fetched all 38,573,654 B of the bank, and
+the biggest JavaScript chunk in the app was a charting library drawing one small chart.
+
+A full tour of the app — Today → Study → Progress → Notes → Library — went from roughly **41.6 MB
+to 504 kB transferred**, with **zero** full-bank fetches. A repeat visit costs **300 B**, and paints
+before spending it.
+
+**Ten commits, nine branches, PRs #52-#61.** A stack: each is based on the one below it.
+
+| PR | What | Measured |
+|---|---|---|
+| #52 | The learning graph asks `/questions/browse?limit=240` for the 240 nodes it draws | 38,573,654 B → 68,467 B (563x) |
+| #53 | Progress counts ids, so it reads `/questions/index` | → 2,886,874 B (13.4x) |
+| #54 | Study plans from the index (`has_answer`/`has_quiz`), then `GET /questions/batch?ids=` for the ≤40 cards it shows | → 40,042 B (963x) |
+| #55 | The quiz-trend chart is hand-drawn SVG; recharts is gone from `package.json` | Progress chunk 397.88 kB → 6.08 kB (65x) |
+| #56 | `GZipMiddleware` + an ETag keyed on the content files' mtimes | `/questions` 38.6 MB → 9.19 MB; a reload is a 304 |
+| #57 | The index lives in IndexedDB — paint from disk, then revalidate; primed on idle | first visit 505 kB, every one after **300 B** |
+| #58 | Related links read the server's expansion instead of an always-empty map | invisible → 6 links; 4 requests per hover → 1 |
+| #59 | lowlight loads with the first fenced code block | Markdown chunk 181.89 → 128.67 kB; 53 kB deferred |
+| #60 | A nav link fetches its route chunk on hover and on focus | click-to-render 61 ms → 17 ms |
+| #61 | STATUS, ARCHITECTURE, README, docs index, SCALING, this entry | — |
+
+**Decisions:**
+
+- **A predicate about a field is not the field.** The pattern behind every one of these: Study
+  downloaded 18,284 answers to evaluate `Boolean(q.answer)`. `has_answer` is 17 bytes; the answer it
+  stands for averages 835. Progress downloaded them to count ids by topic. The graph downloaded them
+  to draw 240 circles. Each time the question was about *existence* and the code answered it by
+  fetching *content*.
+- **Reuse the projection, do not invent an endpoint.** Study could have had its own route. Using
+  `/questions/index` instead means arriving from Today or Ctrl+K — which already hold it — costs
+  **nothing at all**, and that 963x is the number that matters for anyone using the app rather than
+  deep-linking into it.
+- **Paint from disk, then revalidate. Never the other way round.** The ETag alone got a reload to a
+  304, but the page still had nothing to show while that request was in flight. IndexedDB first,
+  conditional request second, and the 300 B is off the path to first paint.
+- **Brotli was considered and rejected.** It needs `brotli-asgi` to buy 15-20% over gzip on an app
+  served from `127.0.0.1`. A dependency for a saving that only exists over a real network.
+- **The chart was worth hand-drawing.** recharts was 96% of the Progress route's JavaScript for one
+  area chart with a fixed 0-100 domain. 60 lines of SVG, and the theme reaches it through Tailwind
+  classes instead of `useThemeColors` reading CSS variables back out as strings.
+
+**Found on the way:**
+
+- **`.gitignore` was swallowing a source directory.** `notes/` — meant for user-exported dumps — is
+  unanchored, and a trailing-slash pattern matches at *any* depth. `frontend/src/components/notes/`
+  matched, so `GraphView.tsx` had **never been committed**: it builds here because the file is on
+  this disk, and a fresh clone did not build at all. Fixed to `/notes/`.
+- **The Related section had disappeared from every saved card.** `RelatedLinks` resolved each id
+  through `questionMap()` — the whole bank held in memory by whichever page last fetched it. Once
+  nothing fetched the bank the map was always empty, so the list was always empty and the component
+  returned null. No error, no empty state, no request. `QuestionDetail` has read the server's
+  expansion since #44; the two agree now.
+- **`cache.has(id)` is never an inflight guard**, and this repo has now learned it twice. #38 fixed
+  it on `useQuestions`; the new hover preview reintroduced it and fired **four** identical requests
+  for one hover, because strict mode double-invokes the effect and the tooltip's open state settles
+  twice. Share the promise, not the result.
+- **A gradient stop's `currentColor` resolves against the gradient element**, not against whatever
+  references it. On the new chart the line came out accented and its fill came out grey.
+- **`preserveAspectRatio="none"` stretches glyphs.** The chart's axis labels are HTML for that
+  reason, and its data marks are vertical rules rather than dots — a circle in a stretched viewBox
+  is an ellipse whose width depends on the window.
+
+**Follow-ups:**
+- [ ] `SavedView` fetches bookmarks one `GET /questions/{qid}` at a time. `/questions/batch` exists
+      but does not expand `related`, which that view needs.
+- [ ] `hooks/useQuestions.ts` is down to `reloadQuestions()` and a `questionMap()` that is always
+      empty. Delete the hook and the map; keep the invalidation.
+- [ ] The three still-unverified UI-rebuild pieces, unchanged for four sessions: timed quiz expiry,
+      Reader PDF + web-fetch, drill mode end to end.
+- [ ] Directory `README.md`s with a change → file table for `frontend/src/lib`, `hooks` and
+      `components`. Only `components/page` has one.
+
 ## 2026-08-29 — Library stopped shipping the bank; eleven PRs merged
 
 **Summary:** A UI sweep that turned into a payload story. Library's first paint went
