@@ -3,12 +3,20 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-09-02.
-- **Where I stopped:** **nothing is unmerged.** The nine-branch stack and
-  `feat/ingest-duplicate-body-filter` are all squash-merged into `main` (PRs #52, #62, #54-#61, #51)
-  and their branches are deleted. Verified on `main` after the last merge: **eight** backend test
-  files green, `npm run build` (which runs `tsc` first) green, `npm run contrast` "All pairs clear
-  their floor in 2 themes". `git diff` between `main` and the old stack tip `17a88fa` was empty, so
-  the ten squashes lost nothing.
+- **Where I stopped:** **nothing is unmerged.** Two pieces of work landed today. First the
+  nine-branch perf stack and `feat/ingest-duplicate-body-filter` (PRs #52, #62, #54-#61, #51) —
+  `git diff` between `main` and the old stack tip `17a88fa` was empty, so the ten squashes lost
+  nothing. Then **four features built from the backlog** (#64, #65, #66, #67 — COD-112 to COD-115):
+  backup/restore, leeches, the due forecast, and highlight-to-card. Verified on `main` after the
+  last merge: **eight** backend test files green, **`npm test` 28/28**, `npm run build` green,
+  `npm run contrast` "All pairs clear their floor in 2 themes".
+- **The frontend has a test command now: `npm test`.** Three plain-Node scripts, no framework and no
+  new dependency: `scripts/test-backup.mjs` (12), `test-srs.mjs` (8), `test-usercards.mjs` (8). Node
+  24 strips TypeScript types on import, so a `.mjs` script can import a `.ts` module **as long as
+  that module's own imports are all `import type`** — Vite resolves extensionless specifiers and
+  Node does not, so one value import makes the module unloadable and the check has to be deleted to
+  keep it. `lib/backup.ts`, `lib/srs.ts` and `lib/userCards.ts` are pure for that reason. On Windows
+  the dynamic import needs `pathToFileURL()`: a bare `C:\...` path is read as a URL scheme.
 - **A squash-merge deletes the base branch, and that CLOSES every child PR on it.** #53 was based on
   `perf/graph-off-the-bank`; merging #52 with `--delete-branch` closed #53, and a closed PR whose
   base branch is gone **cannot be reopened** — recreating the branch does not help. #53 had to be
@@ -27,13 +35,15 @@ Update this when you STOP working, not when you start.
   disk and then spends **300 B** on a conditional request. With the backend stopped, /progress still
   draws the whole recall table and /study still reads "18,185 in the deck". The only pages that
   genuinely need the server are the ones that need an answer.
-- **Next action:** the three still-unverified pieces of the UI rebuild — a **timed quiz through a
-  real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end. Unchanged for four
-  sessions, and now the only thing between `main` and a clean board. `README.md` is no longer stale;
-  it was rewritten in #61 and its card count matches the post-filter bank.
-- **Blocked on:** nothing. **The board matches `main`** — 48 items carry `repo:interview_prep`:
-  **44 Done, 0 In Review, 4 Backlog**, and there are **no open PRs**. Every PR body carries its work
-  item id; COD-99's is on #62, not the closed #53.
+- **Next action:** two of the three long-unverified UI-rebuild pieces are still owed — a **timed
+  quiz through a real 30s expiry** and **Reader's PDF + web-fetch**. The third, **drill mode**, was
+  exercised today: a filtered drill session started, fetched its cards and rendered 1/5. Grading
+  through to the session summary was verified in **recall**, not drill, so if you want that one
+  closed properly, grade a drill session to the end. After that, COD-117 holds the five UX gaps the
+  new features left open (see `docs/UIUX-BACKLOG.md`, 2026-09-02 section).
+- **Blocked on:** nothing. **The board matches `main`** — 53 items carry `repo:interview_prep`:
+  **49 Done, 0 In Review, 5 Backlog** (COD-117 is the new one), and there are **no open PRs**. Every
+  PR body carries its work item id; COD-99's is on #62, not the closed #53.
 - **Reaching Plane without its MCP tools.** `claude mcp list` showed the `plane` server connected,
   but its tools were not exposed to the session and no `ToolSearch` query found them. The way
   through: the credentials are in `~/.claude.json` under `mcpServers.plane.env` —
@@ -54,6 +64,52 @@ Update this when you STOP working, not when you start.
   web-ingest noise (COD-78) is fixed and merged (#51) — see "The ingest noise, decided" below.
   Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
   at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
+
+## Four features off the backlog (2026-09-02)
+
+Built from `docs/BACKLOG.md` by asking what a daily user actually loses. Each shipped as its own
+branch, PR and work item; each was driven in the running browser before it was called done.
+
+| PR | What | The user problem |
+|---|---|---|
+| #64 | **Backup / restore** (Settings → Your data) | Everything personal was in one browser with no exit. Clearing site data took months of due dates and the app could not tell it had happened |
+| #65 | **Leeches** — "Keeps slipping" on Progress, `?pool=leeches` in Study | `lapses` had been counted since the scheduler was written and no screen read it |
+| #66 | **Due forecast** — "Coming up" on Today | SM-2 builds a load one rating at a time; forty cards landing on one day was invisible until that morning |
+| #67 | **Highlight → card** | Reading and recalling were separate acts: a passage worth remembering could only be bookmarked |
+
+### Traps this left
+
+- **`u-` ids are not cosmetic.** `progress.srs` is keyed by question id alone. A card you wrote
+  whose id could collide with the bank's would not be a duplicate card — it would be your schedule
+  for one question silently attached to another. `isUserCardId()` is the guard, and it is tested
+  against real bank id shapes.
+- **The backup version must move when a store is added,** even though adding one is additive. A
+  build that does not know about `cards` restores a file, reports success, and drops every card you
+  wrote — the exact silent loss the backup exists to prevent. It is at **2**.
+- **Restore ends in `location.reload()`.** `useProgress` keeps the progress object in module scope
+  and hands the same reference to every screen; writing localStorage underneath a running app
+  leaves the whole UI rendering what it read at load.
+- **Merge keeps the LOCAL copy on every collision.** Nothing in an SM-2 card records when it was
+  last reviewed, so "the newer copy" cannot be computed, only invented.
+- **`data-cardable` is the whole opt-in for highlight-to-card**, set once in `Markdown`. Adding a
+  reading surface that does not render through `Markdown` silently loses the feature there.
+- **`onOpenAutoFocus` needs `preventDefault()`** or the dialog's own focus move lands after yours —
+  which is how the compose dialog opened with the caret in the field that was already filled in.
+- **A floating button over a selection must anchor to a line, not the bounding box.** A selection
+  running past the fold has a box whose bottom is off-screen, and the button ends up pinned over
+  whatever sits at the bottom of the viewport.
+- **`onMouseDown` → `preventDefault()` on that button**, or pressing it clears the selection it was
+  made from before the click fires.
+- **Verify in the browser after a full reload, not after HMR.** Two fixes read as "not working"
+  because Vite had hot-swapped a component whose state was already mounted; both were correct after
+  a reload.
+- **`?pool=leeches` lives in the URL and is deliberately not remembered** in `pf-study-prefs`. A
+  filter whose origin you cannot see would silently shrink every later session to six cards. It
+  rides along on a mode switch — the one place it would otherwise vanish while the chip still read
+  as active.
+- **Study rebuilds its queue in the planned order**, not the batch response's, now that local cards
+  and bank cards interleave. The `/questions/batch` order guarantee still holds; it is just no
+  longer what decides the queue.
 
 ## Nothing fetches the bank any more (2026-09-02)
 
