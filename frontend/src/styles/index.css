@@ -291,9 +291,10 @@ select:disabled {
     max-width: 68ch;
   }
   .prose-answer strong { @apply font-semibold text-text; }
-  /* Focus mode is the one place the measure comes off: you asked for the whole
-     screen, and a 68ch column inside a 1500px card is the gutter you can see. */
-  .focus-mode .prose-answer { max-width: none; }
+  /* Focus mode widens the measure rather than removing it: you asked for the
+     whole screen, and a 68ch column inside a 1500px card is the gutter you can
+     see — but 180 characters a line is not reading either. */
+  .focus-mode .prose-answer { max-width: 100ch; }
 
   /* Reading an answer with the question list away: the answer IS the page, so
      the shell's 84rem measure is a gutter beside the only thing on screen.

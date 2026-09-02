@@ -129,6 +129,11 @@ the filters — **it gets out of the way while you read**:
   already away. Clicking a row does not: that means you are still choosing.
 - The left edge keeps its hover-peek, and **Keep open** pins the list for the rest of the visit.
 
+With the list away the page carries no 84rem cap — the header, the lens tabs and the related list
+use the whole width — while the **running prose caps at 100ch**. Uncapped, a 1,438px answer runs
+about 180 characters a line and the eye loses the start of the next one on every return sweep. The
+prose is left-aligned rather than centred, so it shares its left edge with the question above it.
+
 Rows are titles now. The difficulty letter went because difficulty is a *filter* — there are chips
 above the list — and nobody picks between two questions because one is an "M"; the origin glyph went
 because the detail header prints provenance in words. Sixty copies of something that is not a

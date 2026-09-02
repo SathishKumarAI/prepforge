@@ -87,6 +87,12 @@ decided the width of the page.
 - [x] With the list away the answer also drops the shell's 84rem measure (`.reading-wide main`), set
       on `<html>` the same way Layout sets `.focus-mode`. The answer is the only thing on the page;
       a centred 84rem column beside 250px of nothing is the gutter you can see.
+- [x] **The running prose caps at 100ch** (COD-127). Uncapped went too far the other way: at 1,438px
+      a paragraph runs ~180 characters and the eye loses the start of the next line on every return
+      sweep, which is the exact failure a measure exists to prevent. The PAGE stays full width — the
+      header, the lens tabs, the related list and the rules all use it — and the prose is
+      **left-aligned, not centred**, so its left edge stays flush with the question above it. Focus
+      mode moved from `max-width: none` to the same 100ch for the same reason.
 
 ## Shipped 2026-09-02 — reading mode in the Library
 
