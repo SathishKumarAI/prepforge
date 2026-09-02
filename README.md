@@ -93,7 +93,7 @@ can make.
 Reading and recalling used to be two separate acts here: the bank is fixed, so the moment you read
 something worth remembering the only thing you could do was bookmark the page it was on.
 
-Select a passage anywhere the app renders prose — an answer, a fetched article, a PDF, a vault
+Select a passage anywhere the app renders prose — an answer, a fetched article, a vault
 document — and **Make a card**. The passage is the answer; you write the question, which is the half
 a highlight cannot give you and the half that makes it recall rather than re-reading. The card joins
 the same deck as everything else, under the topic **My cards**: same ratings, same due dates, same
@@ -342,3 +342,7 @@ four study stages and the SM-2 scheduler, [`PROMPTS.md`](./docs/PROMPTS.md) for 
 - The learning graph draws at most 240 nodes. Filter by topic to see the rest.
 - `SavedView` still fetches its bookmarks one `GET /questions/{qid}` at a time. `/questions/batch`
   exists but does not expand `related`, which that view needs.
+- **Highlight-to-card does not reach a PDF.** The Reader hands a local PDF to the browser's own
+  viewer in an iframe, which is a plugin document, not markup this app rendered — so there is no
+  `data-cardable` prose and the selection watcher never sees a selection. It works on everything
+  that goes through `Markdown`: answers, fetched articles, vault documents, ingested files.
