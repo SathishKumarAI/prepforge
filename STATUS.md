@@ -71,6 +71,23 @@ Update this when you STOP working, not when you start.
   Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
   at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
 
+## Sticky chrome, and the two ways it lies (2026-09-02)
+
+Reported as "the question stays on screen but the scrolled answer is visible in the background".
+Both faults are cheap to reintroduce (#73, COD-123):
+
+- **`--app-bar-h` must be the bar's EFFECTIVE height, not its measured one.** The bar slides itself
+  away on a downward scroll; publishing 61px while it is gone parks every sticky offset in the app
+  against a bar that is not there, and the band it leaves has the page scrolling through it in full
+  view. It publishes 0 while hidden or in focus mode now.
+- **A transparent slit between two sticky elements is a letterbox.** The question header parked at
+  `--app-bar-h + 0.5rem`; the answer scrolled through those eight pixels one line at a time. Park
+  flush, and put the breathing room in padding INSIDE the opaque box.
+- **Translucent sticky chrome ghosts, and a backdrop blur only softens it.** #47 learned this on the
+  question header and left the app bar and the filter chrome at `bg-base/95`. All three are opaque.
+- Still open: scrolling up mid-answer brings the 162px filter chrome back over the question header
+  (z-20 over z-10). Not ghosting — a stacking decision nobody has made on purpose.
+
 ## The URL-once bug, and what it teaches (2026-09-02)
 
 Reported as "the question that stays on screen while scrolling is wrong". The sticky header was

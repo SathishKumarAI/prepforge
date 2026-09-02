@@ -66,6 +66,38 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
+## Bugs fixed 2026-09-02 — the answer scrolled through the chrome
+
+Reported as "the question stays on the screen but the scrolled answer is visible in the background,
+which is not good UI practice". Correct on both counts, and it was two faults stacked (COD-123).
+
+**The band of nothing.** The app bar slides itself out of the way on a downward scroll
+(`translateY(-61px)`) — but `--app-bar-h` kept publishing **61px** the whole time, and every sticky
+offset in the app is derived from that one value. So the question header parked 69px down, against a
+bar that was not there, and the top **69px of the viewport had nothing painted in it**: the answer
+scrolled through it in full view and was sliced in half at the header's top edge, which reads as a
+rendering fault rather than as a header.
+
+Fixed at the source: the variable now publishes the bar's **effective** height — 0 while it is
+hidden or in focus mode — so everything sticky rises with it and there is no uncovered band. One
+value, one fix, every surface.
+
+**The half-rem slit.** The question header parked at `--app-bar-h + 0.5rem`. A transparent gap
+between two sticky elements is a letterbox the answer scrolls through one line at a time. It parks
+flush now, and the breathing room is padding *inside* the opaque box.
+
+**The translucent chrome.** The app bar and the filter chrome were `bg-base/95` with a backdrop
+blur, so text ghosted through them even when they were on screen. #47 learned this on the question
+header — "at 95% the next line ghosted through and sat bisected across the boundary" — and left the
+two elements above it as they were. All three are opaque now. A blur does not fix ghosting, it
+softens it.
+
+- [x] Nothing scrolls behind the app bar, the filters, or the question header — **fixed**.
+- [ ] Scrolling up mid-answer brings the filter chrome back **over** the question header (z-20 over
+      z-10, and the chrome is 162px tall), so the question you are reading is replaced by controls
+      you are not using. The ghosting is gone; the eviction is a stacking decision nobody has made
+      on purpose yet.
+
 ## Bugs fixed 2026-09-02 — the URL said one thing, the screen showed another
 
 Reported as "the question that stays on screen while you scroll is wrong". Three instances of one
