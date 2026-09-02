@@ -20,9 +20,17 @@ Update this when you STOP working, not when you start.
 - **Next action:** the three still-unverified pieces of the UI rebuild — a **timed quiz through a
   real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end. Unchanged for four
   sessions. Then `README.md` is stale (11 pages, retired routes, 8,330 questions — it is 18,284).
-- **Blocked on:** nothing, but **the Plane board is stale.** COD-79, 82-84, 86-88 are done in code
-  and not marked Done, and everything since has no work item at all. First job next session:
-  reconcile the board against `git log`.
+- **Blocked on:** nothing. **The Plane board is reconciled** — 48 items carry `repo:interview_prep`:
+  32 Done, 12 In Review (COD-97 to COD-107, one per PR, plus COD-78), 4 Backlog. The previous
+  session's note that COD-82-88 were unmarked was itself stale; only COD-79 was, and it is Done now.
+  Every PR body carries its work item id.
+- **Reaching Plane without its MCP tools.** `claude mcp list` showed the `plane` server connected,
+  but its tools were not exposed to the session and no `ToolSearch` query found them. The way
+  through: the credentials are in `~/.claude.json` under `mcpServers.plane.env` —
+  `PLANE_API_KEY`, `PLANE_WORKSPACE_SLUG`, `PLANE_BASE_URL` — and the REST API is
+  `{BASE}/api/v1/workspaces/{slug}/projects/{PROJ}/issues/` with an `X-API-Key` header. Paginate on
+  `next_cursor` while `next_page_results`; `labels` on an issue is a list of UUIDs, so filter for
+  this repo in your own head, exactly as the MCP path has to.
 - **Found, and fixed here:** **`.gitignore` was swallowing `frontend/src/components/notes/`.** The
   rule `notes/` was meant for user-exported dumps, but an unanchored trailing-slash pattern matches
   at any depth — so `GraphView.tsx` had never been committed and a fresh clone did not build. It is

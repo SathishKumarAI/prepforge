@@ -66,6 +66,13 @@ before spending it.
   reason, and its data marks are vertical rules rather than dots — a circle in a stretched viewBox
   is an ellipse whose width depends on the window.
 
+**The board:** COD-97 to COD-107, one per PR, all `In Review`. COD-98 records the `.gitignore`
+bug and COD-104 the Related-links one. The follow-ups below are COD-108/109/110 in `Backlog`.
+COD-79 was the only genuinely stale item and is Done; COD-78 moved to `In Review` behind PR #51.
+**The `plane` MCP tools were not exposed to the session** even though `claude mcp list` showed the
+server connected. The credentials are in `~/.claude.json` under `mcpServers.plane.env` and the REST
+API takes an `X-API-Key` header — that is the way through next time.
+
 **Follow-ups:**
 - [ ] `SavedView` fetches bookmarks one `GET /questions/{qid}` at a time. `/questions/batch` exists
       but does not expand `related`, which that view needs.
