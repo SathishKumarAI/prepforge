@@ -12,8 +12,9 @@ Start here, then read `../STATUS.md` — that is where you stopped, what to do n
 | [SCALING.md](./SCALING.md) | Where this design breaks and what replaces it at 100M questions. Forward-looking; not what is built |
 | [BACKLOG.md](./BACKLOG.md) | Feature backlog — shipped, next up, ideas. **We work from here.** |
 | [WORKLOG.md](./WORKLOG.md) | Dated session entries: what shipped, what it measured, what was found on the way |
+| [UIUX-BACKLOG.md](./UIUX-BACKLOG.md) | **Live.** UI craft queue, plus every UI bug fixed on 2026-09-02 with the reason it survived — and what a sweep already checked, so the next one can skip it |
 
-`AUDIT-BACKLOG.md`, `QUIZ-BACKLOG.md`, `UI-REDESIGN-BACKLOG.md`, `UIUX-BACKLOG.md`, `UI-BUTTONS.md`,
+`AUDIT-BACKLOG.md`, `QUIZ-BACKLOG.md`, `UI-REDESIGN-BACKLOG.md`, `UI-BUTTONS.md`,
 `RESEARCH-obsidian-notes.md` and `SESSION-LOG.md` are historical — read them for reasoning, not for
 what is true today.
 
