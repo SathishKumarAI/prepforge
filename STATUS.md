@@ -2,26 +2,97 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-08-29.
-- **Where I stopped:** Everything is merged and **no PR is open**. `main` carries eleven PRs from
-  this session — #38-#43, then #44, #49, #46, #47, #48. Build, `tsc`, `npm run contrast` (24/24) and
-  all six backend test files are green on merged `main`.
-- **Library stopped shipping the bank.** Its first paint went **39,779,359 B -> 39,256 B** (1,013x)
-  across three changes: the shell dropped it (#38), search moved to the server (#44), and the list
-  now really pages (#46). `GET /questions` is no longer requested by Library at all.
-- **Next action:** **decide the web-ingest noise.** The damage is now measured rather than guessed —
-  see "The ingest noise, measured" below. The single highest-value rule is the duplicate-body one:
-  736 cards whose text appears verbatim on 3+ distinct pages, and every one of the top offenders is
-  unambiguous site furniture. Then the three still-unverified pieces of the UI rebuild: a **timed
-  quiz through a real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end.
+- **Last touched:** 2026-09-02.
+- **Where I stopped:** ten commits on a stack of nine branches, tip is `docs/status-session-close`.
+  See "Nothing fetches the bank any more" below for the order they have to merge in and why. All
+  seven backend test files, `tsc`, `npm run build` and `npm run contrast` are green at the tip.
+  `feat/ingest-duplicate-body-filter` is a separate unmerged branch from the previous session,
+  untouched by any of this.
+- **`GET /questions` now has no caller in the app.** Study, Progress and Notes' graph were the last
+  three; each is on a projection or a capped page instead. Measured on the running app: a tour of
+  Today → Study → Progress → Notes → Library costs **504 kB transferred in total**, against roughly
+  **41.6 MB** before. The route is still served — it is useful from a script — it simply is not
+  fetched.
+- **The app opens without the network.** The index is in IndexedDB, so a second visit paints from
+  disk and then spends **300 B** on a conditional request. With the backend stopped, /progress still
+  draws the whole recall table and /study still reads "18,185 in the deck". The only pages that
+  genuinely need the server are the ones that need an answer.
+- **Next action:** the three still-unverified pieces of the UI rebuild — a **timed quiz through a
+  real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end. Unchanged for four
+  sessions. Then `README.md` is stale (11 pages, retired routes, 8,330 questions — it is 18,284).
 - **Blocked on:** nothing, but **the Plane board is stale.** COD-79, 82-84, 86-88 are done in code
-  and not marked Done, and the four newest changes have no work item at all — the Plane MCP server
-  was killed mid-session (see the taskkill trap below) and could not be reached again. First job
-  next session: reconcile the board against `git log`.
-- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34), the
-  web-ingest noise (COD-78), and **`Dashboard` and Notes' `GraphView` still call `useQuestions()`**
-  — both genuinely need per-question data across the whole set, so neither is a copy of the Library
-  problem, but both still pull 39.7 MB.
+  and not marked Done, and everything since has no work item at all. First job next session:
+  reconcile the board against `git log`.
+- **Found, and fixed here:** **`.gitignore` was swallowing `frontend/src/components/notes/`.** The
+  rule `notes/` was meant for user-exported dumps, but an unanchored trailing-slash pattern matches
+  at any depth — so `GraphView.tsx` had never been committed and a fresh clone did not build. It is
+  `/notes/` now, and the file is in the repo. Check `git status --ignored -- frontend/src backend`
+  after touching that file: it should report no source file under either tree.
+- **Also found, and fixed here:** **the Related section had disappeared from every saved card.**
+  `RelatedLinks` resolved each id through `questionMap()` — the whole bank, held in memory by
+  whichever page last fetched it. Once nothing fetched the bank the map was always empty, so the
+  list was always empty and the component returned null. No error, no empty state, no request.
+- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34), and the
+  web-ingest noise (COD-78). Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
+  at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
+
+## Nothing fetches the bank any more (2026-09-02)
+
+Ten commits, and they are a **stack** — later ones do not apply without earlier ones. Merge bottom
+to top:
+
+| # | Branch | What it does | Measured |
+|---|---|---|---|
+| 1 | `perf/graph-off-the-bank` (2 commits) | `.gitignore` fix, then the learning graph asks `/questions/browse?limit=240` for the 240 nodes it draws | 38,573,654 B → 68,467 B (563x) |
+| 2 | `perf/dashboard-off-the-bank` | Progress counts ids, so it reads `/questions/index` | 38,573,654 B → 2,886,874 B (13.4x) |
+| 3 | `perf/study-fetches-the-session-not-the-bank` | Study plans from the index (`has_answer` / `has_quiz`), then `GET /questions/batch?ids=…` for the ≤40 cards it will show | 38,573,654 B → 40,042 B when the index is already loaded (963x) |
+| 4 | `perf/drop-recharts` | The one area chart is hand-drawn SVG; recharts is gone from `package.json` | Progress chunk 397.88 kB → 6.08 kB (65x) |
+| 5 | `perf/api-gzip-etag` | `GZipMiddleware` + an ETag keyed on the same source-file mtimes the caches use | `/questions` 38.6 MB → 9.19 MB; a repeat load is a 304 |
+| 6 | `perf/index-survives-a-reload` | The index lives in IndexedDB; paint from disk, then revalidate. Primed on idle from the shell | first visit 505 kB, every one after **300 B**, and paint waits for neither |
+| 7 | `fix/related-links-vanished` | Related links read the server's expansion instead of an always-empty map; the hover preview fetches its own question | the section was invisible on every saved card; 4 requests per hover → 1 |
+| 8 | `perf/highlighter-on-demand` | lowlight and its grammars load with the first fenced code block | Markdown chunk 181.89 → 128.67 kB; 53.46 kB deferred |
+| 9 | `perf/prefetch-routes-on-hover` | A nav link fetches its route chunk on hover and on focus | click-to-render 61 ms → 17 ms |
+
+Brotli was considered and rejected: it needs `brotli-asgi`, and ~15-20% over gzip buys nothing on an
+app served from 127.0.0.1. Revisit only if this is ever deployed over a real network.
+
+### Traps this left
+
+- **`/questions/batch` returns the order it was ASKED for.** Recall interleaves its queue across
+  topics; a route that returned bank order would undo that with no symptom but a session that feels
+  repetitive. `test_batch_returns_whole_questions_in_the_order_asked_for` is the guard.
+- **`batch` is the fourth route that must be declared above `/questions/{qid}`**, after `index` and
+  `browse`. FastAPI matches in definition order; below it, "batch" is read as a question id.
+- **A gradient stop's `currentColor` resolves against the GRADIENT element**, not against whatever
+  references it. On the quiz chart the accent class belongs on the `<svg>`; on the inner `<g>` the
+  line came out coloured and its fill came out grey.
+- **No text inside a `preserveAspectRatio="none"` SVG.** The non-uniform scale stretches glyphs, and
+  circles become ellipses whose width depends on the window. The chart's axis labels are HTML, and
+  its data marks are vertical rules with `vector-effect: non-scaling-stroke`.
+- **`GraphView`'s topic dropdown keeps the last non-empty topic list.** `browse` sends `topics` on
+  page one only, so a filtered fetch carries none — the #46 trap, hit here for the first time.
+- **The eligibility flags are the index's whole cost story.** `has_answer` / `has_quiz` add 11,668 B
+  gzipped across 18,284 rows. `tags` would add 348 kB, which is why they ride on `browse` (capped at
+  `limit` rows) and not on the index.
+- **The index's field list is an allowlist in two test files now** (`test_questions_index.py`,
+  `test_questions_browse.py`). Adding a field is meant to be a decision, not a diff.
+- **`cache.has(id)` is never an inflight guard.** #38 learned this on `useQuestions`; the related-
+  link preview relearned it, firing four identical requests for one hover because strict mode
+  double-invokes the effect and the tooltip's open state settles twice. Share the promise, not the
+  result.
+- **`questionMap()` is dead and anything reading it is broken.** It was the whole bank held in
+  memory by whichever page last fetched it; nothing fetches it. `RelatedLinks` was reading it and
+  silently rendered nothing for months' worth of saved cards. `reloadQuestions()` in Collections and
+  Feed is the only live user of that module now, and it only invalidates.
+- **The index cache must never store a row without its ETag.** It could not be revalidated, so it
+  would paint stale forever. `lib/indexCache.ts` treats an untagged row as a miss on both read and
+  write.
+- **`fetchQuestionIndex` sends `If-None-Match` by hand with `cache: "no-store"`.** Left to itself the
+  browser keeps a second 3.5 MB copy and answers the conditional request from it as a synthetic 200,
+  so the caller cannot tell "unchanged" from "here it is again".
+- **Route chunk specifiers live in one file** (`lib/routeChunks.ts`). Two `import()` expressions for
+  one module are one chunk only because the bundler sees the same specifier — writing it twice is
+  how you get two copies of Library in the bundle.
 
 ## What shipped 2026-08-29, and the traps inside it
 
@@ -39,14 +110,22 @@ Update this when you STOP working, not when you start.
 | #47 | **The question stays on screen while you read** | the sticky header must be fully opaque; at 95% the next line ghosts through |
 | #48 | A formula on its own line is not an inline chip | uses `:has()`; where unsupported it falls back to the old inline look |
 
-### The bank is fetched in three shapes now, and they are not interchangeable
+### The bank is fetched in five shapes now, and they are not interchangeable
+
+Updated 2026-09-02. Sizes are what the wire carries with gzip on; the raw figure follows it.
 
 | Endpoint | Carries | Who asks |
 |---|---|---|
-| `GET /questions` | everything, **39.7 MB** | Dashboard, Notes' graph. Nothing else should. |
-| `GET /questions/index` | id, title, topic, difficulty — **3.0 MB** | the Ctrl+K palette |
-| `GET /questions/browse` | a **page** of index rows + `origin`, plus a snippet when searching | Library |
+| `GET /questions` | everything — **9.19 MB** gzipped, 38.6 MB raw | **nobody in the app.** Kept for scripts. Anything reaching for it should reach for one of the four below instead. |
+| `GET /questions/index` | id, title, topic, difficulty, `has_answer`, `has_quiz` — **495 kB** gzipped, 3.5 MB raw | Today, the Ctrl+K palette, Settings, Progress, Study's setup screen. Shared module cache, so the second of those is free. |
+| `GET /questions/browse` | a **page** of index rows + `origin` + `tags`, plus a snippet when searching; `topics` and `links` on page ONE only | Library, and the Notes learning graph (`limit=240`) |
+| `GET /questions/batch?ids=` | whole questions, **in the order asked for** | Study, once per session, for the ≤40 cards it will show |
 | `GET /questions/{qid}` | one whole question, `related` expanded with titles | the detail pane |
+
+`/questions` and `/questions/index` carry an `ETag` and `Cache-Control: no-cache`, so a reload
+revalidates and gets a 304 rather than the body — measured at **300 B** for a Today reload. The
+index is additionally kept in IndexedDB (`lib/indexCache.ts`) and painted before that request is
+made, so the 300 B is not on the path to first paint either.
 
 Two caches sit behind them, both keyed on the source files' mtimes so `POST /ingest` and
 `POST /pipeline/build` invalidate them by doing their job: `_load_questions()` (was re-reading
