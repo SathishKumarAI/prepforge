@@ -1,6 +1,7 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useApplyTheme } from "./hooks/useApplyTheme";
+import { primeQuestionIndex } from "./hooks/useQuestionIndex";
 import { Layout } from "./components/Layout";
 import { Loader } from "./components/States";
 import { Button } from "./components/ui/button";
@@ -78,12 +79,38 @@ function NotFound() {
 
 export default function App() {
   useApplyTheme();
+  useWarmIndex();
   return (
     <>
       <Toaster />
       <LayoutRoutes />
     </>
   );
+}
+
+/**
+ * Start the question index loading once the first paint is done.
+ *
+ * Four of the six pages need it, and the two that do not are cheap to leave
+ * waiting a moment. Doing it on idle rather than in the route means landing on
+ * Library or Reader still warms the index for wherever you go next, and doing it
+ * AFTER paint means it never competes with the render it would otherwise delay.
+ *
+ * On a repeat visit this is a disk read and a 304 — a few hundred bytes — which
+ * is why it runs unconditionally instead of trying to guess the next route.
+ */
+function useWarmIndex() {
+  useEffect(() => {
+    // requestIdleCallback is absent on Safari before 16.4. A timeout is not the
+    // same guarantee, but "after the current frame" is the part that matters.
+    const idle = window.requestIdleCallback;
+    if (!idle) {
+      const t = window.setTimeout(() => void primeQuestionIndex(), 200);
+      return () => window.clearTimeout(t);
+    }
+    const id = idle(() => void primeQuestionIndex(), { timeout: 2000 });
+    return () => window.cancelIdleCallback?.(id);
+  }, []);
 }
 
 function LayoutRoutes() {
