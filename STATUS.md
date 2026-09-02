@@ -40,8 +40,9 @@ Update this when you STOP working, not when you start.
   `RelatedLinks` resolved each id through `questionMap()` — the whole bank, held in memory by
   whichever page last fetched it. Once nothing fetched the bank the map was always empty, so the
   list was always empty and the component returned null. No error, no empty state, no request.
-- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34), and the
-  web-ingest noise (COD-78). Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
+- **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34). The
+  web-ingest noise (COD-78) is fixed here — see "The ingest noise, decided" below.
+  Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
   at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
 
 ## Nothing fetches the bank any more (2026-09-02)
@@ -140,7 +141,38 @@ Two caches sit behind them, both keyed on the source files' mtimes so `POST /ing
 ~40 MB of JSON per request) and `_searchable()` (was lowercasing every answer per request).
 Together those took `browse q=kafka` from **1.1s to 0.017s** in-process.
 
-### The ingest noise, measured
+### The ingest noise, decided (2026-09-02)
+
+**Repetition is the filter; a wordlist is not.** `_drop_repeated_bodies` in `backend/ingest.py`
+drops any section body appearing verbatim on **`MIN_DUPLICATE_PAGES` = 3** or more *distinct source
+files*. Measured over the real 1,950-file library:
+
+| | |
+|---|---|
+| Sections before → after | 17,828 → **16,987** (841 dropped, 4.7%) |
+| Distinct duplicated bodies | **42**, and reading all 42 they are **all** furniture |
+| Cards | 17,446 → **16,639** |
+| Questions | 19,074 → **18,284**; with reading 3,016 → **3,014** |
+
+Three things about it that are deliberate:
+
+- **Distinct files, not occurrences.** A block repeated five times down one page is that page's
+  structure; counting occurrences would delete every worked-example series.
+- **Three, not two.** Two pages is the legitimate case of an article split into a part 1 and a
+  part 2. The measurement is what picks 3; if that constant moves, the numbers above are stale.
+- **It runs before the keyword pass, not after.** A blurb on 154 pages is 154 documents' worth of
+  document frequency, which drags the IDF of every word sitting beside it.
+
+The other two candidate rules were **not** built. The stub rule (answers under 25 words) would take
+2,176 cards including ~251 substantial ones; the junk-page rule needs a careers/about wordlist that
+generalises to nothing. Neither has a signal this clean.
+
+Worth knowing: four of the 42 are **your own** authored footers, not third-party junk — the
+"*representative questions synthesised from…*" note on 33 company pages and three "*Last reviewed:
+July/August 2026*" disclaimers. They are correctly dropped (a disclaimer is not a flashcard), but
+if a future authored footer needs to survive, it must not be its own `##` section.
+
+### The ingest noise, as first measured 2026-08-29
 
 Of **10,763** web-derived cards (62% of the 17,446 ingested):
 

@@ -92,11 +92,14 @@ lines are kept ticked rather than deleted so the reasoning stays findable. See `
 
 ## Phase 6 — what the 2026-08-28 evening left
 
-- [ ] `P1` **Decide on the web-ingest noise.** 1,124 fetched pages became 10,744 cards on a
-      deterministic ingest. Sampling found real material (scikit-learn, Kafka, system design) next
-      to consultancy marketing — "Explain: Consulting services". `_is_boilerplate` in
-      `backend/ingest.py` was written for cloned repos, not the open web. Either extend it or
-      accept the noise deliberately; do not leave it undecided.
+- [x] `P1` **Decide on the web-ingest noise.** Decided: filter by **repetition**, not by wordlist.
+      `_drop_repeated_bodies` in `backend/ingest.py` drops any section body appearing verbatim on
+      3+ distinct pages. Measured on the real library: **841 of 17,828 sections (4.7%)**, from 42
+      distinct duplicated bodies, **all 42 read as furniture** — arXiv chrome ×154, paywall prompts,
+      a consultancy's pitch ×11. Cards 17,446 → 16,639; questions 19,074 → 18,284; questions with
+      reading 3,016 → 3,014. The stub rule (answers under 25 words, 2,176 cards) and the junk-page
+      rule (careers/about, 566) were **not** built — neither has a signal this clean, and the stub
+      rule alone would have taken ~251 substantial cards with it.
 - [ ] `P2` **A plain `--retry-failed` pass.** The User-Agent that made Wikipedia 403 is fixed, so
       those 21 pages and others like them are recoverable without rendering.
 - [ ] `P2` **The three still-unverified UI-rebuild pieces**: a timed quiz through a real 30s

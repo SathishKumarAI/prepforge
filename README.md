@@ -142,6 +142,12 @@ diagram-only sections and repo boilerplate (LICENSE, CONTRIBUTING, `.github/`), 
 headings ("Problem statement") their document's title, and pulls each section's outbound links out
 as **Go deeper** reading.
 
+A fetched web page hides its boilerplate *inside* the article, where no filename gives it away, so
+ingest also drops any section body that appears verbatim on **three or more distinct pages**
+(`MIN_DUPLICATE_PAGES`). Repetition is the whole signal — no wordlist, and it generalises to any
+site. On the current library that is 841 sections: arXiv's "NASA ADS · Google Scholar" from 154
+pages, "Subscribe to unlock full access" from 32, a consultancy's pitch from 11.
+
 Ingest has three tiers: `deterministic` (default, zero-token), `ollama` (a local model on
 `localhost:11434`, `OLLAMA_MODEL` to pick it), `claude`. The default
 path uses no model at all — MCQs are synthesised from card structure, and distractors come from a

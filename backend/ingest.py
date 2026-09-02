@@ -83,6 +83,12 @@ _SKIP_DIRS = {".github", ".git", "node_modules", ".venv"}
 _NON_ALNUM = re.compile(r"[^0-9A-Za-z]")
 MIN_HEADING_ALNUM = 2
 
+# A body that appears verbatim on this many distinct pages is furniture, not material.
+# Measured over the 10,763 web-derived cards of the 2026-08-29 ingest: at 3 pages it
+# catches 736 cards and every top offender is unambiguous site chrome. Two would sweep
+# in the legitimate case of one article split across a part 1 and a part 2.
+MIN_DUPLICATE_PAGES = 3
+
 
 # Answers are shown in full on the card. 6000 chars covers ~99% of sections whole;
 # anything longer is still readable end-to-end by opening its source document.
@@ -157,6 +163,35 @@ def _is_boilerplate(rel: Path) -> bool:
     if any(part in _SKIP_DIRS for part in rel.parts):
         return True
     return rel.stem.lower().replace("-", "_") in _SKIP_FILES
+
+
+def _body_key(body: str) -> str:
+    """The comparison form of a section body: case- and whitespace-insensitive.
+    Two pages of a site emit the same furniture with different indentation."""
+    return " ".join(body.lower().split())
+
+
+def _drop_repeated_bodies(
+    sections: list[tuple[str, str, str, str]], min_pages: int = MIN_DUPLICATE_PAGES
+) -> tuple[list[tuple[str, str, str, str]], int]:
+    """Drop sections whose body is repeated verbatim across `min_pages` or more
+    distinct source files. Returns (kept, dropped).
+
+    `_is_boilerplate` judges a *file* by its name, which is all a cloned repo needs.
+    The open web ships its boilerplate inside real articles instead: arXiv puts
+    "NASA ADS · Google Scholar" on 154 fetched pages and its arXivLabs blurb on 154
+    more, and a consultancy repeats its 15-word pitch on 11 pages. Nothing in the
+    filename says so — the repetition is the only signal, and it needs no wordlist
+    and generalises to any site.
+
+    Distinct *files*, not occurrences: a template repeated three times inside one
+    document is that document's structure, not site furniture.
+    """
+    pages: dict[str, set[str]] = {}
+    for source, _topic, _heading, body in sections:
+        pages.setdefault(_body_key(body), set()).add(source)
+    kept = [s for s in sections if len(pages[_body_key(s[3])]) < min_pages]
+    return kept, len(sections) - len(kept)
 
 
 def _frontmatter_title(md: str, fallback: str) -> str:
@@ -584,7 +619,6 @@ def ingest(mode: str = "deterministic") -> dict:
     # that is only knowable once the whole corpus has been seen.
     titles: dict[str, str] = {}  # source_file → readable title (for the source picker)
     sections: list[tuple[str, str, str, str]] = []  # (source, topic, heading, body)
-    df: Counter = Counter()
     for f in files:
         if _is_boilerplate(f.relative_to(LIBRARY)):
             continue
@@ -594,7 +628,15 @@ def ingest(mode: str = "deterministic") -> dict:
         titles[source] = _frontmatter_title(md, source)
         for heading, body in _split_sections(md):
             sections.append((source, topic, heading, body))
-            df.update({t for t in _QTOKEN.findall(tag_text(body).lower()) if t not in STOPWORDS and len(t) > 3})
+
+    # Site furniture goes before the keyword pass, not after: a blurb on 154 pages is
+    # 154 documents' worth of document frequency, which is exactly what makes its words
+    # look common and drags the IDF of everything it sits beside.
+    sections, dropped_repeats = _drop_repeated_bodies(sections)
+
+    df: Counter = Counter()
+    for _source, _topic, _heading, body in sections:
+        df.update({t for t in _QTOKEN.findall(tag_text(body).lower()) if t not in STOPWORDS and len(t) > 3})
 
     n_sections = max(len(sections), 1)
     idf = {term: math.log(n_sections / (1 + freq)) + 1.0 for term, freq in df.items()}
@@ -638,7 +680,11 @@ def ingest(mode: str = "deterministic") -> dict:
     OUT.write_text(json.dumps({"questions": deduped}, indent=2, ensure_ascii=False), encoding="utf-8")
     effective = "claude" if use_claude else ("ollama" if use_ollama else "deterministic")
     log.info(
-        "ingest: %d files → %d cards (mode=%s, model_cards=%d, synth_quizzes=%d)",
-        len(files), len(deduped), effective, model_cards, synth,
+        "ingest: %d files → %d cards (mode=%s, model_cards=%d, synth_quizzes=%d, repeated_bodies=%d)",
+        len(files), len(deduped), effective, model_cards, synth, dropped_repeats,
     )
-    return {"files": len(files), "cards": len(deduped), "mode": effective, "model_cards": model_cards, "synth_quizzes": synth}
+    return {
+        "files": len(files), "cards": len(deduped), "mode": effective,
+        "model_cards": model_cards, "synth_quizzes": synth,
+        "dropped_repeated_bodies": dropped_repeats,
+    }
