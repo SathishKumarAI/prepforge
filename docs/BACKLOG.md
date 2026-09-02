@@ -71,6 +71,14 @@ personal prep tool, not a bloated product.
       rather than piled on the last bar. `dueForecast()` in `lib/srs.ts`, guarded by
       `scripts/test-srs.mjs` — including the month boundary, which is where a UTC slice would have
       put a card on the wrong bar.
+- [x] `P2` **A real Markdown viewer.** **Shipped 2026-09-02** (COD-124). The Reader has always
+      opened `.md` files, but `react-markdown` ran with **no remark plugins at all** — measured on a
+      test file: 0 tables (the pipes rendered as literal text), 0 checkboxes, 0 `<del>`, 0 footnotes.
+      `remark-gfm` is the canonical plugin from the same unified/remark project, loaded lazily the
+      way lowlight already is (39 kB, only when the text actually contains GFM syntax), plus the
+      table / task-list / footnote styles the prose stylesheet had never needed. Alignment is matched
+      on the inline `style` remark-gfm emits, not on an `align` attribute — the attribute selector
+      matched nothing, checked in the DOM.
 - [ ] `P2` **FSRS scheduler** option (20–30% fewer reviews than SM-2; competitors moved to it).
 - [ ] `P2` Draggable sticky board (positions persisted, clamp on resize) + graph pan/zoom + mobile list fallback.
 - [x] `P2` Export/import all progress + notes as one JSON (backup/restore). **Shipped 2026-09-02**

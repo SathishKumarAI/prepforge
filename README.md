@@ -52,7 +52,7 @@ Or `./dev.sh` from the repo root, which starts both. It resolves `.venv/bin` vs 
 
 | Layer | Tech |
 |---|---|
-| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes — see `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, react-markdown, fuse.js |
+| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes — see `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, react-markdown (+ remark-gfm, lazily), fuse.js |
 | Backend | Python + FastAPI + uvicorn; httpx, BeautifulSoup, feedparser, pypdf, youtube-transcript-api |
 | Storage | Flat JSON + Markdown on disk. Progress/notes in `localStorage`; the question index and voice-note audio in IndexedDB |
 | Optional | Anthropic SDK — only for generating *new* answers; unused when the cache hits |
@@ -115,6 +115,23 @@ be your schedule for one question quietly attached to another. Deleting a card l
 so remaking it does not erase what you had done. Cards ride in the backup, which is **version 2**
 for exactly that reason: a build that did not know about them would restore a file, report success,
 and drop every card you had written.
+
+### Reading a Markdown file
+
+**Reader → Local file** opens a `.md`, `.markdown`, `.txt` or PDF from disk; **Web page** fetches a
+URL, strips the navigation and ads, and renders what is left. Markdown goes through
+[react-markdown](https://github.com/remarkjs/react-markdown) with
+[remark-gfm](https://github.com/remarkjs/remark-gfm) — the same unified/remark stack GitHub's own
+renderer is built on — so tables, task lists, strikethrough, footnotes and bare URLs render as
+themselves rather than as punctuation. Long documents get a contents list built from their headings.
+
+Both plugins load **only when the document needs them**: `remark-gfm` (39 kB) when the text contains
+a table row, a task list, a `~~strike~~`, a footnote or a bare URL, and the syntax highlighter
+(53 kB) when it contains a fenced block that names a language. Most of the 16,639 answers in the bank
+contain neither, and they should not pay for either.
+
+A wide table scrolls inside its own box. A table that widens the *page* makes every column on screen
+unreadable at once, which is the one layout failure worth spending a wrapper element on.
 
 ### The fortnight ahead
 
