@@ -382,6 +382,7 @@ GET  /questions               everything — 9.19 MB gzipped. Useful from a scri
 GET  /questions/index         id, title, topic, difficulty, has_answer, has_quiz — 495 kB gzipped
 GET  /questions/browse        a page of index rows; searches ANSWER text server-side
 GET  /questions/batch?ids=    whole questions, in the order asked for — a study session's cards
+                              &expand=related adds titles to each related id (Saved needs it)
 GET  /questions/{id}          one question, `related` expanded with titles
 GET  /resources               aggregated feed
 POST /scrape/refresh          run RSS + YouTube + HTML scrapers, dedupe, persist
@@ -462,8 +463,8 @@ four study stages and the SM-2 scheduler, [`PROMPTS.md`](./docs/PROMPTS.md) for 
   `ETag`, which is what makes the browser and IndexedDB copies stale.
 - The graph uses a static layout (no pan/zoom yet) and the sticky-note board isn't draggable.
 - The learning graph draws at most 240 nodes. Filter by topic to see the rest.
-- `SavedView` still fetches its bookmarks one `GET /questions/{qid}` at a time. `/questions/batch`
-  exists but does not expand `related`, which that view needs.
+- ~~`SavedView` fetches its bookmarks one at a time~~ — fixed: one batched request with
+  `expand=related`. 48 bookmarks went from **48 requests / 97 ms** to **1 request / 11 ms**.
 - **Highlight-to-card does not reach a PDF.** The Reader hands a local PDF to the browser's own
   viewer in an iframe, which is a plugin document, not markup this app rendered — so there is no
   `data-cardable` prose and the selection watcher never sees a selection. It works on everything

@@ -286,8 +286,30 @@ def questions_index(request: Request = None, response: Response = None):
     return {"questions": rows, "count": len(rows)}
 
 
+def _with_related(q: dict, by_id: dict[str, dict]) -> dict:
+    """A question whose `related` entries carry enough to render a link.
+
+    The pipeline writes `related` as `[{id, score}]` — ids alone, which was fine
+    while the client held the whole bank and could look each one up. It no longer
+    does. Each entry is ADDED to, never replaced, so a call site that still
+    resolves by id keeps working, and an id that no longer exists is dropped
+    rather than rendered as a blank row.
+    """
+    rel = q.get("related")
+    if not rel:
+        return q
+    return {
+        **q,
+        "related": [
+            {**r, **{k: by_id[r["id"]].get(k, "") for k in INDEX_FIELDS}}
+            for r in rel
+            if r.get("id") in by_id
+        ],
+    }
+
+
 @app.get("/questions/batch")
-def questions_batch(ids: str = ""):
+def questions_batch(ids: str = "", expand: str = ""):
     """The handful of whole questions a study session is actually about.
 
     Declared ABOVE /questions/{qid} for the third time and the same reason —
@@ -306,6 +328,13 @@ def questions_batch(ids: str = ""):
         return {"questions": []}
     by_id = {q.get("id"): q for q in _load_questions()}
     found = [by_id[i] for i in wanted if i in by_id]
+    # `expand=related` is opt-in, not the default, because the two callers want
+    # different things. Saved renders a Related section under every card and
+    # needs it; Study fetches up to 40 cards it will show one at a time and does
+    # not, and expanding there would add ~6 objects per card to a payload whose
+    # whole point is that it is small.
+    if "related" in {p.strip() for p in expand.split(",")}:
+        found = [_with_related(q, by_id) for q in found]
     return {"questions": found, "count": len(found), "missing": len(wanted) - len(found)}
 
 
@@ -491,18 +520,7 @@ def question(qid: str):
     qs = _load_questions()
     for q in qs:
         if q.get("id") == qid:
-            rel = q.get("related")
-            if rel:
-                by_id = {x.get("id"): x for x in qs}
-                q = {
-                    **q,
-                    "related": [
-                        {**r, **{k: by_id[r["id"]].get(k, "") for k in INDEX_FIELDS}}
-                        for r in rel
-                        if r.get("id") in by_id
-                    ],
-                }
-            return q
+            return _with_related(q, {x.get("id"): x for x in qs})
     return {"error": "not found"}
 
 
