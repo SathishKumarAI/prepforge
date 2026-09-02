@@ -5,7 +5,7 @@ import { Chip } from "@/components/ui/chip";
 import { Page } from "../components/page/PageLayout";
 import { ReadingPane } from "../components/ReadingPane";
 import { Button } from "../components/ui/button";
-import { readResource, uploadResource, type ReadResult } from "../lib/api";
+import { fetchPdfText, readResource, uploadResource, type ReadResult } from "../lib/api";
 
 // Read-only viewer for local files (PDF native + markdown/text) AND web pages,
 // in one page. Nothing is editable — just read. Local PDFs render in the browser's
@@ -33,10 +33,28 @@ export function Reader() {
   );
 }
 
+/**
+ * How a PDF is shown. Two modes, because they answer different questions:
+ *
+ * - `original` is the browser's own viewer — the real layout, the figures, the
+ *   page numbers. It is a plugin document, so the app cannot see inside it: a
+ *   passage selected there reaches nothing, and highlight-to-card, the contents
+ *   list and search all stop at the iframe boundary.
+ * - `text` is the same extraction the library ingest runs, rendered as the app's
+ *   own Markdown — which means it is `data-cardable`, so a selection becomes a
+ *   card exactly as it does in an answer or an article.
+ *
+ * Text is the default, because the reason to open a PDF *in here* rather than in
+ * a PDF reader is to take something out of it.
+ */
+type PdfView = "text" | "original";
+
 function LocalReader() {
   const [file, setFile] = useState<File | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [text, setText] = useState<string | null>(null);
+  const [pdfView, setPdfView] = useState<PdfView>("text");
+  const [extracting, setExtracting] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // revoke object URLs to avoid leaks
@@ -51,6 +69,25 @@ function LocalReader() {
     const ext = f.name.split(".").pop()?.toLowerCase();
     if (ext === "pdf") {
       setPdfUrl(URL.createObjectURL(f));
+      setPdfView("text");
+      // Extracted once per file and kept: switching between the two views is a
+      // toggle, not a round trip, and the bytes never leave this machine anyway.
+      setExtracting(true);
+      try {
+        const got = await fetchPdfText(f);
+        if (got.markdown) setText(got.markdown);
+        else {
+          // A scanned PDF has no text layer. Say so and fall back to the
+          // viewer, rather than showing an empty page that reads as a bug.
+          toast.message(got.message ?? "No text layer in that PDF.");
+          setPdfView("original");
+        }
+      } catch {
+        toast.error("Could not extract the text — is the backend running?");
+        setPdfView("original");
+      } finally {
+        setExtracting(false);
+      }
     } else if (ext === "md" || ext === "markdown" || ext === "txt") {
       try { setText(await f.text()); } catch { toast.error("Couldn't read the file."); }
     } else {
@@ -107,6 +144,22 @@ function LocalReader() {
       )}
 
       {pdfUrl && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <Chip
+            active={pdfView === "text"}
+            onClick={() => setPdfView("text")}
+            label={extracting ? "Text — extracting…" : "Text"}
+          />
+          <Chip active={pdfView === "original"} onClick={() => setPdfView("original")} label="Original" />
+          <span className="text-micro text-overlay1">
+            {pdfView === "text"
+              ? "Select a passage and press c to make a card."
+              : "The browser's viewer — the app cannot read a selection in here."}
+          </span>
+        </div>
+      )}
+
+      {pdfUrl && pdfView === "original" && (
         <iframe
           title={file?.name}
           src={pdfUrl}
@@ -114,7 +167,15 @@ function LocalReader() {
         />
       )}
 
-      {text !== null && (
+      {pdfUrl && pdfView === "text" && text === null && (
+        <div className="rounded-lg border border-dashed border-surface0 px-4 py-10">
+          <p className="max-w-prose text-small text-overlay1">
+            {extracting ? "Reading the text out of that PDF…" : "No text came back — try Original."}
+          </p>
+        </div>
+      )}
+
+      {text !== null && (!pdfUrl || pdfView === "text") && (
         <div className="panel reading-lg p-5 sm:p-7">
           <ReadingPane
             md={text}

@@ -206,11 +206,13 @@ truth *after* mount too, not only at it. `useState(param)` without a matching ef
       the same defect.
 - [ ] There is no automated guard for this class. The three node test scripts cover pure modules;
       URL-to-state wiring is only checked by driving the app.
-- [ ] **Highlight-to-card cannot reach a PDF** (found while verifying the Reader, 2026-09-02). A
-      local PDF goes to the browser's own viewer in an iframe — a plugin document, not markup this
-      app rendered — so there is no `data-cardable` prose and no selection to watch. Reaching it
-      means rendering the PDF ourselves (a text layer), which is a real dependency decision, not a
-      tweak. Until then the README says so rather than implying it works.
+- [x] **Highlight-to-card cannot reach a PDF** — **fixed 2026-09-02** (COD-121), and without the
+      dependency it looked like it needed. Rendering the PDF ourselves means pdf.js and a text layer;
+      the app already had the answer in `capture._pdf_to_markdown` (pypdf), which the library ingest
+      has always used. `POST /reader/pdf-text` runs it and saves nothing, and the Reader shows the
+      result through its own Markdown — so a PDF is `data-cardable` like everything else. **Original**
+      stays one chip away for the layout, and says plainly that a selection cannot be read in there.
+      A scanned PDF has no text layer: it says so and falls back, rather than showing a blank pane.
 
 ## Accessibility & input
 - [x] Global `:focus-visible` rings on all interactive elements — keyboard users can see focus.
