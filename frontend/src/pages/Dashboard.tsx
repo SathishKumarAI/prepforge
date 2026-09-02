@@ -1,21 +1,11 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { Page, Band } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
 import { Loader } from "../components/States";
 import { Button } from "../components/ui/button";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
-import { useThemeColors } from "../hooks/useThemeColors";
 import { dayKey, today } from "../lib/srs";
 
 /**
@@ -58,7 +48,6 @@ export function Dashboard() {
   // other 35 MB never appear on this screen in any form. 38.6 MB -> 2.9 MB.
   const { rows: questions, loading } = useQuestionIndex(true);
   const { progress } = useProgress();
-  const theme = useThemeColors();
 
   const stats = useMemo(() => {
     const known = Object.values(progress.flash).filter((s) => s === "known").length;
@@ -131,7 +120,7 @@ export function Dashboard() {
           </Band>
 
           <Band label="Quiz scores" hint={`${progress.quizzes.length} scored sessions`}>
-            <QuizTrend series={stats.quizSeries} theme={theme} />
+            <QuizTrend series={stats.quizSeries} />
           </Band>
         </>
       }
@@ -218,64 +207,131 @@ function MasteryTable({ rows }: { rows: { topic: string; total: number; done: nu
   );
 }
 
-/** Renders its own axes at zero data — a chart that vanishes until it has
- *  numbers is invisible to exactly the people who have not started. */
-function QuizTrend({
-  series,
-  theme,
-}: {
-  series: { name: string; score: number }[];
-  theme: Record<string, string>;
-}) {
+// Chart geometry. `preserveAspectRatio="none"` is what makes the SVG stretch to
+// its container without measuring anything in JavaScript, so these units are
+// arbitrary — only their ratios reach the screen. It is also why NO text lives
+// inside the SVG: a non-uniform scale stretches glyphs, so the axis labels are
+// HTML positioned around it and stay the size the rest of the page is.
+const CH_W = 600;
+const CH_H = 100;
+const GRID = [100, 75, 50, 25, 0];
+
+/**
+ * Renders its own axes at zero data — a chart that vanishes until it has
+ * numbers is invisible to exactly the people who have not started.
+ *
+ * Hand-drawn SVG rather than a charting library. This is one area chart with a
+ * fixed 0-100 domain and no interaction beyond a hover readout, and recharts
+ * was 397.88 kB of the 415 kB Progress chunk to draw it — 96% of the route's
+ * JavaScript for its only chart. It also forced `useThemeColors`, which exists
+ * solely because recharts needs concrete colour strings where CSS variables
+ * would do; the marks below are Tailwind classes, so the theme switch reaches
+ * them the same way it reaches every other element on the page.
+ */
+function QuizTrend({ series }: { series: { name: string; score: number }[] }) {
   const empty = series.length === 0;
-  const data = empty ? [{ name: "", score: 0 }] : series;
+  // A single session sits mid-canvas rather than pinned to the left edge, which
+  // is where `i / (n - 1)` puts it and where it reads as a truncated chart.
+  const x = (i: number) => (series.length < 2 ? CH_W / 2 : (i / (series.length - 1)) * CH_W);
+  const y = (score: number) => (1 - score / 100) * CH_H;
+
+  const points = series.map((p, i) => ({ ...p, x: x(i), y: y(p.score) }));
+  const line = points.map((p, i) => `${i ? "L" : "M"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("");
+  const area = points.length
+    ? `${line}L${points[points.length - 1].x.toFixed(1)},${CH_H}L${points[0].x.toFixed(1)},${CH_H}Z`
+    : "";
+
   return (
     <div>
-      <ResponsiveContainer width="100%" height={180}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+      <div className="flex gap-2">
+        {/* The y axis, in HTML. Same type scale as the rest of the page. */}
+        <div className="flex h-[180px] w-9 shrink-0 flex-col justify-between py-px text-right text-micro tabular-nums text-overlay0">
+          {GRID.map((g) => (
+            <span key={g}>{g}%</span>
+          ))}
+        </div>
+        <svg
+          viewBox={`0 0 ${CH_W} ${CH_H}`}
+          preserveAspectRatio="none"
+          // The accent lives on the root, not on the <g> below. A gradient stop's
+          // `currentColor` resolves against the GRADIENT element, not against
+          // whatever references it — so with the class on the <g> the line came
+          // out mauve and its fill came out the default text colour.
+          className="h-[180px] min-w-0 flex-1 text-mauve"
+          role="img"
+          aria-label={
+            empty
+              ? "Quiz score trend, no sessions yet"
+              : `Quiz score trend over ${series.length} sessions, from ${series[0].score}% to ${series[series.length - 1].score}%`
+          }
+        >
           <defs>
+            {/* currentColor, so the fill follows the text colour of the <g>
+                below it and needs no JavaScript to know which theme is on. */}
             <linearGradient id="quizfill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={theme.mauve} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={theme.mauve} stopOpacity={0} />
+              <stop offset="0%" stopColor="currentColor" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke={theme.surface0} vertical={false} />
-          <XAxis
-            dataKey="name"
-            tick={{ fill: theme.overlay0, fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            domain={[0, 100]}
-            unit="%"
-            tick={{ fill: theme.overlay0, fontSize: 11 }}
-            axisLine={false}
-            tickLine={false}
-          />
-          {!empty && (
-            <Tooltip
-              formatter={(v: number) => [`${v}%`, "Score"]}
-              contentStyle={{
-                background: theme.mantle,
-                border: `1px solid ${theme.surface1}`,
-                borderRadius: 8,
-                color: theme.text,
-                fontSize: 12,
-              }}
+
+          {GRID.map((g) => (
+            <line
+              key={g}
+              x1={0}
+              x2={CH_W}
+              y1={y(g)}
+              y2={y(g)}
+              className="stroke-surface0"
+              strokeDasharray="3 3"
+              // Without this the dashes and the stroke stretch with the canvas,
+              // which is the tell that a chart was scaled rather than drawn.
+              vectorEffect="non-scaling-stroke"
             />
-          )}
+          ))}
+
           {!empty && (
-            <Area
-              type="monotone"
-              dataKey="score"
-              stroke={theme.mauve}
-              strokeWidth={2}
-              fill="url(#quizfill)"
-            />
+            <g>
+              <path d={area} fill="url(#quizfill)" />
+              <path
+                d={line}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+              {points.map((p, i) => (
+                // The mark carries the readout. A <title> is the browser's own
+                // tooltip: no library, no state, no positioning maths, and a
+                // screen reader reads it as the element's name. A vertical rule
+                // rather than a dot because a circle in a stretched viewBox is
+                // an ellipse, and how wide it is would depend on the window.
+                <line
+                  key={i}
+                  x1={p.x}
+                  x2={p.x}
+                  y1={p.y - 4}
+                  y2={p.y + 4}
+                  stroke="currentColor"
+                  strokeWidth={3}
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                >
+                  <title>{`${p.name}: ${p.score}%`}</title>
+                </line>
+              ))}
+            </g>
           )}
-        </AreaChart>
-      </ResponsiveContainer>
+        </svg>
+      </div>
+      {/* The x axis. Only the ends are labelled: session numbers in between are
+          a ruler, not information, and past a dozen they collide. */}
+      {!empty && (
+        <div className="ml-11 flex justify-between text-micro tabular-nums text-overlay0">
+          <span>{points[0].name}</span>
+          {points.length > 1 && <span>{points[points.length - 1].name}</span>}
+        </div>
+      )}
       {empty && (
         <p className="text-small text-overlay1">
           No scored sessions yet.{" "}
