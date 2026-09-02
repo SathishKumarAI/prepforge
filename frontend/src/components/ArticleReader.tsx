@@ -58,7 +58,13 @@ export function ArticleReader({ resource, onClose }: { resource: Resource | null
                 </div>
               </div>
             ) : (
-              <ReadingPane md={data?.markdown ?? ""} storageKey={`article:${resource.url}`} maxHeight="64vh" />
+              <ReadingPane
+                md={data?.markdown ?? ""}
+                storageKey={`article:${resource.url}`}
+                maxHeight="64vh"
+                sourceTitle={resource.title}
+                sourceHref={resource.url}
+              />
             )}
           </div>
 

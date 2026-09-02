@@ -7,6 +7,7 @@ import {
   BACKUP_VERSION,
   backupFilename,
   countsOf,
+  mergeCards,
   mergeNotes,
   mergeProgress,
   parseBackup,
@@ -14,7 +15,17 @@ import {
 } from "../lib/backup";
 import { loadNotes, saveNotes } from "../lib/notes";
 import { loadSettings, saveSettings } from "../lib/settings";
-import { loadProgress, saveProgress } from "../lib/storage";
+import { load, loadProgress, save, saveProgress } from "../lib/storage";
+import type { UserCard } from "../lib/userCards";
+
+/** The same key `useUserCards` writes. Read here rather than through the hook:
+ *  this is a file operation, not a subscription, and the hook's shared copy is
+ *  reloaded by the page reload a restore ends in anyway. */
+const CARDS_KEY = "cards";
+const loadCards = (): UserCard[] => {
+  const raw = load<UserCard[]>(CARDS_KEY, []);
+  return Array.isArray(raw) ? raw : [];
+};
 
 /**
  * The only way personal state gets out of this browser, and back in.
@@ -48,6 +59,7 @@ export function BackupControls() {
         progress: loadProgress(),
         notes: loadNotes(),
         settings: loadSettings(),
+        cards: loadCards(),
         audio,
       };
       const json = JSON.stringify(payload, null, 2);
@@ -84,9 +96,11 @@ export function BackupControls() {
       if (mode === "replace") {
         saveProgress(file.progress);
         saveNotes(file.notes);
+        save(CARDS_KEY, file.cards);
       } else {
         saveProgress(mergeProgress(loadProgress(), file.progress));
         saveNotes(mergeNotes(loadNotes(), file.notes));
+        save(CARDS_KEY, mergeCards(loadCards(), file.cards));
       }
       // Settings always merge over the defaults rather than replacing the
       // object: a backup written by an older build has no `density` field, and
@@ -127,16 +141,17 @@ export function BackupControls() {
       </div>
 
       <p className="max-w-prose text-small text-overlay1">
-        Everything personal lives in this browser: scheduling, bookmarks, notes and voice clips.
-        Clearing site data takes all of it, and nothing else has a copy.
+        Everything personal lives in this browser: scheduling, bookmarks, the cards you wrote,
+        notes and voice clips. Clearing site data takes all of it, and nothing else has a copy.
       </p>
 
       {pending && counts && (
         <div className="rounded-lg border border-surface1 bg-mantle p-3">
           <p className="text-small text-subtext0">
             {pending.file.exported ? `Backup from ${pending.file.exported.slice(0, 10)}: ` : "Backup: "}
-            {plural(counts.scheduled, "scheduled card")}, {plural(counts.notes, "note")},{" "}
-            {plural(counts.quizzes, "quiz session")}, {plural(counts.clips, "voice clip")}.
+            {plural(counts.scheduled, "scheduled card")}, {plural(counts.cards, "card you wrote")},{" "}
+            {plural(counts.notes, "note")}, {plural(counts.quizzes, "quiz session")},{" "}
+            {plural(counts.clips, "voice clip")}.
           </p>
           {pending.dropped > 0 && (
             <p className="mt-1 text-small text-yellow">

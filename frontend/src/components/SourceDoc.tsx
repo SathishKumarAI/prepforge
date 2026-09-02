@@ -43,7 +43,12 @@ export function SourceDoc({ source, onClose }: { source: VaultSource | null; onC
             ) : data?.error ? (
               <div className="py-8 text-center text-sm text-subtext0">{data.message ?? "Couldn't read this document."}</div>
             ) : (
-              <ReadingPane md={data?.markdown ?? ""} storageKey={`vault:${source.path}`} maxHeight="66vh" />
+              <ReadingPane
+                md={data?.markdown ?? ""}
+                storageKey={`vault:${source.path}`}
+                maxHeight="66vh"
+                sourceTitle={source.title}
+              />
             )}
           </div>
         </DialogContent>

@@ -11,10 +11,12 @@ import { Chip } from "../components/ui/chip";
 import { Segmented, SegmentedPanel } from "../components/ui/segmented";
 import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
+import { useUserCards } from "../hooks/useUserCards";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { fetchQuestionBatch, type QuestionLite } from "../lib/api";
 import { isDue, isLeech, LEECH_LAPSES, type Rating } from "../lib/srs";
 import { MODES, MODE_ORDER, toStudyMode, type StudyMode } from "../lib/studyModes";
+import { isUserCardId, toQuestion, USER_CARD_TOPIC } from "../lib/userCards";
 import type { Question } from "../lib/types";
 
 /**
@@ -92,6 +94,26 @@ export function Study() {
    */
   const { rows: questions, loading } = useQuestionIndex(true);
   const { progress, getCard, markSeen, rateCard, setFlash, addQuiz } = useProgress();
+  const { cards: userCards } = useUserCards();
+
+  /**
+   * Cards you wrote yourself, as index rows. They are local, so they cost no
+   * request and they are eligible for exactly what they carry: an answer, never
+   * a multiple-choice payload. From here on the session cannot tell them apart
+   * from the bank's — which is the point, they are in the same deck.
+   */
+  const userRows = useMemo<QuestionLite[]>(
+    () =>
+      userCards.map((c) => ({
+        id: c.id,
+        question: c.question,
+        topic: USER_CARD_TOPIC,
+        difficulty: "medium",
+        has_answer: true,
+        has_quiz: false,
+      })),
+    [userCards],
+  );
 
   const prefs = useMemo(() => {
     try {
@@ -120,10 +142,12 @@ export function Study() {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ size, topic, weakFirst, timed }));
   }, [size, topic, weakFirst, timed]);
 
-  const topics = useMemo(
-    () => [...new Set(questions.map((q) => q.topic).filter(Boolean))].sort(),
-    [questions],
-  );
+  const topics = useMemo(() => {
+    const names = [...new Set(questions.map((q) => q.topic).filter(Boolean))].sort();
+    // Appended, not sorted in: it is your deck, and it belongs at the end of the
+    // row rather than alphabetised between Data Science and Python.
+    return userRows.length ? [...names, USER_CARD_TOPIC] : names;
+  }, [questions, userRows]);
 
   // Eligibility and readiness come from the registry, so adding a mode never
   // means hunting for the places that filter.
@@ -138,13 +162,13 @@ export function Study() {
 
   const pool = useMemo(
     () =>
-      questions.filter(
+      [...questions, ...userRows].filter(
         (q) =>
           spec.eligible(q) &&
           (!topic || q.topic === topic) &&
           (!onlyLeeches || isLeech(progress.srs[q.id])),
       ),
-    [questions, spec, topic, onlyLeeches, progress.srs],
+    [questions, userRows, spec, topic, onlyLeeches, progress.srs],
   );
   const ready = useMemo(
     () => pool.filter((q) => spec.ready(q, progress.srs[q.id])),
@@ -199,7 +223,16 @@ export function Study() {
     const planned = planQueue();
     setStarting(true);
     try {
-      const queue = await fetchQuestionBatch(planned.map((q) => q.id));
+      // Your own cards are already here; only the bank's ids cost a request. The
+      // queue is then rebuilt in the PLANNED order rather than the response's,
+      // because the two sets have to interleave and only the plan knows how.
+      const bankIds = planned.filter((q) => !isUserCardId(q.id)).map((q) => q.id);
+      const fetched = bankIds.length ? await fetchQuestionBatch(bankIds) : [];
+      const byId = new Map(fetched.map((q) => [q.id, q]));
+      for (const card of userCards) byId.set(card.id, toQuestion(card));
+      const queue = planned
+        .map((q) => byId.get(q.id))
+        .filter((q): q is Question => Boolean(q));
       if (queue.length === 0) return; // the bank was rebuilt out from under us
       setSession({ mode, queue, pos: 0, outcomes: [], revealed: false, picked: null, correct: 0 });
       setRemaining(TIMED_SECONDS);

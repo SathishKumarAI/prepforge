@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { CommandPalette } from "./CommandPalette";
 import { SettingsPanel } from "./SettingsPanel";
+import { CardFromSelection } from "./CardFromSelection";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Button } from "./ui/button";
 import { useProgress } from "../hooks/useProgress";
@@ -188,6 +189,10 @@ export function Layout({ children }: { children: ReactNode }) {
     // this class is on an ancestor. One class, no prop threaded through pages.
     <div className={`relative flex min-h-screen ${focus ? "focus-mode" : ""}`}>
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
+      {/* Once, for the whole app: a copy per reading surface would be four
+          selection watchers to keep in step. */}
+      <CardFromSelection />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 

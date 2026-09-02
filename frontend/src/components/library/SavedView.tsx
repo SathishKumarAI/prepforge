@@ -5,7 +5,9 @@ import { Empty, Loader } from "../States";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
+import { useUserCards } from "../../hooks/useUserCards";
 import { fetchQuestion } from "../../lib/api";
+import { toQuestion } from "../../lib/userCards";
 import type { Question } from "../../lib/types";
 
 /**
@@ -21,10 +23,14 @@ import type { Question } from "../../lib/types";
  * wrote. They are one list with a filter now.
  */
 
-type Scope = "saved" | "noted";
+type Scope = "saved" | "noted" | "mine";
 
 export function SavedView() {
   const { progress } = useProgress();
+  // Cards you wrote out of a highlight. They live here rather than on a route
+  // of their own: this view is already "the things you personally set aside",
+  // and one more surface for a handful of cards is a surface to maintain.
+  const { cards: userCards, remove } = useUserCards();
   const [scope, setScope] = useState<Scope>("saved");
 
   /**
@@ -74,24 +80,63 @@ export function SavedView() {
 
   if (loading) return <Loader label="Loading your saved questions" />;
 
+  const chips = (
+    <div className="mb-5 flex flex-wrap items-center gap-1.5">
+      <Chip
+        active={scope === "saved"}
+        onClick={() => setScope("saved")}
+        label="Bookmarked"
+        count={saved.length}
+      />
+      <Chip
+        active={scope === "noted"}
+        onClick={() => setScope("noted")}
+        label="With a note"
+        count={noted.length}
+      />
+      {userCards.length > 0 && (
+        <Chip
+          active={scope === "mine"}
+          onClick={() => setScope("mine")}
+          label="Cards I made"
+          count={userCards.length}
+        />
+      )}
+    </div>
+  );
+
+  if (scope === "mine") {
+    return (
+      <>
+        {chips}
+        <div className="pf-deck flex flex-col gap-3">
+          {userCards.map((c) => (
+            <article key={c.id} className="panel p-4">
+              <h3 className="text-body font-medium text-text">{c.question}</h3>
+              <p className="mt-2 text-small leading-relaxed text-subtext0">{c.answer}</p>
+              <div className="mt-3 flex items-center justify-between gap-3 text-micro text-overlay0">
+                <span className="truncate">
+                  {c.source ? `From ${c.source.title}` : "From a highlight"} · {c.created.slice(0, 10)}
+                </span>
+                {/* Deleting the card does not touch its SM-2 row: an id that no
+                    longer resolves is already dropped everywhere, and keeping
+                    the history means remaking the card does not erase it. */}
+                <Button variant="danger" size="sm" onClick={() => remove(c.id)}>
+                  Delete
+                </Button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </>
+    );
+  }
+
   const shown = scope === "saved" ? saved : noted;
 
   return (
     <>
-      <div className="mb-5 flex flex-wrap items-center gap-1.5">
-        <Chip
-          active={scope === "saved"}
-          onClick={() => setScope("saved")}
-          label="Bookmarked"
-          count={saved.length}
-        />
-        <Chip
-          active={scope === "noted"}
-          onClick={() => setScope("noted")}
-          label="With a note"
-          count={noted.length}
-        />
-      </div>
+      {chips}
 
       {shown.length === 0 ? (
         <Empty

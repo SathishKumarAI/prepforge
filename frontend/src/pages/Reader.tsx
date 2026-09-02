@@ -116,7 +116,11 @@ function LocalReader() {
 
       {text !== null && (
         <div className="panel reading-lg p-5 sm:p-7">
-          <ReadingPane md={text} storageKey={`local:${file?.name ?? "doc"}`} />
+          <ReadingPane
+            md={text}
+            storageKey={`local:${file?.name ?? "doc"}`}
+            sourceTitle={file?.name}
+          />
         </div>
       )}
     </div>
@@ -191,7 +195,13 @@ function WebReader() {
                   </a>
                 </Button>
               </div>
-              <ReadingPane md={data.markdown ?? ""} storageKey={`web:${url}`} maxHeight="68vh" />
+              <ReadingPane
+                md={data.markdown ?? ""}
+                storageKey={`web:${url}`}
+                maxHeight="68vh"
+                sourceTitle={data.title ?? url}
+                sourceHref={url}
+              />
             </>
           )}
         </div>

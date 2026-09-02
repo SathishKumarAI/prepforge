@@ -17,7 +17,8 @@ account, no server-side user data.
 | Content | Flat JSON + Markdown files | `questions.json` (curated) + `generated.json` (ingested) + `vault_questions.json` |
 | Scrapers | httpx, BeautifulSoup, feedparser, YouTube Data API | Pull articles/videos into the resource feed |
 | Progress | Browser `localStorage` | Flashcard state, SM-2 schedule, bookmarks, notes, quiz history |
-| The way out | A JSON file | `lib/backup.ts` exports all four local stores and reads one back — the only copy of your history that survives clearing site data |
+| Cards you wrote | Browser `localStorage` | A highlight plus your question, in the same SM-2 deck as the bank — `u-` ids, so they can never collide with it |
+| The way out | A JSON file | `lib/backup.ts` exports every local store and reads one back — the only copy of your history that survives clearing site data |
 | Question index | Browser `IndexedDB` | The whole bank's titles, so the app paints before the network answers |
 
 There is no charting library. The one chart — the quiz-score trend on Progress — is hand-drawn SVG,
@@ -108,6 +109,7 @@ frontend/src/
   lib/         api.ts · indexCache.ts (IndexedDB) · routeChunks.ts · srs.ts (SM-2) ·
                studyModes.ts (the mode registry) · storage.ts · notes.ts ·
                backup.ts (export/restore, pure — see scripts/test-backup.mjs) ·
+               userCards.ts (highlight-to-card, pure) ·
                graph.ts (hand-rolled force layout) · audio.ts (IndexedDB) ·
                rehype-highlight-lite.ts (lazy) · theme.ts · topics.ts · types.ts
 extension/     local-only page clipper

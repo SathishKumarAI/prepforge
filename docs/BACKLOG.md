@@ -47,7 +47,16 @@ personal prep tool, not a bloated product.
   sources only where canonical.
 - [ ] `P2` **Obsidian-compatible export** — notes + answers export as a vault folder (YAML frontmatter,
   `[[wikilinks]]`). Edge cases: filename sanitization/collisions; frontmatter escaping; stable slugs.
-- [ ] `P2` **Highlight-to-flashcard** from ingested books/PDFs (idea from RemNote) — tighten read→recall.
+- [x] `P2` **Highlight-to-flashcard** from ingested books/PDFs (idea from RemNote) — tighten
+      read→recall. **Shipped 2026-09-02** (COD-115). Select text anywhere the app renders markdown
+      (`data-cardable`, set once in `Markdown`) → "Make a card" → the passage is the answer and you
+      write the question, which is the half that makes it recall rather than re-reading. Cards are
+      local (`prepforge:cards`), `u-` prefixed so an id can never collide with the bank's — the SM-2
+      map is keyed by id, so a collision would hand your schedule to a different question. They join
+      the same recall/drill deck under the topic "My cards", are listed and deletable in Library →
+      Saved, and ride in the backup (which went to **version 2** for them: a build that did not know
+      about cards would restore a file, say it worked, and drop every card you wrote).
+      `scripts/test-usercards.mjs` guards the ids and the highlight cleaning.
 - [x] `P2` **Leeches — the cards that keep slipping.** **Shipped 2026-09-02** (COD-113). `lapses`
       has been counted since the scheduler was written and no screen read it, so the cards eating a
       session were invisible. Progress names them worst-first (`LEECH_LAPSES = 3`, Anki's eight
