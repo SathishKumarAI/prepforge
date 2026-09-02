@@ -163,6 +163,7 @@ def _assemble_questions() -> list[dict]:
         for q in bank:
             q["origin"] = _origin(q, kind)
             qs.append(q)
+    qs = _real_questions(qs)
     _fill_missing_answers(qs)
     # attach the zero-token related + reading indexes, if built
     related = pipeline_mod.load_related()
@@ -174,6 +175,32 @@ def _assemble_questions() -> list[dict]:
         if reading.get(qid):
             q["reading"] = reading[qid]
     return qs
+
+
+def _real_questions(qs: list[dict]) -> list[dict]:
+    """Drop the cards that are not questions, and tidy the ones carrying an
+    outline number.
+
+    133 cards in the bank began mid-sentence — "and how can it be improved?",
+    "pervised machine learning?" — because a splitter cut a question in half and
+    wrote the tail as its own card. Every one had an answer, so nothing flagged
+    them; they read as ordinary cards until you look at the first three words.
+    57 more carried the document's section number ("10).What are…").
+
+    Filtered here rather than only in `ingest`, because the cards are already
+    written: `generated.json` and `vault_questions.json` are derived files, and
+    re-deriving them means re-running an ingest over the whole library. The rule
+    itself lives in `ingest` — one definition, called from both ends.
+    """
+    out = []
+    for q in qs:
+        tidy = ingest_mod.usable_question(q.get("question", ""))
+        if not tidy:
+            continue
+        if tidy != q.get("question"):
+            q["question"] = tidy
+        out.append(q)
+    return out
 
 
 def _fill_missing_answers(qs: list[dict]) -> None:

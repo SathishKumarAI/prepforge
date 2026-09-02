@@ -189,9 +189,36 @@ is the string `"2.5"` is dropped and counted in the summary — `"2.5" * 6` is c
 would have scheduled it centuries out in silence — and only `data:` audio survives, so a restored
 note can never point at someone else's server. `npm test` is the guard.
 
+### Not every heading is a question
+
+A splitter that cuts a document into cards will sometimes cut a *question* in half and write the tail
+as its own card. 133 of these were in the bank — *"and how can it be improved?"*, *"for better
+performance?"*, *"pervised machine learning?"* (split inside the word *supervised*) — and **every one
+had an answer**, so nothing flagged them. They read as ordinary cards until you look at the first
+three words. Another 57 carried the document's outline number: *"10).What are the Control Flow
+activities…"*.
+
+`ingest.usable_question()` is the rule, called from **both** ends — `ingest`, so a new card never
+carries the defect, and the API's bank assembly, because the cards already on disk are in derived
+files that would otherwise need a full re-ingest to fix. Bank: **18,284 → 18,151**.
+
+The signal is *a lowercase opening that is not one of the ways an English question begins*, and the
+two things it must NOT do were found by printing the whole list and reading it:
+
+| Must survive | Why |
+|---|---|
+| *"what is windowing in spark streaming?"* | 163 real questions were simply never capitalised. Lowercase alone would delete a sixth of the vault |
+| *"vLLM, SGLang, TensorRT-LLM … how do you choose a serving stack?"* | it opens with a product name, so a first token carrying an inner capital, a digit, a dot or a slash is left alone |
+| *"5 Whys analysis?"* | a **bare** number is part of the sentence. Stripping needs a delimiter (`10).`) or dotted numbering (`2.6`), both of which say *outline* |
+
+There is no rule for the other kind of junk this exposed — *"Do you like to read on the go…"* is ad
+copy that survived ingest, and *"2 Should you read this book?"* is a heading. They are grammatical
+questions; nothing in their shape gives them away, and a wordlist would be the wrong tool for the
+same reason `_drop_repeated_bodies` does not use one.
+
 ### Answering the questions that arrived without an answer
 
-99 of the 18,284 questions came out of a vault with a question and no answer. `has_answer` is false
+99 of the questions came out of a vault with a question and no answer. `has_answer` is false
 for every one, so Study skips them and the Answer tab is blank — cards nobody can learn from.
 
 LM Studio is already wired in for the prose lenses, so the same provider fills them in a batch, for
