@@ -1,5 +1,152 @@
 # Worklog
 
+## 2026-09-02 (later) — the stack landed, four features off the backlog, and a UI bug hunt
+
+**Summary:** started with **eleven unmerged PRs** and a `main` carrying none of the perf work. Ended
+with **twenty-seven commits on `main`**, zero open PRs, four features built from the backlog, seven
+UI bugs found by driving the app, and a Markdown viewer that renders Markdown.
+
+`59 files changed, 4,889 insertions, 736 deletions.` The frontend has tests now.
+
+---
+
+### 1. The stack, merged (PRs #52, #62, #54–#61, #51)
+
+Ten stacked branches plus the ingest filter, squash-merged bottom to top. `git diff` between `main`
+and the old stack tip `17a88fa` came back **empty** — the ten squashes reproduce that tip exactly.
+
+**One casualty, and the lesson is the entry.** `gh pr merge --squash --delete-branch` **closes every
+PR based on that branch**, and a closed PR whose base branch is gone **cannot be reopened** —
+recreating the branch does not help. #53 died that way and continued as **#62**. Merging a stack:
+retarget every child to `main` *first*, then merge bottom to top, rebasing each branch with
+`git rebase --onto origin/main <old-parent-tip>`. GitHub also reports `mergeable: UNKNOWN` for a few
+seconds after a force-push — poll it, do not read it as a conflict.
+
+### 2. Four features, built by asking what a daily user loses (COD-112 to COD-115)
+
+| PR | Feature | The problem it answers |
+|---|---|---|
+| #64 | **Backup / restore** — Settings → Your data | Every card, note, setting and voice clip lived in one browser with no exit. Clearing site data took months of due dates, and the app could not tell it had happened |
+| #65 | **Leeches** — "Keeps slipping", `?pool=leeches` | `lapses` had been counted since the scheduler was written and no screen read it |
+| #66 | **Due forecast** — Today, "Coming up" | SM-2 builds a load one rating at a time; forty cards landing on one day was invisible until that morning |
+| #67 | **Highlight → card** | Reading and recalling were separate acts: a passage worth remembering could only be bookmarked |
+
+Then the gaps those four left (COD-117): `c` makes a card without a mouse, and **Undo** restores a
+deleted card *or* note — audio included, because the clip is read out of IndexedDB *before* the
+delete (#69). The leech list expands instead of dead-ending at "and 14 more", and the cards you wrote
+surface on Today and in Ctrl+K (#70).
+
+**Decisions worth keeping:**
+
+- **`u-` prefixed ids.** `progress.srs` is keyed by question id alone, so a collision between a card
+  you wrote and one in the bank would not be a duplicate card — it would be your schedule for one
+  question silently attached to another.
+- **The backup version moves when a store is added**, even additively. A build that did not know
+  about `cards` would restore a file, report success, and drop every card you wrote — the exact
+  silent loss the feature exists to prevent. It is at **2**.
+- **Merge keeps the local copy on every collision.** Nothing in an SM-2 card records when it was last
+  reviewed, so "the newer copy" cannot be computed, only invented.
+- **Overdue lands in the forecast's first bar**, with today. It is work waiting now, not work that
+  happened on some past day, and a bar backwards in time would say the opposite.
+- **A card is not restored without both a question and an answer.** It would sit in the deck as a
+  blank you cannot rate, and nothing else would complain.
+
+### 3. `npm test` exists now — 28 cases, no framework
+
+Three plain-Node scripts and zero new dependencies: `test-backup.mjs` (12), `test-srs.mjs` (8),
+`test-usercards.mjs` (8).
+
+**The rule that makes them possible:** Node 24 strips TypeScript types on import, so a `.mjs` check
+can import a `.ts` module — *as long as every import in that module is `import type`*. Vite resolves
+extensionless specifiers and Node does not, so one value import makes the module unloadable and the
+check has to be deleted to keep the module. `lib/backup.ts`, `lib/srs.ts` and `lib/userCards.ts` are
+pure for that reason. On Windows the dynamic import needs `pathToFileURL()` — a bare `C:\…` path is
+read as a URL scheme.
+
+### 4. Seven UI bugs, all found by driving the app (#71, #73, #76, #77, #78)
+
+**The URL said one thing, the screen showed another (#71).** Three instances of
+`useState(params.get("x"))` — the URL read *once*, at mount. Picking a question in Ctrl+K while
+already in Library left the previous answer on screen; a `?id=` link on a phone showed the list of
+18,284 and never the answer; `?scope=mine` ignored the chip it named. **Why it survived:** every test
+run while building a feature arrives from another route, which remounts the component and re-runs the
+initialiser. The one path that does *not* remount is a same-route navigation — the path nobody clicks
+while building the thing. `?q=` got its sync effect in #46 and was the only one of the four that
+worked.
+
+**The answer scrolled through the chrome (#73).** The app bar slides away on a downward scroll while
+`--app-bar-h` kept publishing **61px**, so the question header parked against a bar that was not
+there and the top 69px of the viewport had nothing painted in it — the answer scrolled through in
+full view and was cut in half at the header's edge. Fixed at the source: the variable publishes the
+bar's *effective* height (0 while hidden). The app bar and the filter row were also `bg-base/95` with
+a blur, so text ghosted through them — the same defect #47 fixed on the question header and left one
+element above it. **A blur does not fix ghosting, it softens it.**
+
+**The answer in a 330px strip (#76).** A regression from reading mode: the grid's column template
+keyed on `listHidden` (the stored preference) while the list was put away by `listAway` (the derived
+value), so the grid still declared two tracks — and CSS Grid puts a lone child in the **first** one.
+**When a derived value replaces a stored one, every reader of the stored value is a call site.** The
+layout branch, the button label, `aria-pressed` and the grid template were four readers; three were
+updated, and the fourth decided the width of the page.
+
+**Then the opposite problem (#77).** Uncapped, a 1,438px answer runs about 180 characters a line and
+the eye loses the start of the next one on every return sweep. The prose caps at **100ch** (measured:
+100 characters = 999px) while the page stays full width, left-aligned so it shares its left edge with
+the question above it.
+
+**A sweep for more of the same (#78).** Every route at 1536px and 520px, measured rather than read.
+Found: explanatory copy has no measure anywhere — Progress's empty state at 1,304px, the Reader's at
+1,269px, and `EmptyFrame`'s label, the component behind *every* empty state in the app. Clean: no
+horizontal overflow, no grid with an empty track, no translucent chrome left, focus mode sane on four
+pages, **no console errors**, and with `fetch` stubbed to reject the app still renders Today, Study
+and Progress from the cached index while Library says so in words.
+
+### 5. Reading mode, and the list that would not move (#75)
+
+The question list is *setup*: it answers "what should I read", and once that is decided it is sixty
+titles competing with the one answer you chose. It now hides while you read — only with a question
+open, and only scrolling down, which on a wide screen means the answer is moving because the list
+scrolls inside itself. **"Keep open" pins it**, and arriving *at* a question (link, Ctrl+K, back
+button) opens with it away; clicking a row does not, because `select()` sets the id before the URL.
+
+Rows are titles now: the difficulty letter went because difficulty is a **filter** with its own chips
+above the list, and the origin glyph went because the detail header prints provenance in words.
+
+### 6. A Markdown viewer that renders Markdown (#74)
+
+The Reader had always accepted `.md`, and `react-markdown` ran with **no remark plugins at all** —
+measured on a test file: 0 tables, 0 checkboxes, 0 footnotes, pipe rows rendered as literal text.
+
+**remark-gfm**, the canonical plugin from the same unified/remark project react-markdown belongs to.
+Nothing reimplemented. Loaded lazily like the highlighter: the Markdown chunk stayed at 129 kB and
+remark-gfm is its own **39.27 kB (11.87 kB gzipped)** chunk that arrives only when the text contains
+a table, a task list, a `~~strike~~`, a footnote or a bare URL.
+
+Tables scroll inside their own box — a table that widens the *page* makes every column on screen
+unreadable at once. Column alignment is matched on the inline `style` remark-gfm emits;
+`td[align="right"]` is the HTML4 attribute and matches nothing.
+
+### 7. Verified what had been unverified for four sessions (#72)
+
+- **Timed quiz through a real 30s expiry:** the countdown ran 29→0 on its own clock, the card read
+  "Time ran out — counted as a miss", and the next question opened with the spine at "0 recalled,
+  1 missed" and a fresh 30s.
+- **Reader:** a Wikipedia URL fetched, stripped and rendered with its own contents list (20,375
+  characters); a generated PDF opened in the browser's viewer from a `blob:` URL.
+- **Drill mode:** a leech-filtered session fetched its cards through `/questions/batch` and ran.
+
+Verifying the PDF caught a README line written the day before: highlight-to-card **cannot** reach a
+PDF, because the file goes to the browser's own viewer in an iframe — a plugin document, not markup
+this app rendered. The README states the limitation now (COD-121).
+
+### The board
+
+**COD-112 → COD-128 filed and closed this session**, except COD-117 (one gap left: the restore panel
+names counts without showing a card from the file) and COD-121 (the PDF limitation). **62 Done, 5
+Backlog, no open PRs.**
+
+---
+
 ## 2026-09-02 — Nothing fetches the bank any more, and the app opens offline
 
 **Summary:** The brief was "lazy loading". Route splitting was already done in #32, so the weight

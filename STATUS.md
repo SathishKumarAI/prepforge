@@ -3,13 +3,19 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-09-02.
-- **Where I stopped:** **nothing is unmerged.** Two pieces of work landed today. First the
-  nine-branch perf stack and `feat/ingest-duplicate-body-filter` (PRs #52, #62, #54-#61, #51) —
-  `git diff` between `main` and the old stack tip `17a88fa` was empty, so the ten squashes lost
-  nothing. Then **four features built from the backlog** (#64, #65, #66, #67 — COD-112 to COD-115):
-  backup/restore, leeches, the due forecast, and highlight-to-card. Verified on `main` after the
-  last merge: **eight** backend test files green, **`npm test` 28/28**, `npm run build` green,
-  `npm run contrast` "All pairs clear their floor in 2 themes".
+- **Where I stopped:** **nothing is unmerged, and there are no open PRs.** Twenty-seven commits
+  landed on `main` today, in four waves — the full account is the top entry of
+  [`docs/WORKLOG.md`](docs/WORKLOG.md):
+  1. The nine-branch perf stack and `feat/ingest-duplicate-body-filter` (#52, #62, #54-#61, #51).
+     `git diff` against the old stack tip `17a88fa` was empty, so the squashes lost nothing.
+  2. **Four features off the backlog** (#64-#67, COD-112 to COD-115): backup/restore, leeches, the
+     due forecast, highlight-to-card — then the gaps they left (#69, #70).
+  3. **Seven UI bugs**, every one found by driving the app rather than reading it (#71, #73, #76,
+     #77, #78), plus reading mode (#75) and a Markdown viewer that renders Markdown (#74).
+  4. Docs: the three four-session-old unverified pieces verified (#72), and this record.
+
+  Verified on `main` after the last merge: **eight** backend test files green, **`npm test` 28/28**,
+  `npm run build` green, `npm run contrast` "All pairs clear their floor in 2 themes".
 - **The frontend has a test command now: `npm test`.** Three plain-Node scripts, no framework and no
   new dependency: `scripts/test-backup.mjs` (12), `test-srs.mjs` (8), `test-usercards.mjs` (8). Node
   24 strips TypeScript types on import, so a `.mjs` script can import a `.ts` module **as long as
@@ -44,9 +50,17 @@ Update this when you STOP working, not when you start.
     (20,375 characters); a PDF opened in the browser's viewer from a `blob:` URL.
   - **Drill mode** — a filtered session started, fetched its cards through `/questions/batch` and
     rendered 1/5.
-- **Next action:** nothing is owed from the UI rebuild. The open work is the backlog: COD-117's
-  remaining gap (the restore panel names counts without showing a card), the PDF limitation below,
-  and whatever `docs/UIUX-BACKLOG.md` still carries unticked.
+- **Next action:** nothing is owed from the UI rebuild, and the UI bug classes hit this session are
+  swept (#78 lists what came back clean, so the next sweep can skip those probes). The open work is
+  the backlog:
+  - **COD-117**, one gap left: the restore panel names counts without showing a card or note from
+    the file, so "is this the right backup?" is still answered by the filename.
+  - **COD-121**: highlight-to-card cannot reach a PDF — the file goes to the browser's own viewer in
+    an iframe. Reaching it means rendering PDFs ourselves with a text layer.
+  - Two things left deliberately, both recorded in `docs/UIUX-BACKLOG.md`: the filter chrome returns
+    **over** the question header on scroll-up (a stacking decision nobody has made on purpose), and
+    Library's orient reads 18,284 under a topic filter (that number is context, not a result count).
+  - `docs/AUDIT-BACKLOG.md` (157 open) and `docs/UIUX-BACKLOG.md` are the standing queues.
 - **Blocked on:** nothing. **The board matches `main`** — 53 items carry `repo:interview_prep`:
   **49 Done, 0 In Review, 5 Backlog** (COD-117 is the new one), and there are **no open PRs**. Every
   PR body carries its work item id; COD-99's is on #62, not the closed #53.
