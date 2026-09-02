@@ -94,7 +94,7 @@ can make.
 Reading and recalling used to be two separate acts here: the bank is fixed, so the moment you read
 something worth remembering the only thing you could do was bookmark the page it was on.
 
-Select a passage anywhere the app renders prose — an answer, a fetched article, a vault
+Select a passage anywhere the app renders prose — an answer, a fetched article, a PDF, a vault
 document — and **Make a card**. The passage is the answer; you write the question, which is the half
 a highlight cannot give you and the half that makes it recall rather than re-reading. The card joins
 the same deck as everything else, under the topic **My cards**: same ratings, same due dates, same
@@ -140,10 +140,17 @@ above the list — and nobody picks between two questions because one is an "M";
 because the detail header prints provenance in words. Sixty copies of something that is not a
 per-row decision is a column of noise beside the column you are reading.
 
-### Reading a Markdown file
+### Reading a file, and taking something out of it
 
-**Reader → Local file** opens a `.md`, `.markdown`, `.txt` or PDF from disk; **Web page** fetches a
-URL, strips the navigation and ads, and renders what is left. Markdown goes through
+**Reader → Local file** opens a `.md`, `.markdown`, `.txt` or PDF from disk. A PDF opens as **Text**
+by default — the same pypdf extraction the library ingest runs, sent through the app's own Markdown,
+which means it is `data-cardable`: select a passage, press `c`, and it becomes a card. **Original**
+is one chip away for the real layout, and says plainly that the app cannot read a selection inside
+the browser's viewer. The extraction saves **nothing** — `POST /reader/pdf-text` reads the bytes,
+returns Markdown and forgets them, because adding a file to your library is a separate, deliberate
+step.
+
+**Web page** fetches a URL, strips the navigation and ads, and renders what is left. Markdown goes through
 [react-markdown](https://github.com/remarkjs/react-markdown) with
 [remark-gfm](https://github.com/remarkjs/remark-gfm) — the same unified/remark stack GitHub's own
 renderer is built on — so tables, task lists, strikethrough, footnotes and bare URLs render as
@@ -465,7 +472,5 @@ four study stages and the SM-2 scheduler, [`PROMPTS.md`](./docs/PROMPTS.md) for 
 - The learning graph draws at most 240 nodes. Filter by topic to see the rest.
 - ~~`SavedView` fetches its bookmarks one at a time~~ — fixed: one batched request with
   `expand=related`. 48 bookmarks went from **48 requests / 97 ms** to **1 request / 11 ms**.
-- **Highlight-to-card does not reach a PDF.** The Reader hands a local PDF to the browser's own
-  viewer in an iframe, which is a plugin document, not markup this app rendered — so there is no
-  `data-cardable` prose and the selection watcher never sees a selection. It works on everything
-  that goes through `Markdown`: answers, fetched articles, vault documents, ingested files.
+- A **scanned** PDF has no text layer, so the Reader's Text view has nothing to show and falls back
+  to the browser's viewer, where a selection cannot be read. Every other PDF reads as text.

@@ -170,6 +170,22 @@ export async function fetchQuestionBatch(
   return pages.flatMap((p) => p.questions);
 }
 
+/**
+ * A local PDF's text, extracted server-side and returned without being saved.
+ *
+ * The browser's own PDF viewer is a plugin document the app cannot see into, so
+ * a passage selected there reaches nothing — no highlight-to-card, no contents
+ * list, no search. This is the same pypdf extraction the library upload runs;
+ * the difference is that this one saves nothing, which is the Reader's contract.
+ */
+export async function fetchPdfText(file: File): Promise<{ markdown?: string; error?: string; message?: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/reader/pdf-text`, { method: "POST", body: form });
+  if (!res.ok) throw new Error(`/reader/pdf-text → ${res.status}`);
+  return res.json();
+}
+
 export interface Providers {
   /** The model id LM Studio is serving right now, or null if it is not running. */
   local_model: string | null;

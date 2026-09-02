@@ -594,6 +594,39 @@ async def upload_resource(file: UploadFile = File(...), topic: str = Form("AI"))
     return capture_mod.upload(file.filename or "file", data, topic)
 
 
+@app.post("/reader/pdf-text")
+async def reader_pdf_text(file: UploadFile = File(...)):
+    """A PDF's text, extracted and returned — and NOT saved anywhere.
+
+    The Reader hands a local PDF to the browser's own viewer, which is a plugin
+    document: the app cannot see inside it, so selecting a passage there reaches
+    nothing. Highlight-to-card, the contents list and search all stop at the
+    iframe boundary.
+
+    This is the same pypdf extraction the library upload already runs — the
+    difference is the whole point: `POST /resources/upload` SAVES the file into
+    the library, and the Reader's contract is that reading something does not
+    add it to anything. So the bytes are read, turned into Markdown, returned,
+    and forgotten.
+    """
+    data = await file.read()
+    if not data:
+        return {"error": "empty", "message": "That file had no bytes."}
+    try:
+        md = capture_mod._pdf_to_markdown(data)
+    except Exception as exc:
+        log.warning("pdf text extraction failed: %s", exc)
+        return {"error": "unreadable", "message": "Could not read that PDF — it may be scanned images."}
+    if not md.strip():
+        # A scanned PDF is pages of pictures. Saying so beats an empty page that
+        # looks like the feature is broken.
+        return {
+            "error": "no_text",
+            "message": "No text layer in that PDF — it is probably scanned images. The original still reads in the viewer.",
+        }
+    return {"markdown": md, "chars": len(md)}
+
+
 class FeedReq(BaseModel):
     url: str
     name: str = ""

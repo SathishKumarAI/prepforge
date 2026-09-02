@@ -100,6 +100,12 @@ Update this when you STOP working, not when you start.
   `RelatedLinks` resolved each id through `questionMap()` — the whole bank, held in memory by
   whichever page last fetched it. Once nothing fetched the bank the map was always empty, so the
   list was always empty and the component returned null. No error, no empty state, no request.
+- **A PDF is highlightable now, and it cost no dependency.** The obvious fix was pdf.js and a text
+  layer; the answer was already in the repo — `capture._pdf_to_markdown` (pypdf), which the library
+  ingest has used since v1. `POST /reader/pdf-text` runs it and **saves nothing**, which is the
+  Reader's whole contract, and the result renders through the app's own Markdown, so it is
+  `data-cardable` like every other surface. The browser's viewer stays one chip away for layout.
+  A scanned PDF has no text layer and says so instead of showing a blank pane.
 - **`/questions/batch` expands `related` on request** (`&expand=related`), which is what let Saved
   stop fetching its bookmarks one at a time: 48 bookmarks went from **48 requests / 97 ms** to
   **1 request / 11 ms**, same bytes. It is **opt-in** because Study fetches up to 40 cards it never
