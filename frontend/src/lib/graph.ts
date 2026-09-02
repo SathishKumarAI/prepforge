@@ -1,7 +1,6 @@
 // Derive graphs from notes (Obsidian-style) and from questions (prerequisite
 // learning graph), plus a compact deterministic force layout. No external deps.
 import type { Note } from "./notes";
-import type { Question } from "./types";
 import { wikilinks } from "./notes";
 import { topicColor } from "./topics";
 
@@ -90,9 +89,24 @@ export function notesGraph(notes: Note[]): Graph {
 
 const DIFF_RANK: Record<string, number> = { easy: 0, medium: 1, hard: 2 };
 
+/**
+ * The five fields a question node is drawn from — not `Question`.
+ *
+ * A graph capped at a few hundred nodes has no use for answers, sources or
+ * related lists, and typing this to the whole shape is what forced its caller to
+ * download 38 MB of them. `/questions/browse` returns exactly these.
+ */
+export interface GraphQuestion {
+  id: string;
+  question: string;
+  topic: string;
+  difficulty: string;
+  tags?: string[];
+}
+
 /** Learning graph: questions linked topic→topic and by prerequisite (easier→harder
  *  within a topic when they share a tag). Approximates study order. */
-export function learningGraph(questions: Question[]): Graph {
+export function learningGraph(questions: GraphQuestion[]): Graph {
   const nodes: GNode[] = [];
   const edges: GEdge[] = [];
   const seenEdge = new Set<string>();
@@ -124,7 +138,7 @@ export function learningGraph(questions: Question[]): Graph {
 
   // prerequisite edges: within a topic, an easier question sharing a tag with a
   // harder one points to it. Cap fan-out per node to keep the graph readable.
-  const byTopic = new Map<string, Question[]>();
+  const byTopic = new Map<string, GraphQuestion[]>();
   for (const q of questions) {
     const arr = byTopic.get(q.topic) ?? [];
     arr.push(q);
@@ -136,7 +150,10 @@ export function learningGraph(questions: Question[]): Graph {
       for (const b of group) {
         if (added >= 2) break;
         if (a.id === b.id) continue;
-        if (DIFF_RANK[a.difficulty] < DIFF_RANK[b.difficulty] && a.tags.some((t) => b.tags.includes(t))) {
+        if (
+          DIFF_RANK[a.difficulty] < DIFF_RANK[b.difficulty] &&
+          (a.tags ?? []).some((t) => (b.tags ?? []).includes(t))
+        ) {
           addEdge(a.id, b.id, "prereq");
           added++;
         }

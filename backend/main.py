@@ -276,6 +276,10 @@ def questions_browse(
         # not carry — the palette has no use for it and 19,000 copies of it is a
         # quarter of that payload. Here the page is capped at `limit` rows.
         row["origin"] = item.get("origin")
+        # Same reasoning for tags: they are what the learning graph draws its
+        # prerequisite edges from, and 19,000 copies of them is 1.2 MB on the
+        # index — but a capped page of them is a few kB, so they ride here.
+        row["tags"] = item.get("tags") or []
         if terms:
             row["snippet"] = _snippet(item.get("answer") or "", terms)
         out.append(row)
