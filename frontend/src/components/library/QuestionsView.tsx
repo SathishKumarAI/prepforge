@@ -157,12 +157,37 @@ export function QuestionsView() {
   const topics = meta?.topics ?? [];
 
   // ---- selection ---------------------------------------------------------
-  // Which question the detail pane is showing. In the URL so a refresh, a back
-  // button and a shared link all land on the same question.
+  /**
+   * Which question the detail pane is showing. In the URL so a refresh, a back
+   * button and a shared link all land on the same question.
+   *
+   * `useState(params.get("id"))` alone reads the URL ONCE. Arriving at Library
+   * from elsewhere remounts this component and looks correct, which is what hid
+   * the bug: pick a question in Ctrl+K while you are ALREADY on this view and
+   * the URL becomes ?id=q002, the search box picks up the ?q= that travelled
+   * with it — that one has had a sync effect since #46 — and the answer pane
+   * keeps showing whatever you were reading. No error, no empty state, just the
+   * wrong answer under the right heading in the list.
+   */
   const [selectedId, setSelectedId] = useState<string | null>(params.get("id"));
-  // Below lg the panes cannot share the screen, so the detail replaces the list
-  // and this says which one you are looking at.
-  const [detailOnly, setDetailOnly] = useState(false);
+  /**
+   * Below lg the panes cannot share the screen, so the detail REPLACES the list
+   * and this says which one you are looking at.
+   *
+   * It starts from the URL for the same reason: `false` meant a phone opening a
+   * shared ?id= link got the list of 18,284 and no way to know which one the
+   * link meant. Only a tap set it, so the one entry point that cannot tap —
+   * the link — was the one that did not work.
+   */
+  const [detailOnly, setDetailOnly] = useState(() => Boolean(params.get("id")));
+
+  // The URL is the source of truth for both, not just at mount.
+  useEffect(() => {
+    const id = params.get("id");
+    if (!id || id === selectedId) return;
+    setSelectedId(id);
+    setDetailOnly(true);
+  }, [params, selectedId]);
   const peekTimer = useRef<number>();
 
   // ---- the list pane, put away -------------------------------------------

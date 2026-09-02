@@ -127,6 +127,14 @@ export function Study() {
   // Progress hands you "study your weakest topic", and a link that silently
   // ignores its own parameter is worse than not offering the link.
   const [topic, setTopic] = useState<string | null>(params.get("topic") ?? prefs.topic ?? null);
+  // Follows the URL after mount too. Nothing in the UI links from Study to
+  // Study with a different topic today, but the back button does exactly that,
+  // and this is the same read-the-URL-once defect that made Library open the
+  // wrong question.
+  useEffect(() => {
+    const wanted = params.get("topic");
+    if (wanted && wanted !== topic) setTopic(wanted);
+  }, [params, topic]);
   const [weakFirst, setWeakFirst] = useState<boolean>(prefs.weakFirst ?? false);
   const [timed, setTimed] = useState<boolean>(prefs.timed ?? false);
   const [more, setMore] = useState(false);
