@@ -64,6 +64,8 @@ export interface QuestionRowLite {
   topic: string;
   difficulty: string;
   origin?: Origin;
+  /** Only on `/questions/browse` — the graph's prerequisite edges need them. */
+  tags?: string[];
   /** Only on `/questions/browse`, and only when something was searched. */
   snippet?: string;
 }

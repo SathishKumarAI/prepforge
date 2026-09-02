@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import main
 
-ROW_KEYS = set(main.INDEX_FIELDS) | {"origin", "snippet"}
+ROW_KEYS = set(main.INDEX_FIELDS) | {"origin", "tags", "snippet"}
 
 
 def test_browse_rows_never_carry_the_answer():

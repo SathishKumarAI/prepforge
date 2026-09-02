@@ -35,7 +35,10 @@ backend/data/resources.json
 
 # User-exported progress / notes dumps
 *.progress.json
-notes/
+# Anchored. Unanchored, `notes/` matches at ANY depth, and it was silently
+# swallowing frontend/src/components/notes/ — GraphView.tsx, the whole Notes
+# graph feature, never entered the repo, so a fresh clone did not build.
+/notes/
 *.notes.md
 
 # ─────────────────────────────────────────────────────────────
