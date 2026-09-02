@@ -12,7 +12,7 @@ account, no server-side user data.
 
 | Layer | Tech | Responsibility |
 |---|---|---|
-| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes, `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, react-markdown, fuse.js | Six routes, the study session, the reader, the graph |
+| Frontend | React 18 + Vite 6 + TypeScript, Tailwind (two measured themes, `docs/DESIGN-THEMES.md`), Radix primitives, framer-motion, react-markdown + remark-gfm (lazy), fuse.js | Six routes, the study session, the reader, the graph |
 | Backend | Python + FastAPI | Serves the Q&A bank in five shapes, runs scrapers, ingests markdown |
 | Content | Flat JSON + Markdown files | `questions.json` (curated) + `generated.json` (ingested) + `vault_questions.json` |
 | Scrapers | httpx, BeautifulSoup, feedparser, YouTube Data API | Pull articles/videos into the resource feed |

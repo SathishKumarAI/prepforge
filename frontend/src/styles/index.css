@@ -349,6 +349,47 @@ select:disabled {
   .prose-answer blockquote {
     @apply my-3 border-l border-surface1 pl-3 text-subtext0;
   }
+
+  /* ---- GitHub-flavoured markdown ----
+     Unstyled until now because nothing could produce these: the renderer had no
+     remark plugins, so a table arrived as a paragraph of pipe characters and a
+     task list as literal "[x]". */
+
+  /* Scrolls inside its own box. A wide table in a 68ch column otherwise pushes
+     the whole page sideways, and a horizontally scrolling PAGE is the one
+     layout failure that makes every other column unreadable at once. */
+  .prose-answer .table-scroll { @apply my-4 overflow-x-auto; }
+  .prose-answer table {
+    @apply w-full border-collapse text-[0.94em];
+  }
+  .prose-answer thead th {
+    @apply border-b border-surface1 pb-1.5 pr-4 text-left font-semibold text-text;
+  }
+  /* Numbers are why people put tables in an answer, so they line up.
+     Matched on the inline style, not on an `align` attribute: remark-gfm emits
+     column alignment as `style="text-align: right"`, and a selector written for
+     the HTML4 attribute silently matches nothing. Checked in the DOM. */
+  .prose-answer :is(td, th)[style*="text-align: right"] { @apply tabular-nums; }
+  .prose-answer tbody td {
+    @apply border-b border-surface0 py-1.5 pr-4 align-top;
+  }
+  .prose-answer tbody tr:last-child td { @apply border-0; }
+
+  /* A task list is a list of states, not of bullets: the marker is the box. */
+  .prose-answer li:has(> input[type="checkbox"]) { @apply list-none -ml-5; }
+  .prose-answer input[type="checkbox"] {
+    @apply mr-2 align-middle accent-mauve;
+  }
+
+  .prose-answer del { @apply text-overlay1 line-through; }
+
+  /* Footnotes: a rule and a smaller size say "this is apparatus, not prose",
+     without the browser default of an unlabelled horizontal line. */
+  .prose-answer .footnotes {
+    @apply mt-6 border-t border-surface0 pt-3 text-[0.9em] text-subtext0;
+  }
+  .prose-answer .footnotes h2 { @apply mb-1 mt-0 text-small uppercase tracking-[0.14em] text-overlay1; }
+  .prose-answer .footnotes hr { @apply hidden; }
   .prose-answer a {
     @apply text-mauve underline decoration-mauve/40 underline-offset-2 hover:decoration-mauve;
   }
