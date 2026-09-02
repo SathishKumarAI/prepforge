@@ -66,6 +66,28 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
+## Fixed 2026-09-02 — the answer in a 330px strip
+
+A regression from the reading mode above, and worth writing down because the shape is general
+(COD-126).
+
+The grid picks its column template from **`listHidden`** — the *stored preference*. Reading mode put
+the list away through **`listAway`**, the derived value, and left the template alone. So the grid
+still declared `minmax(15rem,20rem) minmax(0,1fr)` with only one child in it, and CSS Grid put that
+child in the **first** track: the answer rendered in **330px** with **949px of empty page** beside
+it, on a 1536px window.
+
+**The rule:** when a derived value replaces a stored one, every reader of the stored value is a call
+site to check — not just the ones that obviously "show or hide" something. The layout, the button
+label, the `aria-pressed` and the grid template were four readers; three were updated and the fourth
+decided the width of the page.
+
+- [x] Grid template keyed on `listAway`; `aria-pressed` and the title too, so the control describes
+      what you can see rather than what is stored.
+- [x] With the list away the answer also drops the shell's 84rem measure (`.reading-wide main`), set
+      on `<html>` the same way Layout sets `.focus-mode`. The answer is the only thing on the page;
+      a centred 84rem column beside 250px of nothing is the gutter you can see.
+
 ## Shipped 2026-09-02 — reading mode in the Library
 
 The last piece of chrome that did not get out of the way (COD-125). The app bar and the filter row

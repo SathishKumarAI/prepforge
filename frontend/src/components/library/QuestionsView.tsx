@@ -269,6 +269,22 @@ export function QuestionsView() {
   const listAway =
     listHidden || readingMode || (!pinOpen && scrolledIntoTheAnswer && Boolean(selectedId));
 
+  /**
+   * With the list away, the answer is the only thing on the page, so it gets
+   * the whole page: the shell's 84rem measure is what leaves a 250px gutter on
+   * a wide monitor next to a column that is already the sole content.
+   *
+   * A root class rather than a prop, exactly like `focus-mode` above it —
+   * `<main>` lives in the shell and knows nothing about which view is mounted,
+   * and threading a layout flag through the router to reach it would be a
+   * bigger change than the rule it carries.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("reading-wide", listAway);
+    return () => root.classList.remove("reading-wide");
+  }, [listAway]);
+
   useEffect(() => {
     localStorage.setItem(LIST_HIDDEN_KEY, listHidden ? "1" : "0");
     // Showing the list for real ends the peek, or the overlay would sit on top
@@ -524,14 +540,14 @@ export function QuestionsView() {
             size="sm"
             className="ml-auto hidden lg:inline-flex"
             onClick={() => (listAway ? showListForGood() : hideList())}
-            aria-pressed={listHidden}
+            aria-pressed={listAway}
             title={
-              listHidden
+              listAway
                 ? "Show the question list"
                 : "Hide the question list — hover the left edge to peek at it"
             }
           >
-            {listHidden ? (
+            {listAway ? (
               <PanelLeftOpen aria-hidden="true" />
             ) : (
               <PanelLeftClose aria-hidden="true" />
@@ -567,12 +583,18 @@ export function QuestionsView() {
       ) : (
         // Two panes above lg, one below it. The grid's second track is
         // minmax(0,1fr) so the detail takes every pixel the list does not — the
-        // point of the layout is that nothing on this screen is empty. Hidden,
+        // point of the layout is that nothing on this screen is empty. Away,
         // the list's track goes entirely rather than collapsing to zero: a
         // zero-width track still owns the gap beside it.
+        //
+        // Keyed on `listAway`, NOT on `listHidden`. Keyed on the stored
+        // preference, an auto-hidden or reading-mode list left both tracks
+        // declared — and the answer, as the only child, landed in the FIRST
+        // one: a 330px strip of text with 949px of empty page beside it.
+        // Measured on a 1536px window.
         <div
           className={`relative lg:grid lg:gap-6 ${
-            listHidden
+            listAway
               ? "lg:grid-cols-[minmax(0,1fr)]"
               : "lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
           }`}
