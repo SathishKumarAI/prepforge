@@ -48,10 +48,14 @@ recorded here because the reasoning is the part that does not survive in a diff.
 
 **What these left open**
 
-- [ ] No keyboard route to "Make a card" — a selection made with `shift+arrow` shows the button, but
-      reaching it means a pointer. A shortcut (`c`?) while a selection is live would finish it.
-- [ ] No undo after deleting a card you wrote. The SM-2 row survives, so remaking the card restores
-      its schedule, but the text is gone.
+- [x] No keyboard route to "Make a card" — **fixed 2026-09-02** (COD-118). `c` opens the composer
+      while a selection is live, and the button shows the key. Bound through `useHotkeys`, which
+      already refuses to fire inside a text field or while a dialog is open, and enabled only while
+      there IS a selection, so `c` is not a global key that eats a keystroke on every page.
+- [x] No undo after deleting a card you wrote — **fixed 2026-09-02** (COD-118). Undo restores the
+      card with its ORIGINAL id, which is what makes it the same card: `progress.srs` is keyed by
+      that id, so the schedule comes back with the text. A fresh id would be a lookalike that has
+      never been reviewed.
 - [ ] The leech list shows six and says "and N more" — there is no way to see the rest.
 - [ ] Cards you made are only reachable through Library → Saved. Nothing on Today or in the command
       palette knows they exist.
@@ -86,7 +90,11 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] Optimistic UI + rollback on bookmark/note/flash actions.
 - [ ] Inline "Saved ✓" affordance on note textareas (autosave indicator).
 - [ ] Copy-to-clipboard buttons on answers, code blocks, sources.
-- [ ] Undo toast after deleting a note/sticky.
+- [x] Undo toast after deleting a note/sticky — **2026-09-02** (COD-118). The audio clip is read
+      out of IndexedDB *before* the delete and held for the life of the toast; without that, Undo
+      restores a voice note that looks whole and plays nothing. An empty sticky deleting itself on
+      blur gets no toast — nothing to undo, and a toast on the one action that cannot lose anything
+      is noise.
 - [ ] Progress toast during long vault ingest with a spinner + elapsed time.
 
 ## Loading, empty & error states

@@ -3,6 +3,7 @@ import { Highlighter } from "lucide-react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { toast } from "./ui/sonner";
+import { useHotkeys } from "../hooks/useHotkeys";
 import { useUserCards } from "../hooks/useUserCards";
 import {
   cleanHighlight,
@@ -91,6 +92,18 @@ export function CardFromSelection() {
     };
   }, []);
 
+  /**
+   * `c` opens the composer for whatever is selected, so the whole feature works
+   * without a pointer — a selection made with shift+arrow already raises the
+   * button, and before this the only way to reach it was to click it.
+   *
+   * Enabled only while a selection is live, so `c` is not a global key that
+   * swallows a keystroke on every page. `useHotkeys` already refuses to fire
+   * inside a text field or while a dialog is open, which is what stops it from
+   * typing `c` into the composer it just opened.
+   */
+  useHotkeys({ c: () => pending && open(pending) }, pending !== null);
+
   // The button is positioned in viewport coordinates, so it has to go the
   // moment the page moves under it rather than float over unrelated text.
   useEffect(() => {
@@ -138,6 +151,9 @@ export function CardFromSelection() {
         >
           <Highlighter aria-hidden className="size-3.5" />
           Make a card
+          <kbd className="rounded border border-surface1 bg-crust px-1 font-mono text-micro text-overlay1">
+            c
+          </kbd>
         </button>
       )}
 

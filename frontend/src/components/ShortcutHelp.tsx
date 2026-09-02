@@ -18,6 +18,10 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
       { keys: "Enter", desc: "Open the focused question" },
     ],
   },
+  {
+    title: "Reading",
+    items: [{ keys: "c", desc: "Turn the selected passage into a card" }],
+  },
 ];
 
 export function ShortcutHelp({ open, onClose }: { open: boolean; onClose: () => void }) {

@@ -101,7 +101,9 @@ rows on Progress. `Library → Saved → Cards I made` lists them, with delete.
 
 The opt-in is one attribute, `data-cardable`, set once in `Markdown` — every reading surface got the
 feature by rendering markdown, and there is one selection watcher for the whole app rather than one
-per surface.
+per surface. **`c` opens the composer** while a selection is live, so the whole path works without a
+pointer, and deleting a card offers **Undo** — which puts it back under its original id, so the
+SM-2 schedule returns with the text.
 
 Ids are `u-` prefixed and cannot collide with the bank's. That matters more than it looks:
 `progress.srs` is keyed by question id alone, so a collision would not be a duplicate card, it would

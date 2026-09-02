@@ -50,5 +50,16 @@ export function useUserCards() {
 
   const remove = useCallback((id: string) => set(removeUserCard(shared, id)), []);
 
-  return { cards, create, remove };
+  /**
+   * Puts a deleted card back with its ORIGINAL id, which is the whole point:
+   * `progress.srs` is keyed by that id, so the card returns still carrying
+   * everything you had done with it. A fresh id would be a new card that looks
+   * the same and has never been reviewed.
+   */
+  const restore = useCallback((card: UserCard) => {
+    if (shared.some((c) => c.id === card.id)) return;
+    set([...shared, card]);
+  }, []);
+
+  return { cards, create, remove, restore };
 }
