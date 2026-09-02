@@ -16,6 +16,7 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **100 curated questions** | `backend/content/questions.json`, tagged by topic / difficulty |
 | **+ any question bank you clone** | eight public GitHub repos currently seed 16,639 more cards, see [seeding](#seeding-from-public-question-banks) |
 | **703 pre-authored answers** | 7 variants per question, as readable `.md` — see [Answer variants](#answer-variants) |
+| **Nothing left unanswered** | The 99 vault questions that arrived with no answer are filled by the local model, labelled as machine-written, and gated by `eval_answers.py` |
 | **Six routes** | Today · Study · Library · Notes · Progress · Reader. Every older route still resolves — `/flashcards`, `/quiz`, `/bookmarks`, `/graph` and the rest redirect carrying their intent. |
 | **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
 | **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
@@ -187,6 +188,55 @@ backup from a newer build is refused whole (half a schedule looks like it worked
 is the string `"2.5"` is dropped and counted in the summary — `"2.5" * 6` is concatenation, and SM-2
 would have scheduled it centuries out in silence — and only `data:` audio survives, so a restored
 note can never point at someone else's server. `npm test` is the guard.
+
+### Answering the questions that arrived without an answer
+
+99 of the 18,284 questions came out of a vault with a question and no answer. `has_answer` is false
+for every one, so Study skips them and the Answer tab is blank — cards nobody can learn from.
+
+LM Studio is already wired in for the prose lenses, so the same provider fills them in a batch, for
+nothing:
+
+```bash
+cd backend
+./.venv/Scripts/python.exe answer_missing.py --dry-run     # what would be written
+./.venv/Scripts/python.exe answer_missing.py --limit 10    # try ten
+./.venv/Scripts/python.exe answer_missing.py               # the rest
+./.venv/Scripts/python.exe eval_answers.py --judge         # before trusting any of it
+```
+
+Each answer is cached as `content/answers/<qid>__local.md` — the same Markdown the interactive
+lenses write, so nothing new had to learn to read it — and `GET /questions/{id}` serves it for a
+question that has none. The run is resumable: an answer already on disk is skipped, so a Ctrl-C
+costs only the sentence in flight.
+
+**Three properties this path is built around, each because the failure is silent:**
+
+| | |
+|---|---|
+| **It never bills.** | `generate.local_only()` raises where `generate()` would fall back to Claude. That fallback is right for one hover and wrong for a run of hundreds, where one flaky moment starts spending money you did not decide to spend |
+| **It only fills a gap.** | A question that already has an answer keeps it. A 20B model's unreviewed prose can never shadow a curated or ingested answer |
+| **It says what it is.** | Every generated answer ends with *"Written by … running locally. Machine-generated, not reviewed."* — in the body, not in a schema field, so it survives the detail pane, a study card, an export and a grep |
+
+**Nothing generated is trusted until `eval_answers.py` has read it.** A model writing unattended
+produces answers that are good, answers that are fine, and a few that are confidently wrong-shaped:
+a leaked reasoning block, one sentence repeated eight times, a refusal, a paragraph cut off
+mid-word. None of those announce themselves. The checks are deterministic and free — they read the
+text, so they are the same every time and cannot themselves hallucinate:
+
+`note_missing` · `too_short` · `too_long` · `reasoning_leak` · `refusal` · `looping` ·
+`restates_question` · `truncated` (including an unclosed code fence, which renders the rest of the
+page as code)
+
+`--judge` adds a second opinion from the same local model, scoring 1–5 on *answers the question*,
+*specific* and *no filler*. It is evidence, not proof — **a model marking its own homework cannot
+tell you the question was junk**, and some of these questions are: an ad blurb and a multiple-choice
+stub with no choices both scored well on the answer they got. `--delete-failures` removes the files
+that failed so the next run rewrites them.
+
+`backend/test_local_answers.py` guards the part that fails quietly: every check, that filling only
+ever fills a gap, and that writing an answer moves the bank's ETag — otherwise the file would sit on
+disk while every client kept serving an index that says the question has none.
 
 ## Answer variants
 

@@ -11,6 +11,7 @@ drop straight into Obsidian.
 |---|---|---|---|
 | **Deep answer** (grounded, web-sourced) | `backend/content/answers/<qid>.md` | `generate()` on a cache-miss (or Claude Code authoring) | `generate()` cache-first — **no API call on a hit** |
 | **STAR interview answer** | `backend/content/answers/<qid>__star.md` | `generate(mode="star")` | same cache-first read |
+| **An answer for a question that has none** | `backend/content/answers/<qid>__local.md` | `answer_missing.py` → `generate.local_only()` (LM Studio, never billed) | `_fill_missing_answers()` in `main.py` — only ever fills a gap, and the text carries its own machine-written line |
 | **Captured / read resource** | `backend/content/library/<slug>.md` | `capture.read()` (in-app reader / manual URL) | ingestion + graph |
 | **Every page the bank cites** | `backend/content/library/<slug>.md` + `content/reading_fetch.json` | `fetch_reading.py` (batch, resumable) | ingestion + graph |
 | **Ingested book / notes** | `backend/content/library/*.md` (you drop them) | you | `POST /ingest` → cards |
