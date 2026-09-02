@@ -100,8 +100,28 @@ export interface QuestionLite {
   has_quiz?: boolean;
 }
 
-export async function fetchQuestionIndex(): Promise<{ questions: QuestionLite[] }> {
-  return get("/questions/index");
+/**
+ * The index, with the tag it was served under, and a 304 reported rather than
+ * hidden.
+ *
+ * `cache: "no-store"` and a hand-written `If-None-Match` because the caller
+ * keeps its own copy in IndexedDB. Left to itself the browser would keep a
+ * SECOND 3.5 MB copy in the HTTP cache and answer a conditional request from it
+ * as a synthetic 200, so the caller could never tell "unchanged, keep what you
+ * have" from "here is 3.5 MB again". Asking explicitly makes the 304 visible,
+ * and costs about 300 B on the wire.
+ */
+export async function fetchQuestionIndex(
+  etag?: string | null,
+): Promise<{ questions: QuestionLite[]; etag: string | null; unchanged: boolean }> {
+  const res = await fetch(`${BASE}/questions/index`, {
+    cache: "no-store",
+    headers: etag ? { "If-None-Match": etag } : {},
+  });
+  if (res.status === 304) return { questions: [], etag: etag ?? null, unchanged: true };
+  if (!res.ok) throw new Error(`/questions/index → ${res.status}`);
+  const body = (await res.json()) as { questions: QuestionLite[] };
+  return { questions: body.questions, etag: res.headers.get("etag"), unchanged: false };
 }
 
 /**
