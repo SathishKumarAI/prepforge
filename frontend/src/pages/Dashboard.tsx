@@ -276,7 +276,7 @@ function Leeches({
 
   if (rows.length === 0) {
     return (
-      <p className="text-small text-overlay1">
+      <p className="max-w-prose text-small text-overlay1">
         Nothing has been forgotten {LEECH_LAPSES} times. Cards that keep coming back wrong show up
         here, where they can be rewritten or split instead of re-read.
       </p>
@@ -439,7 +439,7 @@ function QuizTrend({ series }: { series: { name: string; score: number }[] }) {
         </div>
       )}
       {empty && (
-        <p className="text-small text-overlay1">
+        <p className="max-w-prose text-small text-overlay1">
           No scored sessions yet.{" "}
           <Link to="/study?mode=quiz" className="text-mauve underline underline-offset-2">
             Take a quiz

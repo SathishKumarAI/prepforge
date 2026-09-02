@@ -236,7 +236,7 @@ export function QuestionDetail({
 
       {/* One line, under the row it explains, because the answer to "did that
           hover just cost me money" is worthless anywhere else on the page. */}
-      <p className="mb-4 min-h-[1.1rem] text-micro text-overlay1">
+      <p className="mb-4 min-h-[1.1rem] max-w-prose text-micro text-overlay1">
         {!providersKnown ? null : localModel ? (
           <>
             Local model · <span className="font-mono">{localModel}</span> — {freeModes.length} lens

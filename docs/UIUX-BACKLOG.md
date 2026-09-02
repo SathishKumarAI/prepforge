@@ -66,6 +66,34 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
+## Swept 2026-09-02 — a UI bug hunt, and what came back clean
+
+Asked to find more bugs of the kind already fixed, so the app was probed rather than read: every
+route at **1536px and 520px**, measuring real geometry (COD-128).
+
+**Found and fixed: explanatory copy has no measure.** The answer is capped at 100ch and nothing else
+in the app is, so the lines that talk to someone who has *not* started were the widest text on the
+screen — Progress's "Nothing has been forgotten 3 times" at **1,304px** (~180 characters a line),
+the Reader's "Nothing open…" at **1,269px**, the lens meta line at **1,440px**, and `EmptyFrame`'s
+label — the component behind *every* empty state in the app — with no cap at all. All now
+`max-w-prose`; the sweep re-run reports **zero** paragraphs over 700px.
+
+**Came back clean, and worth recording so the next sweep can skip them:**
+
+| Probe | Result |
+|---|---|
+| Horizontal overflow, every route, 1536 + 520px | none; no element crosses the viewport |
+| Grid tracks with no child in them (the #76 defect) | none |
+| Translucent sticky/fixed chrome (the ghosting defect) | none left |
+| Focus mode on Today, Study, Progress, Library | layout sane, nav gone, no overflow |
+| Backend unreachable (fetch stubbed to reject) | Today, Study and Progress render from the cached index; Library, Collections and Feed say so in words. No blank page, no infinite spinner |
+| Console errors/warnings across all routes | none |
+| Filter → paging interaction in Library | list restarts on a topic change, topic chips survive, counts agree with the server |
+
+**Known and deliberately left:** the filter chrome still returns *over* the question header on
+scroll-up (a stacking decision, above), and the Library orient still reads the whole bank's 18,284
+while a topic filter is on — that number is the page's stable context, not a result count.
+
 ## Fixed 2026-09-02 — the answer in a 330px strip
 
 A regression from the reading mode above, and worth writing down because the shape is general
