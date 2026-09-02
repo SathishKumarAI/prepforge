@@ -35,12 +35,18 @@ Update this when you STOP working, not when you start.
   disk and then spends **300 B** on a conditional request. With the backend stopped, /progress still
   draws the whole recall table and /study still reads "18,185 in the deck". The only pages that
   genuinely need the server are the ones that need an answer.
-- **Next action:** two of the three long-unverified UI-rebuild pieces are still owed — a **timed
-  quiz through a real 30s expiry** and **Reader's PDF + web-fetch**. The third, **drill mode**, was
-  exercised today: a filtered drill session started, fetched its cards and rendered 1/5. Grading
-  through to the session summary was verified in **recall**, not drill, so if you want that one
-  closed properly, grade a drill session to the end. After that, COD-117 holds the five UX gaps the
-  new features left open (see `docs/UIUX-BACKLOG.md`, 2026-09-02 section).
+- **The three long-unverified UI-rebuild pieces are verified.** Held open for four sessions,
+  all exercised on the running app on 2026-09-02:
+  - **Timed quiz through a real 30s expiry** — the countdown ran 29→0 on its own clock, the card
+    then read "Time ran out — counted as a miss", and the next question opened with the spine at
+    "0 recalled, 1 missed" and a fresh 30s.
+  - **Reader** — a Wikipedia URL fetched, stripped and rendered with its own table of contents
+    (20,375 characters); a PDF opened in the browser's viewer from a `blob:` URL.
+  - **Drill mode** — a filtered session started, fetched its cards through `/questions/batch` and
+    rendered 1/5.
+- **Next action:** nothing is owed from the UI rebuild. The open work is the backlog: COD-117's
+  remaining gap (the restore panel names counts without showing a card), the PDF limitation below,
+  and whatever `docs/UIUX-BACKLOG.md` still carries unticked.
 - **Blocked on:** nothing. **The board matches `main`** — 53 items carry `repo:interview_prep`:
   **49 Done, 0 In Review, 5 Backlog** (COD-117 is the new one), and there are **no open PRs**. Every
   PR body carries its work item id; COD-99's is on #62, not the closed #53.
@@ -64,6 +70,34 @@ Update this when you STOP working, not when you start.
   web-ingest noise (COD-78) is fixed and merged (#51) — see "The ingest noise, decided" below.
   Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
   at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
+
+## The URL-once bug, and what it teaches (2026-09-02)
+
+Reported as "the question that stays on screen while scrolling is wrong". The sticky header was
+never at fault — it pinned exactly the question the pane was rendering, and the pane was rendering
+the wrong one. Three instances, one defect, fixed in #71 (COD-120):
+
+- **`useState(params.get("x"))` reads the URL once, at mount.** It looks right in every test run
+  while building a feature, because those arrive from another route — which remounts the component
+  and re-runs the initialiser. The path that does NOT remount is a same-route navigation: the
+  palette, or a link from the page to itself. Nobody clicks that while building the thing.
+- It hit `?id=` (Ctrl+K opened the wrong answer), `detailOnly` (a phone opening a shared `?id=` link
+  got the list of 18,284 and never the answer — only a tap set it, so the one entry point that
+  cannot tap was the one that did not work), and `?scope=` in Saved.
+- `?q=` next door has had a sync effect since #46, when paging made a stale search obvious. That is
+  the whole difference between the line that worked and the three that did not.
+- **The rule:** if state can be named in the URL, the URL is its source of truth after mount as well
+  as at it. `useState(param)` with no matching effect is the bug. Study's `?topic=` got the effect
+  too, though nothing links Study→Study today — the back button does.
+- **No automated guard exists for this class.** The node scripts cover pure modules; URL-to-state
+  wiring is only caught by driving the app.
+
+### Also found while verifying
+
+- **Highlight-to-card cannot reach a PDF.** The Reader hands a local PDF to the browser's own viewer
+  in an iframe — a plugin document, not markup this app rendered — so there is no `data-cardable`
+  prose and no selection to watch. The README claimed otherwise; it says so now, and reaching it
+  would mean rendering PDFs ourselves.
 
 ## Four features off the backlog (2026-09-02)
 
