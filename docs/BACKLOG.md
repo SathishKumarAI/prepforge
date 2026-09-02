@@ -79,6 +79,14 @@ personal prep tool, not a bloated product.
       table / task-list / footnote styles the prose stylesheet had never needed. Alignment is matched
       on the inline `style` remark-gfm emits, not on an `align` attribute — the attribute selector
       matched nothing, checked in the DOM.
+- [x] `P2` **A card that is not a question is not a card.** **Shipped 2026-09-02** (COD-132). The
+      duplicate-body filter cleaned up junk *bodies*; this is the same idea for junk *questions*.
+      133 cards began mid-sentence because a splitter cut a question in half and wrote the tail as
+      its own card — and all 133 had answers, so nothing flagged them. 57 more carried the
+      document's outline number. `ingest.usable_question()` is the one rule, called from ingest and
+      from bank assembly. Bank 18,284 → 18,151. The two false positives that shaped it are pinned in
+      `test_junk_questions.py`: a real question that was never capitalised, and one that opens with a
+      product name.
 - [ ] `P2` **FSRS scheduler** option (20–30% fewer reviews than SM-2; competitors moved to it).
 - [ ] `P2` Draggable sticky board (positions persisted, clamp on resize) + graph pan/zoom + mobile list fallback.
 - [x] `P2` Export/import all progress + notes as one JSON (backup/restore). **Shipped 2026-09-02**

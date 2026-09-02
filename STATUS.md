@@ -64,6 +64,14 @@ Update this when you STOP working, not when you start.
     stub with no choices — and they now carry confident generated answers. `ingest` filters junk
     *bodies* by repetition and has nothing for junk *questions*.
   - `docs/AUDIT-BACKLOG.md` (157 open) and `docs/UIUX-BACKLOG.md` are the standing queues.
+- **A card that is not a question is not served.** 133 cards began mid-sentence — a splitter cut a
+  question in half and wrote the tail as its own card — and every one HAD an answer, which is why
+  nothing ever flagged them. `ingest.usable_question()` drops them and strips outline numbers off 57
+  more; it is called from ingest AND from bank assembly, because the cards already written live in
+  derived files. Bank 18,284 → 18,151. **Lowercase alone is not the signal** — 163 real questions
+  were simply never capitalised — and a first token with an inner capital, a digit, a dot or a slash
+  is an identifier, not a mid-sentence continuation ("vLLM, SGLang … how do you choose a serving
+  stack?"). Both are pinned in `test_junk_questions.py`.
 - **Every question in the bank has an answer now.** The 99 that arrived without one are answered by
   `openai/gpt-oss-20b` in LM Studio — `answer_missing.py` writes them, `eval_answers.py` gates them
   (99 answers, 0 failing), `_fill_missing_answers()` serves them, and each one carries its own
