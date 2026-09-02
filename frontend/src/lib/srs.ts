@@ -105,6 +105,56 @@ export function schedule(card: SrsCard, rating: Rating): SrsCard {
   return { ef, interval, reps, lapses, due: addDays(today(), interval), stage, seen: true };
 }
 
+/** A fortnight: long enough that a pile-up is visible before it lands, short
+ *  enough that every day still fits on a phone without becoming a chart. */
+export const FORECAST_DAYS = 14;
+
+export interface ForecastDay {
+  /** Local day key, `YYYY-MM-DD`. */
+  key: string;
+  count: number;
+  /** The first bucket, which is today AND everything already overdue. */
+  today: boolean;
+}
+
+/**
+ * How many cards fall due on each of the next `days` days.
+ *
+ * SM-2 decides due dates one rating at a time, so the load it is building is
+ * never visible while you build it: rate forty cards "easy" today and the
+ * fortnight looks empty right up to the morning forty come back at once. This
+ * turns the schedule the app already holds into something you can look at.
+ *
+ * **Anything already overdue lands in the first bucket**, with today. It is
+ * work waiting now, not work that happened on some past day, and giving it its
+ * own bar backwards in time would say the opposite.
+ *
+ * Cards due beyond the horizon are dropped rather than piled onto the last day:
+ * a final bar carrying "and 4,000 more, some time" would dominate the shape and
+ * mean nothing.
+ */
+export function dueForecast(
+  dueDates: string[],
+  days = FORECAST_DAYS,
+  from = today(),
+): ForecastDay[] {
+  const out: ForecastDay[] = Array.from({ length: days }, (_, i) => ({
+    key: i === 0 ? from : addDays(from, i),
+    count: 0,
+    today: i === 0,
+  }));
+  const index = new Map(out.map((d, i) => [d.key, i]));
+  for (const due of dueDates) {
+    if (due <= from) {
+      out[0].count++;
+      continue;
+    }
+    const i = index.get(due);
+    if (i !== undefined) out[i].count++;
+  }
+  return out;
+}
+
 /** Human-readable next-interval preview for a rating, used on the buttons. */
 export function previewInterval(card: SrsCard, rating: Rating): string {
   const next = schedule(card, rating);

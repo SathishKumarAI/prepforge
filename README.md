@@ -21,6 +21,7 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
 | **Leeches** | The cards forgotten three or more times, named on Progress, with one click to drill only those |
+| **Due forecast** | The next fortnight as bars on Today, so a 43-card day is visible a week out |
 | **A way out of the browser** | Settings → Your data: one JSON file with every card, note, setting and voice clip, and a merge-or-replace restore |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
@@ -85,6 +86,18 @@ The threshold is `LEECH_LAPSES = 3` in `lib/srs.ts` — Anki's default of eight,
 reviewed by hand rather than daily for years. Two failures is a bad week; three is a pattern. The
 scheduler does not act on it: nothing is suspended or rescheduled, because the fix is one only you
 can make.
+
+### The fortnight ahead
+
+SM-2 sets due dates one rating at a time, so the load it is building is invisible while you build
+it: rate forty cards *easy* today and the calendar looks empty right up to the morning forty come
+back at once. **Today → Coming up** draws the next fourteen days as bars, with the heaviest named
+underneath ("12 now · heaviest Tue 8 at 43 · 82 in the fortnight").
+
+Anything **overdue lands in the first bar**, with today — it is work waiting now, not work that
+happened on some past day. Cards due beyond the horizon are dropped rather than piled onto the last
+bar, where "and 4,000 more, some time" would dominate the shape and mean nothing. Same table-with-
+text shape as the study-days strip beside it: no chart library, and no cell that is colour only.
 
 ### Backup and restore
 
