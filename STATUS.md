@@ -3,11 +3,21 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-09-02.
-- **Where I stopped:** ten commits on a stack of nine branches, tip is `docs/status-session-close`.
-  See "Nothing fetches the bank any more" below for the order they have to merge in and why. All
-  seven backend test files, `tsc`, `npm run build` and `npm run contrast` are green at the tip.
-  `feat/ingest-duplicate-body-filter` is a separate unmerged branch from the previous session,
-  untouched by any of this.
+- **Where I stopped:** **nothing is unmerged.** The nine-branch stack and
+  `feat/ingest-duplicate-body-filter` are all squash-merged into `main` (PRs #52, #62, #54-#61, #51)
+  and their branches are deleted. Verified on `main` after the last merge: **eight** backend test
+  files green, `npm run build` (which runs `tsc` first) green, `npm run contrast` "All pairs clear
+  their floor in 2 themes". `git diff` between `main` and the old stack tip `17a88fa` was empty, so
+  the ten squashes lost nothing.
+- **A squash-merge deletes the base branch, and that CLOSES every child PR on it.** #53 was based on
+  `perf/graph-off-the-bank`; merging #52 with `--delete-branch` closed #53, and a closed PR whose
+  base branch is gone **cannot be reopened** — recreating the branch does not help. #53 had to be
+  reopened as **#62** with the same commit. Merging a stack: retarget every child PR to `main`
+  *first* (`gh pr edit N --base main`), then merge bottom to top, rebasing each branch with
+  `git rebase --onto origin/main <old-parent-tip>` before its turn.
+- **GitHub reports `mergeable: UNKNOWN` for a few seconds after a force-push** and `gh pr merge`
+  fails with "Pull Request is not mergeable" if you ask in that window. Poll `gh pr view N --json
+  mergeable` until it says `MERGEABLE`; it is a race, not a conflict.
 - **`GET /questions` now has no caller in the app.** Study, Progress and Notes' graph were the last
   three; each is on a projection or a capped page instead. Measured on the running app: a tour of
   Today → Study → Progress → Notes → Library costs **504 kB transferred in total**, against roughly
@@ -19,11 +29,11 @@ Update this when you STOP working, not when you start.
   genuinely need the server are the ones that need an answer.
 - **Next action:** the three still-unverified pieces of the UI rebuild — a **timed quiz through a
   real 30s expiry**, **Reader's PDF + web-fetch**, and **drill mode** end to end. Unchanged for four
-  sessions. Then `README.md` is stale (11 pages, retired routes, 8,330 questions — it is 18,284).
-- **Blocked on:** nothing. **The Plane board is reconciled** — 48 items carry `repo:interview_prep`:
-  32 Done, 12 In Review (COD-97 to COD-107, one per PR, plus COD-78), 4 Backlog. The previous
-  session's note that COD-82-88 were unmarked was itself stale; only COD-79 was, and it is Done now.
-  Every PR body carries its work item id.
+  sessions, and now the only thing between `main` and a clean board. `README.md` is no longer stale;
+  it was rewritten in #61 and its card count matches the post-filter bank.
+- **Blocked on:** nothing. **The board matches `main`** — 48 items carry `repo:interview_prep`:
+  **44 Done, 0 In Review, 4 Backlog**, and there are **no open PRs**. Every PR body carries its work
+  item id; COD-99's is on #62, not the closed #53.
 - **Reaching Plane without its MCP tools.** `claude mcp list` showed the `plane` server connected,
   but its tools were not exposed to the session and no `ToolSearch` query found them. The way
   through: the credentials are in `~/.claude.json` under `mcpServers.plane.env` —
@@ -41,26 +51,26 @@ Update this when you STOP working, not when you start.
   whichever page last fetched it. Once nothing fetched the bank the map was always empty, so the
   list was always empty and the component returned null. No error, no empty state, no request.
 - **Found, not fixed:** *"What's the weather like today?"* tagged `Behavioral` (COD-34). The
-  web-ingest noise (COD-78) is fixed here — see "The ingest noise, decided" below.
+  web-ingest noise (COD-78) is fixed and merged (#51) — see "The ingest noise, decided" below.
   Also `SavedView` still fetches its bookmarks one `GET /questions/{qid}`
   at a time; `/questions/batch` exists now but does not expand `related`, which that view needs.
 
 ## Nothing fetches the bank any more (2026-09-02)
 
-Ten commits, and they are a **stack** — later ones do not apply without earlier ones. Merge bottom
-to top:
+Ten commits, built as a **stack** and merged bottom to top on 2026-09-02. All ten are on `main`;
+the branches are deleted. The order is kept here because it is what the measurements were taken in:
 
-| # | Branch | What it does | Measured |
+| # | Branch (merged as) | What it does | Measured |
 |---|---|---|---|
-| 1 | `perf/graph-off-the-bank` (2 commits) | `.gitignore` fix, then the learning graph asks `/questions/browse?limit=240` for the 240 nodes it draws | 38,573,654 B → 68,467 B (563x) |
-| 2 | `perf/dashboard-off-the-bank` | Progress counts ids, so it reads `/questions/index` | 38,573,654 B → 2,886,874 B (13.4x) |
-| 3 | `perf/study-fetches-the-session-not-the-bank` | Study plans from the index (`has_answer` / `has_quiz`), then `GET /questions/batch?ids=…` for the ≤40 cards it will show | 38,573,654 B → 40,042 B when the index is already loaded (963x) |
-| 4 | `perf/drop-recharts` | The one area chart is hand-drawn SVG; recharts is gone from `package.json` | Progress chunk 397.88 kB → 6.08 kB (65x) |
-| 5 | `perf/api-gzip-etag` | `GZipMiddleware` + an ETag keyed on the same source-file mtimes the caches use | `/questions` 38.6 MB → 9.19 MB; a repeat load is a 304 |
-| 6 | `perf/index-survives-a-reload` | The index lives in IndexedDB; paint from disk, then revalidate. Primed on idle from the shell | first visit 505 kB, every one after **300 B**, and paint waits for neither |
-| 7 | `fix/related-links-vanished` | Related links read the server's expansion instead of an always-empty map; the hover preview fetches its own question | the section was invisible on every saved card; 4 requests per hover → 1 |
-| 8 | `perf/highlighter-on-demand` | lowlight and its grammars load with the first fenced code block | Markdown chunk 181.89 → 128.67 kB; 53.46 kB deferred |
-| 9 | `perf/prefetch-routes-on-hover` | A nav link fetches its route chunk on hover and on focus | click-to-render 61 ms → 17 ms |
+| 1 | `perf/graph-off-the-bank` (2 commits, #52) | `.gitignore` fix, then the learning graph asks `/questions/browse?limit=240` for the 240 nodes it draws | 38,573,654 B → 68,467 B (563x) |
+| 2 | `perf/dashboard-off-the-bank` (#62) | Progress counts ids, so it reads `/questions/index` | 38,573,654 B → 2,886,874 B (13.4x) |
+| 3 | `perf/study-fetches-the-session-not-the-bank` (#54) | Study plans from the index (`has_answer` / `has_quiz`), then `GET /questions/batch?ids=…` for the ≤40 cards it will show | 38,573,654 B → 40,042 B when the index is already loaded (963x) |
+| 4 | `perf/drop-recharts` (#55) | The one area chart is hand-drawn SVG; recharts is gone from `package.json` | Progress chunk 397.88 kB → 6.08 kB (65x) |
+| 5 | `perf/api-gzip-etag` (#56) | `GZipMiddleware` + an ETag keyed on the same source-file mtimes the caches use | `/questions` 38.6 MB → 9.19 MB; a repeat load is a 304 |
+| 6 | `perf/index-survives-a-reload` (#57) | The index lives in IndexedDB; paint from disk, then revalidate. Primed on idle from the shell | first visit 505 kB, every one after **300 B**, and paint waits for neither |
+| 7 | `fix/related-links-vanished` (#58) | Related links read the server's expansion instead of an always-empty map; the hover preview fetches its own question | the section was invisible on every saved card; 4 requests per hover → 1 |
+| 8 | `perf/highlighter-on-demand` (#59) | lowlight and its grammars load with the first fenced code block | Markdown chunk 181.89 → 128.67 kB; 53.46 kB deferred |
+| 9 | `perf/prefetch-routes-on-hover` (#60) | A nav link fetches its route chunk on hover and on focus | click-to-render 61 ms → 17 ms |
 
 Brotli was considered and rejected: it needs `brotli-asgi`, and ~15-20% over gzip buys nothing on an
 app served from 127.0.0.1. Revisit only if this is ever deployed over a real network.
