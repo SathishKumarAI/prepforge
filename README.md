@@ -116,6 +116,24 @@ so remaking it does not erase what you had done. Cards ride in the backup, which
 for exactly that reason: a build that did not know about them would restore a file, report success,
 and drop every card you had written.
 
+### Reading mode in the Library
+
+The question list is *setup*: it answers "what should I read", and once that is decided it is sixty
+titles competing with the one answer you chose. On a wide screen it now behaves like the app bar and
+the filters — **it gets out of the way while you read**:
+
+- Scrolling into an answer puts it away; scrolling back up, or reaching the top, brings it back. Only
+  with a question open, and never while you are still browsing — the list scrolls inside itself, so
+  page scroll means the *answer* is moving.
+- Arriving **at** a question — a shared link, a Ctrl+K pick, the back button — opens with the list
+  already away. Clicking a row does not: that means you are still choosing.
+- The left edge keeps its hover-peek, and **Keep open** pins the list for the rest of the visit.
+
+Rows are titles now. The difficulty letter went because difficulty is a *filter* — there are chips
+above the list — and nobody picks between two questions because one is an "M"; the origin glyph went
+because the detail header prints provenance in words. Sixty copies of something that is not a
+per-row decision is a column of noise beside the column you are reading.
+
 ### Reading a Markdown file
 
 **Reader → Local file** opens a `.md`, `.markdown`, `.txt` or PDF from disk; **Web page** fetches a

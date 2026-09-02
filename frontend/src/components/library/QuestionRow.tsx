@@ -1,4 +1,3 @@
-import { Bookmark, FileText, Library } from "lucide-react";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
 import type { QuestionRowLite } from "../../lib/types";
 
@@ -9,6 +8,22 @@ import type { QuestionRowLite } from "../../lib/types";
  * Deliberately one line of question text. A row that wraps to three makes the
  * list a second reading surface competing with the one on the right, and the
  * whole point of the layout is that there is exactly one place to read.
+ *
+ * Two marks were removed for the same reason, and both were per-row copies of
+ * something that is not a per-row decision:
+ *
+ * - The difficulty letter. Difficulty is a FILTER — there are Easy / Medium /
+ *   Hard chips above this list — and nobody chooses between two questions
+ *   because one of them is an "M". Sixty single letters down the right edge is
+ *   a column of noise beside the column you are actually reading.
+ * - The origin icon. Provenance matters when you are reading a card, and the
+ *   detail header prints it in words ("PrepForge bank", "ai-system-design-
+ *   guide"). Sixty mostly-identical glyphs here said nothing that one line
+ *   over there says better.
+ *
+ * What is left is the topic dot and the question. Both earn their place: the
+ * dot is the only thing that groups a scan of sixty rows, and the question is
+ * the thing you are choosing between.
  */
 export function QuestionRow({
   q,
@@ -42,21 +57,8 @@ export function QuestionRow({
           className={`size-1.5 shrink-0 rounded-full ${ACCENT_DOT[topicColor(q.topic)]}`}
         />
         <span className="min-w-0 flex-1 truncate text-small leading-snug">{q.question}</span>
-        {q.origin && <OriginIcon kind={q.origin.kind} />}
-
-        <span
-          className={`shrink-0 text-micro tabular-nums ${
-            selected ? "text-subtext0" : "text-overlay0"
-          }`}
-        >
-          {q.difficulty.slice(0, 1).toUpperCase()}
-        </span>
       </button>
     </li>
   );
 }
 
-function OriginIcon({ kind }: { kind: string }) {
-  const Icon = kind === "library" ? Library : kind === "vault" ? FileText : Bookmark;
-  return <Icon aria-hidden="true" className="size-3 shrink-0 text-overlay0" />;
-}
