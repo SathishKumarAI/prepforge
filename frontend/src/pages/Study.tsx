@@ -13,7 +13,7 @@ import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { fetchQuestionBatch, type QuestionLite } from "../lib/api";
-import { isDue, type Rating } from "../lib/srs";
+import { isDue, isLeech, LEECH_LAPSES, type Rating } from "../lib/srs";
 import { MODES, MODE_ORDER, toStudyMode, type StudyMode } from "../lib/studyModes";
 import type { Question } from "../lib/types";
 
@@ -127,9 +127,24 @@ export function Study() {
 
   // Eligibility and readiness come from the registry, so adding a mode never
   // means hunting for the places that filter.
+  /**
+   * `?pool=leeches` narrows the deck to the cards you keep forgetting, which is
+   * how Progress hands you "drill the ones that keep slipping". It lives in the
+   * URL rather than in state because it arrives as a link — and it is NOT
+   * remembered in `pf-study-prefs`: a filter you cannot see the origin of would
+   * silently shrink every later session to six cards.
+   */
+  const onlyLeeches = params.get("pool") === "leeches";
+
   const pool = useMemo(
-    () => questions.filter((q) => spec.eligible(q) && (!topic || q.topic === topic)),
-    [questions, spec, topic],
+    () =>
+      questions.filter(
+        (q) =>
+          spec.eligible(q) &&
+          (!topic || q.topic === topic) &&
+          (!onlyLeeches || isLeech(progress.srs[q.id])),
+      ),
+    [questions, spec, topic, onlyLeeches, progress.srs],
   );
   const ready = useMemo(
     () => pool.filter((q) => spec.ready(q, progress.srs[q.id])),
@@ -142,6 +157,13 @@ export function Study() {
   const mastered = useMemo(
     () => pool.filter((q) => progress.srs[q.id]?.stage === "mastered").length,
     [pool, progress.srs],
+  );
+  // Counted over the SRS state, not the bank: only a card you have already
+  // failed can be a leech, so this is a walk of what you have studied — tens of
+  // rows on a real profile, against 18,284 in `questions`.
+  const leechCount = useMemo(
+    () => Object.values(progress.srs).filter(isLeech).length,
+    [progress.srs],
   );
 
   const plannedSize =
@@ -367,7 +389,12 @@ export function Study() {
         label="Study mode"
         value={mode}
         options={MODE_ORDER.map((m) => ({ value: m, label: MODES[m].label }))}
-        onChange={(m) => setParams({ mode: m }, { replace: true })}
+        // `pool` rides along; everything else on this screen is component state.
+        // Losing the filter on a mode switch would silently widen the deck back
+        // to 18,284 cards while the chip still read as active.
+        onChange={(m) =>
+          setParams(onlyLeeches ? { mode: m, pool: "leeches" } : { mode: m }, { replace: true })
+        }
         idPrefix="study-mode"
         panelId="study-mode-panel"
         className="mb-5"
@@ -393,6 +420,19 @@ export function Study() {
             />
           ))}
         </Setting>
+        {/* Only when there is something to focus on. A chip that always narrows
+            to nothing is a dead control on every new install. */}
+        {(onlyLeeches || leechCount > 0) && (
+          <Setting label="Focus">
+            <Chip
+              active={onlyLeeches}
+              onClick={() =>
+                setParams(onlyLeeches ? { mode } : { mode, pool: "leeches" }, { replace: true })
+              }
+              label={`Keeps slipping · ${leechCount}`}
+            />
+          </Setting>
+        )}
       </div>
 
       {/* One disclosure, below the fold, for the settings most sessions do not
@@ -455,7 +495,13 @@ export function Study() {
           </span>
         </div>
       ) : (
-        <Empty title={spec.emptyLabel}>
+        <Empty
+          title={
+            onlyLeeches
+              ? `Nothing here has been forgotten ${LEECH_LAPSES} times. Clear the focus to study the rest.`
+              : spec.emptyLabel
+          }
+        >
           {/* The zeroed spine, so the thing you are about to use is visible
               before you have any data in it. */}
           <Spine total={12} position={-1} outcomes={[]} />

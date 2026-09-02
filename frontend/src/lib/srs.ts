@@ -17,6 +17,24 @@ export interface SrsCard {
 const RATING_Q: Record<Rating, number> = { again: 2, hard: 3, good: 4, easy: 5 };
 const MASTERED_INTERVAL = 21;
 
+/**
+ * Forgotten this many times and the card is not being learned, it is being
+ * re-read. SM-2 answers a failure by shortening the interval, which for a card
+ * you cannot hold means seeing it constantly and still failing it — the review
+ * load goes up and nothing sticks.
+ *
+ * Three, following Anki's default of eight lapses halved for a deck reviewed by
+ * hand rather than daily for years: two is a bad week, three is a pattern. The
+ * scheduler does NOT act on this — nothing here reschedules or suspends. It is
+ * a lens: the app can finally say which cards are the problem, and the fix
+ * (rewrite it, split it, learn the thing underneath) is not one the app can make.
+ */
+export const LEECH_LAPSES = 3;
+
+export function isLeech(card: SrsCard | undefined): boolean {
+  return Boolean(card && card.lapses >= LEECH_LAPSES);
+}
+
 export function newCard(): SrsCard {
   return { ef: 2.5, interval: 0, reps: 0, lapses: 0, due: today(), stage: "new", seen: false };
 }
