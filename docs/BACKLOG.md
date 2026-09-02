@@ -48,6 +48,13 @@ personal prep tool, not a bloated product.
 - [ ] `P2` **Obsidian-compatible export** — notes + answers export as a vault folder (YAML frontmatter,
   `[[wikilinks]]`). Edge cases: filename sanitization/collisions; frontmatter escaping; stable slugs.
 - [ ] `P2` **Highlight-to-flashcard** from ingested books/PDFs (idea from RemNote) — tighten read→recall.
+- [x] `P2` **Leeches — the cards that keep slipping.** **Shipped 2026-09-02** (COD-113). `lapses`
+      has been counted since the scheduler was written and no screen read it, so the cards eating a
+      session were invisible. Progress names them worst-first (`LEECH_LAPSES = 3`, Anki's eight
+      halved for a hand-reviewed deck), each row linking into the Library — re-reading or rewriting
+      a card is the fix, not a seventh test. `/study?pool=leeches` drills only those, from a button
+      on Progress or a chip on Study. Nothing is suspended or rescheduled: this is a lens, not a
+      scheduler change. Guarded by `scripts/test-srs.mjs`.
 - [ ] `P2` **FSRS scheduler** option (20–30% fewer reviews than SM-2; competitors moved to it).
 - [ ] `P2` Draggable sticky board (positions persisted, clamp on resize) + graph pan/zoom + mobile list fallback.
 - [x] `P2` Export/import all progress + notes as one JSON (backup/restore). **Shipped 2026-09-02**

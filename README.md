@@ -20,6 +20,7 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **Provenance on every card** | curated bank / which cloned repo / vault — no question is unattributed |
 | **More to read** | links the source cites, the authored answer's citations, else borrowed from close relatives (labelled) |
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
+| **Leeches** | The cards forgotten three or more times, named on Progress, with one click to drill only those |
 | **A way out of the browser** | Settings → Your data: one JSON file with every card, note, setting and voice clip, and a merge-or-replace restore |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
@@ -66,6 +67,24 @@ key is the `ETag`, so every client copy is invalidated by the same act.
 the network is consulted; progress has always been `localStorage`. Today, Study's setup screen,
 Progress and the notes graph all render with the server stopped. Only the screens that need an
 *answer* need it running.
+
+### The cards that keep slipping
+
+SM-2 answers a failure by shortening the interval, so a card you never manage to hold comes back
+sooner, fails again, and quietly takes over the session — the review load climbs and nothing sticks.
+Anki calls these leeches. `lapses` has been counted since the scheduler was written and no screen
+read it.
+
+Progress now names them: **Keeps slipping**, worst first, each row linking into the Library rather
+than into a session — the useful move on a card you have failed six times is to re-read it, split
+it, or decide it is badly written, none of which is another test. Beside the weakest-topic button,
+**Drill the N that keep slipping** starts a session over only those (`/study?pool=leeches`, also a
+chip on Study's setup screen).
+
+The threshold is `LEECH_LAPSES = 3` in `lib/srs.ts` — Anki's default of eight, halved for a deck
+reviewed by hand rather than daily for years. Two failures is a bad week; three is a pattern. The
+scheduler does not act on it: nothing is suspended or rescheduled, because the fix is one only you
+can make.
 
 ### Backup and restore
 
