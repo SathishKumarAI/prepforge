@@ -96,18 +96,31 @@ export function Layout({ children }: { children: ReactNode }) {
     return lockBodyScroll();
   }, [navOpen, focus]);
 
-  // Publish the app bar's real height for sticky page chrome. Measured, not
-  // assumed — the bar wraps at narrow widths and grows by a line.
+  /**
+   * Publish the app bar's EFFECTIVE height for sticky page chrome. Measured,
+   * not assumed — the bar wraps at narrow widths and grows by a line.
+   *
+   * Effective, because the bar slides itself out of the way on a downward
+   * scroll. While it is gone its height is 0, and publishing 61px anyway is
+   * what put a 69px band of nothing at the top of the viewport with the answer
+   * scrolling through it in full view — text sliced in half at the sticky
+   * question header's top edge, which reads as a rendering fault. Every sticky
+   * offset in the app is derived from this one value, so correcting it here
+   * fixes all of them at once.
+   */
   useLayoutEffect(() => {
     const el = barRef.current;
     if (!el) return;
     const publish = () =>
-      document.documentElement.style.setProperty("--app-bar-h", `${el.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        "--app-bar-h",
+        barHidden || focus ? "0px" : `${el.offsetHeight}px`,
+      );
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [focus]);
+  }, [focus, barHidden]);
 
   // Focus mode hides our chrome; the browser's chrome is chrome too, so take
   // the real screen. A failed request (iframe, permission) is not fatal — the
@@ -294,7 +307,11 @@ export function Layout({ children }: { children: ReactNode }) {
         <header
           ref={barRef}
           style={{ transitionProperty: "transform, visibility" }}
-          className={`sticky top-0 z-30 flex items-center gap-2 border-b border-surface0 bg-base/95 px-3 py-2 backdrop-blur-sm duration-200 ${
+          // Opaque, not bg-base/95: content scrolls UNDER a sticky bar, so the
+          // bar has to occlude it. At 95% with a blur the answer still ghosted
+          // through — the same defect #47 fixed on the question header, left in
+          // place one element above it.
+          className={`sticky top-0 z-30 flex items-center gap-2 border-b border-surface0 bg-base px-3 py-2 duration-200 ${
             focus ? "hidden" : ""
           } ${barHidden ? "invisible -translate-y-full" : "visible translate-y-0"}`}
         >
