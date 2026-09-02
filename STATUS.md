@@ -60,7 +60,19 @@ Update this when you STOP working, not when you start.
   - Two things left deliberately, both recorded in `docs/UIUX-BACKLOG.md`: the filter chrome returns
     **over** the question header on scroll-up (a stacking decision nobody has made on purpose), and
     Library's orient reads 18,284 under a topic filter (that number is context, not a result count).
+  - **COD-132**: some ingested questions are not questions — a heading, a sentence fragment, an MCQ
+    stub with no choices — and they now carry confident generated answers. `ingest` filters junk
+    *bodies* by repetition and has nothing for junk *questions*.
   - `docs/AUDIT-BACKLOG.md` (157 open) and `docs/UIUX-BACKLOG.md` are the standing queues.
+- **Every question in the bank has an answer now.** The 99 that arrived without one are answered by
+  `openai/gpt-oss-20b` in LM Studio — `answer_missing.py` writes them, `eval_answers.py` gates them
+  (99 answers, 0 failing), `_fill_missing_answers()` serves them, and each one carries its own
+  "machine-generated, not reviewed" line. **The files are gitignored**: they are this machine's
+  output, so a fresh clone has 99 unanswered questions again and one `answer_missing.py` run to fix
+  it. Traps worth knowing before touching that path: `generate.local_only()` must never gain a
+  billed fallback, filling must only ever fill a gap, and the judge's absolute score is inflated
+  (mean 4.80, median 5.00, nothing below 4.00 over 97 of its own answers) — read its `why` line and
+  its ranking instead.
 - **Blocked on:** nothing. **The board matches `main`** — 53 items carry `repo:interview_prep`:
   **49 Done, 0 In Review, 5 Backlog** (COD-117 is the new one), and there are **no open PRs**. Every
   PR body carries its work item id; COD-99's is on #62, not the closed #53.
