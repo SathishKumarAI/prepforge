@@ -16,7 +16,10 @@ The checks are deterministic and free: they run over the text, not through a
 model, so they are the same every time and they cannot themselves hallucinate.
 `--judge` adds a second opinion from the same local model — useful, slower, and
 never the only gate, because a model marking its own homework is evidence, not
-proof.
+proof. Measured over 97 of its own answers: **mean 4.80, median 5.00, minimum
+4.00 out of 5**, with nothing below 4 — including one it described as "does not
+directly address the unclear question" and still scored 4.0. Read the `why`
+text and the ranking; do not read the absolute number as a grade.
 
 Exit code is 1 when anything fails, so this is usable as a gate.
 """
@@ -195,7 +198,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--mode", default="deep")
     ap.add_argument("--judge", action="store_true", help="also ask the local model to grade each answer")
-    ap.add_argument("--judge-floor", type=float, default=3.0, help="mean below this counts as a failure")
+    # 4.5, not the 3.0 a "1-5, be strict" rubric suggests. Measured over 97
+    # answers this model wrote: mean 4.80, median 5.00, nothing at all below
+    # 4.00. A floor of 3.0 would never have fired once — it would have looked
+    # like a gate and been a decoration. At 4.5 the bottom third is at least
+    # surfaced for a human to read.
+    ap.add_argument("--judge-floor", type=float, default=4.5, help="mean below this counts as a failure")
     ap.add_argument("--delete-failures", action="store_true", help="remove failing files so they regenerate")
     args = ap.parse_args()
 

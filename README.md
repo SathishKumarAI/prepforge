@@ -229,10 +229,15 @@ text, so they are the same every time and cannot themselves hallucinate:
 page as code)
 
 `--judge` adds a second opinion from the same local model, scoring 1–5 on *answers the question*,
-*specific* and *no filler*. It is evidence, not proof — **a model marking its own homework cannot
-tell you the question was junk**, and some of these questions are: an ad blurb and a multiple-choice
-stub with no choices both scored well on the answer they got. `--delete-failures` removes the files
-that failed so the next run rewrites them.
+*specific* and *no filler*. It is evidence, not proof, and the measurement says how much to trust it:
+over 97 of its own answers it returned **mean 4.80, median 5.00, minimum 4.00** — nothing below 4,
+including one answer it described as *"does not directly address the unclear question"* and scored
+4.0 anyway. So the floor defaults to **4.5**: at 3.0 the gate would never fire once and would look
+like a check while being a decoration. Read the `why` line and the ranking, not the number.
+
+It also **cannot tell you the question was junk**, and some of these are: an ad blurb and a
+multiple-choice stub with no choices both got sensible answers and good scores. `--delete-failures`
+removes the files that failed so the next run rewrites them.
 
 `backend/test_local_answers.py` guards the part that fails quietly: every check, that filling only
 ever fills a gap, and that writing an answer moves the bank's ETag — otherwise the file would sit on
