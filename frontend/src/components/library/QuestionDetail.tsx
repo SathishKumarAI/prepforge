@@ -104,10 +104,20 @@ export function QuestionDetail({
   useEffect(() => () => window.clearTimeout(tabTimer.current), []);
 
   return (
-    // The 68ch measure comes off in here. In a pane whose whole job is to hold
-    // the answer, that cap IS the empty space the layout was changed to remove —
-    // a deliberate trade of line length for using the width.
-    <article className="min-w-0 [&_.prose-answer]:max-w-none">
+    /* 100ch, not the 68ch measure and not uncapped.
+     *
+     * 68ch was written for a pane sharing the screen with a list; with the list
+     * away it left a third of the page empty. Uncapped went too far the other
+     * way — at 1,438px an answer runs about 180 characters a line, and the eye
+     * loses the start of the next one on every return sweep, which is the exact
+     * failure a measure exists to prevent.
+     *
+     * The PAGE stays full width: the header, the lens tabs and the related list
+     * all use it. Only the running prose is capped, and it is left-aligned
+     * rather than centred so its left edge stays flush with the question above
+     * it — a centred column under a full-width heading reads as a mistake.
+     */
+    <article className="min-w-0 [&_.prose-answer]:max-w-[100ch]">
       {onBack && (
         <Button variant="ghost" size="sm" onClick={onBack} className="mb-3 lg:hidden">
           <ArrowLeft aria-hidden="true" />
