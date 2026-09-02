@@ -66,6 +66,26 @@ recorded here because the reasoning is the part that does not survive in a diff.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
+## Shipped 2026-09-02 — reading mode in the Library
+
+The last piece of chrome that did not get out of the way (COD-125). The app bar and the filter row
+already hide on a downward scroll; the sixty-row question list stayed, taking a third of a wide
+screen while you read one answer.
+
+- [x] **The list auto-hides while you read.** Only with a question open, only scrolling down away
+      from the top, and never after "Keep open" — which now pins it, because a button that promises
+      to keep something open cannot be undone by the next scroll.
+- [x] **Arriving at a question opens in reading mode.** A link, a Ctrl+K pick or the back button says
+      which question you want; the other 18,283 are not an answer to anything you asked. Clicking a
+      row does not trigger it — `select()` sets the id before the URL, so the URL effect sees them
+      equal and does nothing.
+- [x] **Rows are titles.** The E/M/H letter went (difficulty is a filter — the chips are right above
+      the list — and nobody chooses between two questions because one is an "M") and so did the
+      origin glyph (the detail header prints provenance in words). Sixty copies of a thing that is
+      not a per-row decision is noise beside the column you are reading.
+- [ ] Below `lg` none of this applies: there is no list beside the answer to put away. The phone
+      layout swaps panes instead, which is its own answer to the same problem.
+
 ## Bugs fixed 2026-09-02 — the answer scrolled through the chrome
 
 Reported as "the question stays on the screen but the scrolled answer is visible in the background,

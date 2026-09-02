@@ -8,6 +8,7 @@ import { StickyChrome, UNDER_APP_BAR } from "../page/StickyChrome";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
+import { useScrollDirection } from "../../hooks/useScrollDirection";
 import { useQuestion } from "../../hooks/useQuestion";
 import { fetchBrowse, type Browse } from "../../lib/api";
 import { isDue } from "../../lib/srs";
@@ -181,12 +182,24 @@ export function QuestionsView() {
    */
   const [detailOnly, setDetailOnly] = useState(() => Boolean(params.get("id")));
 
-  // The URL is the source of truth for both, not just at mount.
+  /**
+   * Reading mode: arriving AT a question puts the list away.
+   *
+   * A deep link, a Ctrl+K pick or a back button says which question you want —
+   * the list of the other 18,283 is not the answer to anything you just asked.
+   * Browsing is the opposite: clicking a row means you are still choosing, and
+   * that path never sets this, because `select()` updates `selectedId` before
+   * the URL, so the effect below sees them already equal and does nothing.
+   */
+  const [readingMode, setReadingMode] = useState(() => Boolean(params.get("id")));
+
+  // The URL is the source of truth for these, not just at mount.
   useEffect(() => {
     const id = params.get("id");
     if (!id || id === selectedId) return;
     setSelectedId(id);
     setDetailOnly(true);
+    setReadingMode(true);
   }, [params, selectedId]);
   const peekTimer = useRef<number>();
 
@@ -199,6 +212,12 @@ export function QuestionsView() {
   const [listHidden, setListHidden] = useState(
     () => localStorage.getItem(LIST_HIDDEN_KEY) === "1",
   );
+  /**
+   * Pinned by "Keep open", which is a promise this has to honour: without it the
+   * next downward scroll would put the list away again and the button would
+   * have meant nothing.
+   */
+  const [pinOpen, setPinOpen] = useState(false);
   const [peeking, setPeeking] = useState(false);
   const revealTimer = useRef<number>();
   // Hover selects on a real pointer only. On touch, mouseenter fires from the
@@ -234,12 +253,43 @@ export function QuestionsView() {
   }
   useEffect(() => () => window.clearTimeout(peekTimer.current), []);
 
+  /**
+   * The list gets out of the way while you read, like the app bar and the
+   * filters above it — this was the one piece of chrome that stayed put.
+   *
+   * Only with a question open, because otherwise the list IS the page. Only on
+   * a downward scroll away from the top, which on a wide screen means you are
+   * reading: the list scrolls inside itself, so page scroll is the answer
+   * moving, never the list. And never once "Keep open" has been pressed.
+   *
+   * `listHidden` stays the persisted preference and is untouched by any of
+   * this; `listAway` is what the layout reads.
+   */
+  const { hidden: scrolledIntoTheAnswer } = useScrollDirection();
+  const listAway =
+    listHidden || readingMode || (!pinOpen && scrolledIntoTheAnswer && Boolean(selectedId));
+
   useEffect(() => {
     localStorage.setItem(LIST_HIDDEN_KEY, listHidden ? "1" : "0");
     // Showing the list for real ends the peek, or the overlay would sit on top
     // of the column it is a stand-in for.
     if (!listHidden) setPeeking(false);
   }, [listHidden]);
+
+  /** One place for "the list is back and stays back", so the peek panel, the
+   *  handle and the header toggle cannot drift apart. */
+  const showListForGood = useCallback(() => {
+    setListHidden(false);
+    setReadingMode(false);
+    setPinOpen(true);
+    setPeeking(false);
+  }, []);
+
+  /** And its opposite. Pinning is dropped so the auto-hide can work again. */
+  const hideList = useCallback(() => {
+    setListHidden(true);
+    setPinOpen(false);
+  }, []);
 
   useEffect(() => () => window.clearTimeout(revealTimer.current), []);
 
@@ -473,7 +523,7 @@ export function QuestionsView() {
             variant="ghost"
             size="sm"
             className="ml-auto hidden lg:inline-flex"
-            onClick={() => setListHidden((v) => !v)}
+            onClick={() => (listAway ? showListForGood() : hideList())}
             aria-pressed={listHidden}
             title={
               listHidden
@@ -486,7 +536,7 @@ export function QuestionsView() {
             ) : (
               <PanelLeftClose aria-hidden="true" />
             )}
-            {listHidden ? "Show list" : "Hide list"}
+            {listAway ? "Show list" : "Hide list"}
           </Button>
         </div>
       </StickyChrome>
@@ -531,7 +581,7 @@ export function QuestionsView() {
               reading a long answer never scrolls the list away from you. Its
               offset is --app-bar-h, the same measured value StickyChrome uses;
               a constant here and the two would overlap by exactly one notch. */}
-          {!listHidden && (
+          {!listAway && (
             <div
               style={UNDER_APP_BAR}
               // `overscroll-contain`: reaching the end of the list must not hand
@@ -555,7 +605,7 @@ export function QuestionsView() {
               left edge. At left-0 the handle sat on the answer's first glyph and
               its hover box swallowed the first 12px of every line, so you could
               not select from the start of a paragraph. */}
-          {listHidden && (
+          {listAway && (
             <div
               onMouseEnter={() => peekList(true)}
               onMouseLeave={() => peekList(false)}
@@ -571,7 +621,7 @@ export function QuestionsView() {
                         <span className="tabular-nums">{filtered.length}</span> question
                         {filtered.length === 1 ? "" : "s"}
                       </span>
-                      <Button variant="ghost" size="sm" onClick={() => setListHidden(false)}>
+                      <Button variant="ghost" size="sm" onClick={showListForGood}>
                         Keep open
                       </Button>
                     </div>
@@ -582,7 +632,7 @@ export function QuestionsView() {
                   // secret. A button, so it also answers a click and a Tab.
                   <button
                     type="button"
-                    onClick={() => setListHidden(false)}
+                    onClick={showListForGood}
                     aria-label="Show the question list"
                     title="Show the question list"
                     className="ml-2 h-24 w-1.5 rounded-full bg-surface0 transition-colors duration-100 hover:bg-surface2"
