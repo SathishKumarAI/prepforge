@@ -5,6 +5,8 @@ import { ArrowRight, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
+import { useUserCards } from "../hooks/useUserCards";
+import { isUserCardId, USER_CARD_TOPIC } from "../lib/userCards";
 import type { QuestionLite } from "../lib/api";
 import { DifficultyBadge, TopicBadge } from "./Badge";
 
@@ -35,6 +37,7 @@ const COMMANDS: Command[] = [
   { id: "quiz", label: "Study — quiz", hint: "multiple choice, scored", to: "/study?mode=quiz" },
   { id: "library", label: "Library — questions", hint: "the whole bank", to: "/library?view=questions" },
   { id: "saved", label: "Library — saved", hint: "what you bookmarked", to: "/library?view=saved" },
+  { id: "mine", label: "Library — cards I made", hint: "written from a highlight", to: "/library?view=saved&scope=mine" },
   { id: "collections", label: "Library — collections", hint: "sources and documents", to: "/library?view=collections" },
   { id: "feed", label: "Library — feed", hint: "articles and videos", to: "/library?view=feed" },
   { id: "reader", label: "Reader", hint: "open a document or a URL", to: "/reader" },
@@ -53,6 +56,25 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // cost nothing, and this is the titles-only projection, not the 15 MB bank.
   const { rows: questions, loading: indexLoading } = useQuestionIndex(open);
   const { progress } = useProgress();
+  const { cards: ownCards } = useUserCards();
+
+  /**
+   * Cards you wrote, searched alongside the bank. They are local, so they cost
+   * nothing to include — and leaving them out meant the one box that reaches
+   * the whole app could not reach the deck you built by hand.
+   */
+  const searchable = useMemo<QuestionLite[]>(
+    () => [
+      ...questions,
+      ...ownCards.map((c) => ({
+        id: c.id,
+        question: c.question,
+        topic: USER_CARD_TOPIC,
+        difficulty: "medium",
+      })),
+    ],
+    [questions, ownCards],
+  );
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
@@ -68,8 +90,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // answers and tags too, which is right there and wrong here: this is a jump
   // box, and an 8,330-answer index built on every app start is not free.
   const fuse = useMemo(
-    () => (open ? new Fuse(questions, { keys: ["question", "topic"], threshold: 0.35, ignoreLocation: true }) : null),
-    [open, questions],
+    () => (open ? new Fuse(searchable, { keys: ["question", "topic"], threshold: 0.35, ignoreLocation: true }) : null),
+    [open, searchable],
   );
 
   const commandHits = useMemo(() => {
@@ -84,12 +106,12 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     // opened this to get back to. Ids only are stored, so they are resolved
     // against the index — one that no longer exists simply drops out.
     if (!q) {
-      const byId = new Map(questions.map((row) => [row.id, row]));
+      const byId = new Map(searchable.map((row) => [row.id, row]));
       return progress.recent.map((id) => byId.get(id)).filter(Boolean).slice(0, 5) as QuestionLite[];
     }
     if (!fuse) return [];
     return fuse.search(q, { limit: LIMIT }).map((r) => r.item);
-  }, [fuse, query, questions, progress.recent]);
+  }, [fuse, query, searchable, progress.recent]);
 
   const rows = useMemo(
     () => [
@@ -112,6 +134,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (!row) return;
     onClose();
     if (row.kind === "command") navigate(row.cmd.to);
+    // A card you wrote is not in the bank, so Library's questions view cannot
+    // resolve its id — it lives in Saved, under its own scope.
+    else if (isUserCardId(row.q.id)) navigate("/library?view=saved&scope=mine");
     // Library reads ?id= and opens that question in the detail pane; ?q= puts
     // the same words in its own box, so the list around the answer is the list
     // you were looking for rather than all 8,330.

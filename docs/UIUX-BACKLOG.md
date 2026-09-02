@@ -56,9 +56,13 @@ recorded here because the reasoning is the part that does not survive in a diff.
       card with its ORIGINAL id, which is what makes it the same card: `progress.srs` is keyed by
       that id, so the schedule comes back with the text. A fresh id would be a lookalike that has
       never been reviewed.
-- [ ] The leech list shows six and says "and N more" — there is no way to see the rest.
-- [ ] Cards you made are only reachable through Library → Saved. Nothing on Today or in the command
-      palette knows they exist.
+- [x] The leech list shows six and says "and N more" — **fixed 2026-09-02** (COD-119). "Show all N"
+      expands it in place, `aria-expanded` and all. Collapsed by default so the band stays a summary.
+- [x] Cards you made are only reachable through Library → Saved — **fixed 2026-09-02** (COD-119).
+      Today ranks "Study N cards you wrote" above generic new material (you read something, decided
+      it was worth remembering, and stopped there) and counts them in due/never-seen/forecast; the
+      Ctrl+K palette searches them alongside the bank and has a "Library — cards I made" command;
+      `?scope=mine` is the deep link both use, with its own empty state.
 - [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
       right backup?" is still answered by the filename.
 
