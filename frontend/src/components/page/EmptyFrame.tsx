@@ -32,7 +32,11 @@ export function EmptyFrame({
         </div>
       )}
       <div className={`flex flex-wrap items-center gap-3 ${children ? "mt-3" : ""}`}>
-        <p className="text-small text-overlay1">{label}</p>
+        {/* A measure, because this is running prose. Without it the line an
+            empty screen uses to explain itself is the widest text on the page —
+            the app caps the ANSWER at 100ch and left the copy that talks to
+            someone who has not started uncapped. */}
+        <p className="max-w-prose text-small text-overlay1">{label}</p>
         {action}
       </div>
     </div>

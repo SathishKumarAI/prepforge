@@ -99,7 +99,7 @@ function LocalReader() {
 
       {!file && (
         <div className="rounded-lg border border-dashed border-surface0 px-4 py-10">
-          <p className="text-small text-overlay1">
+          <p className="max-w-prose text-small text-overlay1">
             Nothing open. Choose a PDF, Markdown or text file and it renders here — reading it
             does not add it to your library.
           </p>
