@@ -150,10 +150,46 @@ def questions_index():
     the palette needs four fields per row. Declared ABOVE /questions/{qid} on
     purpose — FastAPI matches in definition order, and below it "index" would be
     read as a question id.
+
+    Two booleans ride along: whether the question has an answer and whether it
+    has a multiple-choice payload. They are what Study's mode eligibility turns
+    on, and they are the whole reason it can plan a session from this projection
+    instead of the bank — the presence of a 900-word answer, not the answer.
+    Measured: +11,668 B gzipped on 18,284 rows, against the 38 MB they replace.
     """
     qs = _load_questions()
-    rows = [{k: q.get(k, "") for k in INDEX_FIELDS} for q in qs]
+    rows = [
+        {
+            **{k: q.get(k, "") for k in INDEX_FIELDS},
+            "has_answer": bool(q.get("answer")),
+            "has_quiz": bool(q.get("quiz")),
+        }
+        for q in qs
+    ]
     return {"questions": rows, "count": len(rows)}
+
+
+@app.get("/questions/batch")
+def questions_batch(ids: str = ""):
+    """The handful of whole questions a study session is actually about.
+
+    Declared ABOVE /questions/{qid} for the third time and the same reason —
+    FastAPI matches in definition order, so below it "batch" is a question id.
+
+    Returned in the order they were ASKED for, not bank order. Study interleaves
+    its queue across topics so two consecutive cards are rarely alike, and a
+    route that quietly re-sorted would undo that with no visible symptom beyond
+    a session that feels repetitive.
+
+    Unknown ids are skipped rather than erroring: a bank rebuilt between planning
+    a session and starting it should cost you the card, not the session.
+    """
+    wanted = [i for i in ids.split(",") if i]
+    if not wanted:
+        return {"questions": []}
+    by_id = {q.get("id"): q for q in _load_questions()}
+    found = [by_id[i] for i in wanted if i in by_id]
+    return {"questions": found, "count": len(found), "missing": len(wanted) - len(found)}
 
 
 _search_cache: tuple[tuple[float, ...], list[tuple[dict, str, str]]] | None = None

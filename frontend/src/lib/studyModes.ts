@@ -13,7 +13,7 @@
  * Owns: mode identity, eligibility, copy, how a grade is recorded.
  * Does NOT own: scheduling (lib/srs), persistence (lib/storage), layout.
  */
-import type { Question } from "./types";
+import type { QuestionLite } from "./api";
 import type { SrsCard } from "./srs";
 import { isDue } from "./srs";
 
@@ -40,13 +40,17 @@ export interface ModeSpec {
   /**
    * Which questions this mode can use at all. Quiz needs a multiple-choice
    * payload; the others only need an answer to check yourself against.
+   *
+   * Takes an index row, not a `Question`. The predicate only ever asked whether
+   * a thing EXISTS, and typing it to the whole question is what forced the page
+   * to download 38 MB of answers to decide which ones it had.
    */
-  eligible: (q: Question) => boolean;
+  eligible: (q: QuestionLite) => boolean;
   /**
    * Which eligible questions are *ready right now*. Recall respects the SM-2
    * due date; the other two are self-paced and always ready.
    */
-  ready: (q: Question, card: SrsCard | undefined) => boolean;
+  ready: (q: QuestionLite, card: SrsCard | undefined) => boolean;
   /**
    * Where a grade lands.
    *
@@ -81,7 +85,7 @@ export const MODES: Record<StudyMode, ModeSpec> = {
     cta: "Start recall session",
     readyLabel: "due now",
     emptyLabel: "Nothing is due. Spaced repetition works by making you wait.",
-    eligible: (q) => Boolean(q.answer),
+    eligible: (q) => Boolean(q.has_answer),
     ready: (_q, card) => Boolean(card?.seen && isDue(card)),
     grades: "srs",
     ratings: FOUR_POINT,
@@ -94,7 +98,7 @@ export const MODES: Record<StudyMode, ModeSpec> = {
     cta: "Start drilling",
     readyLabel: "in the deck",
     emptyLabel: "No cards match. Widen the topic filter.",
-    eligible: (q) => Boolean(q.answer),
+    eligible: (q) => Boolean(q.has_answer),
     ready: () => true,
     grades: "flash",
     ratings: TWO_POINT,
@@ -107,7 +111,7 @@ export const MODES: Record<StudyMode, ModeSpec> = {
     cta: "Start quiz",
     readyLabel: "quiz-ready",
     emptyLabel: "No question in this filter carries a multiple-choice quiz.",
-    eligible: (q) => Boolean(q.quiz),
+    eligible: (q) => Boolean(q.has_quiz),
     ready: () => true,
     grades: "quiz",
     ratings: [],
