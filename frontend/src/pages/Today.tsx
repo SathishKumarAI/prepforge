@@ -8,7 +8,7 @@ import { useNotes } from "../hooks/useNotes";
 import { useProgress } from "../hooks/useProgress";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { suggestActions } from "../lib/nextAction";
-import { dayKey, isDue } from "../lib/srs";
+import { dayKey, dueForecast, FORECAST_DAYS, isDue, type ForecastDay } from "../lib/srs";
 
 /**
  * Slot table
@@ -16,7 +16,9 @@ import { dayKey, isDue } from "../lib/srs";
  *   job      answer "what should I do right now" and start it in one click
  *   orient   due now, never seen, day streak
  *   act      the single top-ranked action, as the page's only primary button
- *   review   the runners-up, and the last fortnight of study days
+ *   review   the runners-up, the last fortnight of study days, and the next
+ *            fortnight of cards falling due — the past and the future of the
+ *            same habit, read the same way
  *   accent   the primary button and today's cell in the strip
  *
  * This page earns its place only because it sees signals Study cannot — a
@@ -32,16 +34,24 @@ export function Today() {
   const { progress } = useProgress();
   const { notes } = useNotes();
 
-  const { suggestions, due, unseen } = useMemo(() => {
+  const { suggestions, due, unseen, forecast } = useMemo(() => {
     const suggestions = suggestActions(questions, progress);
-    return {
-      suggestions,
-      due: questions.filter((q) => {
-        const c = progress.srs[q.id];
-        return c && c.seen && isDue(c);
-      }).length,
-      unseen: questions.filter((q) => !progress.srs[q.id]?.seen).length,
-    };
+    // One pass for all three, and the due dates the forecast needs come out of
+    // it — a card the bank no longer carries must not be counted, which is the
+    // reason this walks `questions` rather than `progress.srs`.
+    let due = 0;
+    let unseen = 0;
+    const dueDates: string[] = [];
+    for (const q of questions) {
+      const card = progress.srs[q.id];
+      if (!card?.seen) {
+        unseen++;
+        continue;
+      }
+      dueDates.push(card.due);
+      if (isDue(card)) due++;
+    }
+    return { suggestions, due, unseen, forecast: dueForecast(dueDates) };
   }, [questions, progress]);
 
   if (loading) return <Loader label="Working out what is due" />;
@@ -89,6 +99,10 @@ export function Today() {
           <Band label="Study days" hint="the last fortnight">
             <StudyStrip days={progress.studyDays} />
           </Band>
+
+          <Band label="Coming up" hint="cards falling due, the next fortnight">
+            <Forecast days={forecast} />
+          </Band>
         </>
       }
     >
@@ -99,6 +113,90 @@ export function Today() {
         </Button>
       </div>
     </Page>
+  );
+}
+
+const BAR_MAX_PX = 44;
+
+/** "Tue 9" — the weekday is what makes a spike plannable; the year is noise. */
+function shortDay(key: string): string {
+  const d = new Date(key + "T00:00:00");
+  return `${d.toLocaleDateString(undefined, { weekday: "short" })} ${d.getDate()}`;
+}
+
+/**
+ * The fortnight ahead, so a pile-up is visible a week before it lands rather
+ * than on the morning it does. SM-2 sets due dates one rating at a time, and a
+ * session of "easy" ratings quietly stacks forty cards onto one future day.
+ *
+ * Same shape as `StudyStrip` above and for the same reasons: a table, every
+ * cell carrying its date and count as text, cells not individually focusable.
+ * The bars are HTML boxes, not an SVG — fourteen heights need no geometry, and
+ * the chart this page already avoided is still avoided.
+ */
+function Forecast({ days }: { days: ForecastDay[] }) {
+  const peak = days.reduce((m, d) => Math.max(m, d.count), 0);
+  const total = days.reduce((sum, d) => sum + d.count, 0);
+
+  if (total === 0) {
+    return (
+      <p className="text-small text-overlay1">
+        Nothing is scheduled in the next {FORECAST_DAYS} days. Cards appear here as you rate them —
+        that is what spaced repetition is planning.
+      </p>
+    );
+  }
+
+  const heaviest = days.reduce((a, b) => (b.count > a.count ? b : a));
+
+  return (
+    <div>
+      <div className="overflow-x-auto">
+        <table className="border-collapse">
+          <caption className="sr-only">Cards falling due on each of the next {FORECAST_DAYS} days</caption>
+          <thead className="sr-only">
+            <tr>
+              {days.map((d) => (
+                <th key={d.key} scope="col">
+                  {d.key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              {days.map((d) => (
+                <td key={d.key} className="p-0 pr-1 align-bottom">
+                  {/* A day with nothing due still gets a hairline, so the strip
+                      reads as fourteen days rather than as five bars. */}
+                  <span
+                    className={`block w-5 rounded-sm ${d.today ? "bg-mauve" : "bg-subtext0"}`}
+                    style={{
+                      height: d.count
+                        ? Math.max(3, Math.round((d.count / peak) * BAR_MAX_PX))
+                        : 1,
+                    }}
+                  >
+                    <span className="sr-only">
+                      {d.key}: {d.count} card{d.count === 1 ? "" : "s"}
+                      {d.today ? " due now, including anything overdue" : " due"}
+                    </span>
+                  </span>
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-micro text-overlay1">
+        <span className="tabular-nums text-subtext0">{days[0].count.toLocaleString()}</span> now
+        {" · heaviest "}
+        {shortDay(heaviest.key)} at{" "}
+        <span className="tabular-nums text-subtext0">{heaviest.count.toLocaleString()}</span>
+        {" · "}
+        <span className="tabular-nums">{total.toLocaleString()}</span> in the fortnight
+      </p>
+    </div>
   );
 }
 

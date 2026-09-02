@@ -14,9 +14,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const lib = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "lib", "srs.ts");
-const { newCard, schedule, isLeech, LEECH_LAPSES, isDue, dayKey } = await import(
-  pathToFileURL(lib).href
-);
+const { newCard, schedule, isLeech, LEECH_LAPSES, isDue, dayKey, dueForecast, FORECAST_DAYS } =
+  await import(pathToFileURL(lib).href);
 
 const tests = {
   test_three_failures_are_what_makes_a_leech() {
@@ -47,6 +46,41 @@ const tests = {
     card = schedule(card, "easy");
     assert.equal(card.lapses, 4);
     assert.equal(isLeech(card), true);
+  },
+
+  test_the_forecast_covers_a_fortnight_starting_today() {
+    const f = dueForecast([], FORECAST_DAYS, "2026-09-02");
+    assert.equal(f.length, FORECAST_DAYS);
+    assert.equal(f[0].key, "2026-09-02");
+    assert.equal(f[0].today, true);
+    assert.equal(f[1].key, "2026-09-03");
+    assert.equal(f[13].key, "2026-09-15");
+    assert.equal(f[13].today, false);
+  },
+
+  test_overdue_lands_on_today_not_in_the_past() {
+    // Work waiting now, not work that happened on some past day. A bar
+    // backwards in time would say the opposite of what it means.
+    const f = dueForecast(["2026-08-01", "2026-09-01", "2026-09-02"], FORECAST_DAYS, "2026-09-02");
+    assert.equal(f[0].count, 3);
+    assert.equal(
+      f.slice(1).reduce((n, d) => n + d.count, 0),
+      0,
+    );
+  },
+
+  test_a_month_out_is_dropped_rather_than_piled_on_the_last_day() {
+    const f = dueForecast(["2026-09-10", "2026-10-30", "2027-01-01"], FORECAST_DAYS, "2026-09-02");
+    assert.equal(f[8].key, "2026-09-10");
+    assert.equal(f[8].count, 1);
+    assert.equal(f[13].count, 0, "the horizon must not become a bucket for everything beyond it");
+    assert.equal(f.reduce((n, d) => n + d.count, 0), 1);
+  },
+
+  test_the_forecast_crosses_a_month_boundary_on_the_local_calendar() {
+    const f = dueForecast(["2026-10-01"], FORECAST_DAYS, "2026-09-25");
+    assert.equal(f[6].key, "2026-10-01");
+    assert.equal(f[6].count, 1);
   },
 
   test_a_failure_still_resets_the_interval_to_one_day() {
