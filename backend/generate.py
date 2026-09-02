@@ -335,6 +335,53 @@ def _write_answer(qid: str, question: str, topic: str, out: dict) -> None:
     _answer_path(qid).write_text(md, encoding="utf-8")
 
 
+# A machine-written answer must never read like a curated one. This rides on the
+# answer body rather than in a schema field, so it survives every path that
+# renders Markdown — the detail pane, a study card, an export, a grep.
+MACHINE_NOTE = "_Written by {model} running locally. Machine-generated, not reviewed._"
+# The blank line that separates the note from the answer above it. A named
+# constant, because an inline escape is the kind of thing an editing pass eats.
+MACHINE_SEPARATOR = "\n\n"
+
+
+def local_only(question: str, topic: str, qid: str, mode: str = "deep", persona: str = "") -> dict:
+    """Generate with the local model or raise — never falls back to a billed one.
+
+    `generate()` falls back to Claude when LM Studio fails, which is right for a
+    single hover and wrong for a batch of hundreds: one flaky moment mid-run
+    would quietly start billing. Batch callers use this, which has no billed path
+    at all.
+
+    Cache-first on the same `__local` file the interactive path writes, so a run
+    is resumable and a second run over the same ids costs nothing.
+    """
+    if mode not in MODES:
+        raise ValueError(f"unknown mode {mode!r}")
+    system, suffix, _ = MODES[mode]
+    model = local_model()
+    if not model:
+        raise RuntimeError(
+            f"LM Studio is not answering at {LOCAL_URL}. Start its server (Developer → Start Server) "
+            "and load a chat model."
+        )
+    cache_qid = (qid + suffix + LOCAL_SUFFIX) if qid else ""
+    hit = _cached(cache_qid)
+    if hit:
+        return hit
+    out = _local_generate(system, _prompt(question, topic, persona), model)
+    out["answer"] = out["answer"].rstrip() + MACHINE_SEPARATOR + MACHINE_NOTE.format(model=model)
+    if cache_qid:
+        _write_answer(cache_qid, question, topic, out)
+    return out
+
+
+def local_answer_path(qid: str, mode: str = "deep") -> Path:
+    """Where `local_only` caches this question+mode. The API reads it to answer a
+    question the bank has no answer for."""
+    suffix = MODES[mode][1] if mode in MODES else ""
+    return ANSWERS_DIR / f"{_safe_qid(qid)}{suffix}{LOCAL_SUFFIX}.md"
+
+
 def _cached(cache_qid: str) -> dict | None:
     if not cache_qid:
         return None

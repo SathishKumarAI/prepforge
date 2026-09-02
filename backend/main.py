@@ -32,6 +32,9 @@ log = logging.getLogger("prepforge")
 
 BASE = Path(__file__).parent
 CONTENT = BASE / "content"
+# Where generated answers are cached. Named here because the bank's version
+# depends on it: see `_bank_stamp` and `_fill_missing_answers`.
+ANSWERS_DIR = generate_mod.ANSWERS_DIR
 DATA = BASE / "data"
 CONFIG = BASE / "config" / "sources.yaml"
 DATA.mkdir(exist_ok=True)
@@ -82,6 +85,19 @@ def _bank_stamp() -> tuple[float, ...]:
     for name in _BANK_FILES:
         p = CONTENT / name
         out.append(p.stat().st_mtime if p.exists() else 0.0)
+    # The answers directory too, because a question with no answer of its own is
+    # answered from a file in there (see `_fill_missing_answers`). Writing one
+    # changes the bank, so it has to change the bank's version — the directory's
+    # own mtime moves when a file is added or removed, which is exactly the event
+    # that matters.
+    #
+    # The cost, measured: writing ANY answer — including a lens nobody asked this
+    # for — bumps the ETag, so the next request re-assembles the bank (0.59s for
+    # 18,284 questions) and every client revalidates its index. That is one slow
+    # request per generation, and generation happens on a hover a few times a
+    # session. A narrower marker would be more precise and one more mechanism to
+    # keep true; revisit if generation ever becomes continuous.
+    out.append(ANSWERS_DIR.stat().st_mtime if ANSWERS_DIR.exists() else 0.0)
     return tuple(out)
 
 
@@ -147,6 +163,7 @@ def _assemble_questions() -> list[dict]:
         for q in bank:
             q["origin"] = _origin(q, kind)
             qs.append(q)
+    _fill_missing_answers(qs)
     # attach the zero-token related + reading indexes, if built
     related = pipeline_mod.load_related()
     reading = pipeline_mod.load_reading()
@@ -157,6 +174,34 @@ def _assemble_questions() -> list[dict]:
         if reading.get(qid):
             q["reading"] = reading[qid]
     return qs
+
+
+def _fill_missing_answers(qs: list[dict]) -> None:
+    """Answer, from a generated file, the questions that arrived without one.
+
+    99 questions came out of a vault with a question and no answer. `has_answer`
+    is false for them, so Study skips them and the Answer tab is blank — they are
+    cards nobody can learn from. `answer_missing.py` writes an answer for each
+    with the local model; this is the half that makes it visible.
+
+    Only ever FILLS a gap: a question that has an answer keeps it, so nothing
+    curated or ingested can be shadowed by a machine-written file. The answer
+    text carries its own "written by … not reviewed" line, added at generation —
+    see `generate.MACHINE_NOTE` — so a reader is never told a 20B model's answer
+    is the bank's.
+    """
+    if not ANSWERS_DIR.exists():
+        return
+    for q in qs:
+        if (q.get("answer") or "").strip():
+            continue
+        path = generate_mod.local_answer_path(q.get("id", ""))
+        if not path.exists():
+            continue
+        got = generate_mod._read_answer(path.stem)
+        if got and got.get("answer"):
+            q["answer"] = got["answer"]
+            q["answer_origin"] = "local-model"
 
 
 def _load_resources() -> list[dict]:
