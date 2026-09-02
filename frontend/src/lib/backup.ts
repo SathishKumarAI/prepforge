@@ -19,6 +19,7 @@
  * Node does not), and the check would go with it.
  */
 import type { Note } from "./notes";
+import type { UserCard } from "./userCards";
 import type { Settings } from "./settings";
 import type { Progress, QuizResult } from "./storage";
 import type { SrsCard } from "./srs";
@@ -28,7 +29,10 @@ import type { SrsCard } from "./srs";
  * version it does not know rather than importing half of it: a partial restore
  * of scheduling data is worse than none, because it looks like it worked.
  */
-export const BACKUP_VERSION = 1;
+// 2 (2026-09-02): cards written from a highlight. Additive, and the version
+//                 still moved: a build that does not know about them would
+//                 restore a file, report success, and drop every card you wrote.
+export const BACKUP_VERSION = 2;
 
 export interface BackupFile {
   app: "prepforge";
@@ -38,6 +42,8 @@ export interface BackupFile {
   progress: Progress;
   notes: Note[];
   settings: Partial<Settings>;
+  /** Cards written from a highlight — the only cards not in the served bank. */
+  cards: UserCard[];
   /** Voice-note audio: the note's `audioId` → a `data:` URL of the clip. */
   audio: Record<string, string>;
 }
@@ -51,6 +57,7 @@ export interface Counts {
   bookmarks: number;
   notes: number;
   quizzes: number;
+  cards: number;
   clips: number;
 }
 
@@ -123,6 +130,37 @@ function readNotes(v: unknown): Note[] {
       kind: n.kind === "voice" || n.kind === "note" ? n.kind : "sticky",
       created: typeof n.created === "string" ? n.created : "",
       updated: typeof n.updated === "string" ? n.updated : "",
+    });
+  }
+  return out;
+}
+
+/**
+ * A card with no question is not recall, and a card with no answer is nothing at
+ * all — either way it would sit in the deck as a blank you cannot rate.
+ */
+function readCards(v: unknown): UserCard[] {
+  if (!Array.isArray(v)) return [];
+  const out: UserCard[] = [];
+  for (const c of v) {
+    if (!isObj(c)) continue;
+    const { id, question, answer } = c;
+    if (typeof id !== "string" || typeof question !== "string" || typeof answer !== "string") {
+      continue;
+    }
+    if (!question.trim() || !answer.trim()) continue;
+    out.push({
+      id,
+      question,
+      answer,
+      source:
+        isObj(c.source) && typeof c.source.title === "string"
+          ? {
+              title: c.source.title,
+              href: typeof c.source.href === "string" ? c.source.href : undefined,
+            }
+          : undefined,
+      created: typeof c.created === "string" ? c.created : "",
     });
   }
   return out;
@@ -201,6 +239,7 @@ export function parseBackup(text: string): ParseResult {
       },
       notes: readNotes(raw.notes),
       settings: isObj(raw.settings) ? (raw.settings as Partial<Settings>) : {},
+      cards: readCards(raw.cards),
       audio: readAudio(raw.audio),
     },
   };
@@ -246,12 +285,25 @@ export function mergeNotes(local: Note[], incoming: Note[]): Note[] {
   return [...local, ...incoming.filter((n) => !have.has(n.id))];
 }
 
-export function countsOf(file: Pick<BackupFile, "progress" | "notes" | "audio">): Counts {
+/**
+ * And again for cards. Ids carry the second they were made, so two browsers
+ * almost never collide — but when they do, the same rule applies: this browser's
+ * copy is the one you have been rating, and its SM-2 row is keyed by that id.
+ */
+export function mergeCards(local: UserCard[], incoming: UserCard[]): UserCard[] {
+  const have = new Set(local.map((c) => c.id));
+  return [...local, ...incoming.filter((c) => !have.has(c.id))];
+}
+
+export function countsOf(
+  file: Pick<BackupFile, "progress" | "notes" | "audio"> & { cards?: UserCard[] },
+): Counts {
   return {
     scheduled: Object.keys(file.progress.srs).length,
     bookmarks: file.progress.bookmarks.length,
     notes: file.notes.length,
     quizzes: file.progress.quizzes.length,
+    cards: file.cards?.length ?? 0,
     clips: Object.keys(file.audio).length,
   };
 }

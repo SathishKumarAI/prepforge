@@ -63,7 +63,10 @@ export function Markdown({ children }: { children: string }) {
   // processor each time, which on a 900-word answer is not free.
   const plugins = useMemo<PluggableList>(() => (hl ? [rehypeSlug, hl] : [rehypeSlug]), [hl]);
   return (
-    <div className="prose-answer">
+    // `data-cardable` is the whole opt-in for highlight-to-card: anything
+    // rendered as markdown can become a card, and no caller had to learn
+    // about the feature. See components/CardFromSelection.tsx.
+    <div className="prose-answer" data-cardable>
       <ReactMarkdown rehypePlugins={plugins} components={{ pre: PreWithCopy }}>
         {children}
       </ReactMarkdown>

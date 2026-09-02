@@ -4,6 +4,60 @@ A UI/UX-engineer pass focused on **craft**: hierarchy, motion, states, accessibi
 responsiveness, consistency. Complements the feature/bug audit in `AUDIT-BACKLOG.md`. Kanban-ready,
 checkbox tickets, no priority labels. Checked items are done this session.
 
+## Shipped 2026-09-02 — backup, leeches, forecast, highlight-to-card
+
+Four features landed (COD-112 to COD-115). The UI/UX decisions and the fixes each one turned up,
+recorded here because the reasoning is the part that does not survive in a diff.
+
+**New surfaces**
+
+- [x] **Settings → Your data** — download / restore, with a summary panel naming what a file holds
+      before anything is written, and the destructive option (`Replace everything`) separated from
+      the safe one (`Merge`) by variant, not by wording alone.
+- [x] **Progress → Keeps slipping** — the cards forgotten 3+ times, worst first. Rows link into the
+      Library rather than into a session: the useful move on a card you keep failing is to re-read
+      or rewrite it, not to be tested a seventh time.
+- [x] **Study → Focus chip** (`Keeps slipping · N`), shown only when there is something to focus on.
+      A chip that always narrows to nothing is a dead control on every new install.
+- [x] **Today → Coming up** — 14 days of cards falling due, as bars, in the same table-with-text
+      shape as the study-days strip beside it. Past and future of one habit, read the same way.
+- [x] **Highlight → "Make a card"** — a floating button on any selection inside rendered markdown,
+      then a compose dialog: the passage is the answer, you write the question.
+- [x] **Library → Saved → "Cards I made"** — a third scope chip beside Bookmarked and With a note,
+      appearing only once you have written a card, with delete per card.
+
+**Fixes found by looking at the running UI, not the code**
+
+- [x] The restore summary read "1 notes, 1 quiz sessions, 1 voice clips". Four counts in a row, all
+      wrong, reads as a placeholder rather than a number about your data. There is a `plural()`
+      helper in `BackupControls.tsx` now.
+- [x] `Merge into this browser` shipped as a second accent-filled button in a dialog whose one
+      accent is `Done`. Two accents on a screen is two answers to "what do I do now" — it is a
+      neutral fill now, and the same rule kept the leech button off the accent on Progress.
+- [x] The "Make a card" button anchored to the selection's **bounding box**, so a selection running
+      past the fold pinned it over whatever sat at the bottom of the viewport. It anchors to the
+      last line of the selection that is actually on screen.
+- [x] The compose dialog opened with the caret in the **answer** — the field that is already filled
+      in. `onOpenAutoFocus` needs `preventDefault()`, or the dialog's own focus move lands after
+      yours.
+- [x] The floating button uses `onMouseDown` → `preventDefault()`: without it, pressing the button
+      clears the selection it was created from before the click ever fires.
+- [x] Empty states for all three new surfaces, each saying what would fill it — "Nothing has been
+      forgotten 3 times", "Nothing is scheduled in the next 14 days", "Nothing here has been
+      forgotten 3 times. Clear the focus to study the rest."
+
+**What these left open**
+
+- [ ] No keyboard route to "Make a card" — a selection made with `shift+arrow` shows the button, but
+      reaching it means a pointer. A shortcut (`c`?) while a selection is live would finish it.
+- [ ] No undo after deleting a card you wrote. The SM-2 row survives, so remaking the card restores
+      its schedule, but the text is gone.
+- [ ] The leech list shows six and says "and N more" — there is no way to see the rest.
+- [ ] Cards you made are only reachable through Library → Saved. Nothing on Today or in the command
+      palette knows they exist.
+- [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
+      right backup?" is still answered by the filename.
+
 ## Accessibility & input
 - [x] Global `:focus-visible` rings on all interactive elements — keyboard users can see focus.
 - [x] Respect `prefers-reduced-motion` — disable framer-motion/CSS animation for users who ask.

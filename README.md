@@ -22,6 +22,7 @@ it: every answer ships pre-authored as Markdown and is served from disk.
 | **Spaced repetition** | SM-2 (`frontend/src/lib/srs.ts`), state in `localStorage` |
 | **Leeches** | The cards forgotten three or more times, named on Progress, with one click to drill only those |
 | **Due forecast** | The next fortnight as bars on Today, so a 43-card day is visible a week out |
+| **Your own cards** | Highlight a passage anywhere the app renders prose, write the question, and it joins the same SM-2 deck |
 | **A way out of the browser** | Settings → Your data: one JSON file with every card, note, setting and voice clip, and a merge-or-replace restore |
 | **Quiz engine** | 4 zero-token question kinds, weakness-aware selection, timed mode, resume |
 | **Resource feed** | RSS + YouTube + HTML scrapers, plus a one-click browser clipper |
@@ -86,6 +87,28 @@ The threshold is `LEECH_LAPSES = 3` in `lib/srs.ts` — Anki's default of eight,
 reviewed by hand rather than daily for years. Two failures is a bad week; three is a pattern. The
 scheduler does not act on it: nothing is suspended or rescheduled, because the fix is one only you
 can make.
+
+### A highlight becomes a card
+
+Reading and recalling used to be two separate acts here: the bank is fixed, so the moment you read
+something worth remembering the only thing you could do was bookmark the page it was on.
+
+Select a passage anywhere the app renders prose — an answer, a fetched article, a PDF, a vault
+document — and **Make a card**. The passage is the answer; you write the question, which is the half
+a highlight cannot give you and the half that makes it recall rather than re-reading. The card joins
+the same deck as everything else, under the topic **My cards**: same ratings, same due dates, same
+rows on Progress. `Library → Saved → Cards I made` lists them, with delete.
+
+The opt-in is one attribute, `data-cardable`, set once in `Markdown` — every reading surface got the
+feature by rendering markdown, and there is one selection watcher for the whole app rather than one
+per surface.
+
+Ids are `u-` prefixed and cannot collide with the bank's. That matters more than it looks:
+`progress.srs` is keyed by question id alone, so a collision would not be a duplicate card, it would
+be your schedule for one question quietly attached to another. Deleting a card leaves its SM-2 row,
+so remaking it does not erase what you had done. Cards ride in the backup, which is **version 2**
+for exactly that reason: a build that did not know about them would restore a file, report success,
+and drop every card you had written.
 
 ### The fortnight ahead
 
@@ -281,6 +304,7 @@ frontend/src/
   lib/         api.ts · indexCache.ts (the index in IndexedDB) · routeChunks.ts (lazy routes,
                prefetched on hover) · srs.ts (SM-2) · studyModes.ts (the mode registry) ·
                storage.ts · notes.ts · backup.ts (export/restore, pure) ·
+               userCards.ts (cards you wrote, pure) ·
                graph.ts (hand-rolled force layout) ·
                audio.ts (IndexedDB) · rehype-highlight-lite.ts (lazy) · theme.ts ·
                topics.ts · types.ts

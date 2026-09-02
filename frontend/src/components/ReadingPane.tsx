@@ -28,10 +28,15 @@ export function ReadingPane({
   md,
   storageKey,
   maxHeight = "74vh",
+  sourceTitle,
+  sourceHref,
 }: {
   md: string;
   storageKey: string;
   maxHeight?: string;
+  /** Named on any card made from a highlight in here, so it can be traced. */
+  sourceTitle?: string;
+  sourceHref?: string;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const heads = useMemo(() => outline(md), [md]);
@@ -95,6 +100,8 @@ export function ReadingPane({
         ref={scrollRef}
         className="reading-lg overflow-y-auto scroll-smooth"
         style={{ maxHeight }}
+        data-card-source={sourceTitle}
+        data-card-href={sourceHref}
       >
         <Markdown>{md}</Markdown>
       </div>
