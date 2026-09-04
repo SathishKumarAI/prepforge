@@ -66,6 +66,8 @@ _FENCE = re.compile(r"```.*?```", re.DOTALL)
 _SKIP_HEADINGS = {
     "table of contents", "contents", "toc", "references", "further reading", "license",
     "contributing", "acknowledgements", "acknowledgments", "star history", "index",
+    # blog footers: the same two sections at the bottom of every KDnuggets page
+    "more on this topic", "top posts",
 }
 # Whole files that ship with every repo and teach nothing. Cloning a repo used to
 # put "Explain: Reporting a bug" in the quiz rotation.
@@ -226,10 +228,21 @@ def _infer_topic(path: Path, default: str = "Machine Learning") -> str:
 
 def _split_sections(md: str) -> list[tuple[str, str]]:
     """Return (heading, body) pairs split on markdown headings."""
-    matches = list(_HEADING.finditer(md))
+    # A `# comment` inside a fenced block is code, not a heading. Read over the
+    # whole file, the regex split a scraped SQL article into "Explain: max step
+    # per user per feature" -- nine-word cards whose body was the rest of the
+    # snippet. Headings that start inside a fence are skipped, which is the one
+    # rule both Python and shell comments need.
+    fences = [(f.start(), f.end()) for f in _FENCE.finditer(md)]
+    matches = [
+        m for m in _HEADING.finditer(md)
+        if not any(a <= m.start() < b for a, b in fences)
+    ]
     sections: list[tuple[str, str]] = []
     for i, m in enumerate(matches):
-        heading = _LEAD_NUM.sub("", m.group(2).strip().strip("*_` ")).strip()
+        # `#` in the strip set: KDnuggets renders each heading's anchor as a
+        # literal "#" inside the h2, so the text arrives as "# Introduction".
+        heading = _LEAD_NUM.sub("", m.group(2).strip().strip("*_`# ")).strip()
         start = m.end()
         end = matches[i + 1].start() if i + 1 < len(matches) else len(md)
         body = _ANSWER_LEAD.sub("", _HTML_WRAPPER.sub("", md[start:end]).strip()).strip()
