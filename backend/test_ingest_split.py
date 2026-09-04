@@ -120,6 +120,44 @@ def test_repo_boilerplate_files_are_not_study_material():
         assert not _is_boilerplate(Path(real)), real
 
 
+SCRAPED_BLOG = """# SQL vs Pandas
+
+## # Introduction
+
+Three ways to answer the same analytics question, timed against each other on one dataset.
+
+## # Multi-Step Aggregation
+
+```
+import pandas as pd
+# max step per user per feature
+max_step = df.groupby(["feature_id", "user_id"])["step_reached"].max()
+# join to features, fill users who never started with 0
+```
+
+The agent got the grouping right but hallucinated a column on the second pass, which is
+the failure mode schema grounding exists to prevent.
+
+## More On This Topic
+
+- Ten other articles you did not ask for, one line each, enough to clear the length floor.
+"""
+
+
+def test_a_comment_inside_a_fence_is_not_a_heading():
+    headings = [h for h, _ in _split_sections(SCRAPED_BLOG)]
+    assert "max step per user per feature" not in headings, headings
+    assert "join to features, fill users who never started with 0" not in headings, headings
+    # ...and the snippet stays inside the section it belongs to
+    body = dict(_split_sections(SCRAPED_BLOG))["Multi-Step Aggregation"]
+    assert "max_step = df.groupby" in body and "schema grounding" in body
+
+
+def test_an_anchor_hash_and_a_blog_footer_do_not_become_cards():
+    headings = [h for h, _ in _split_sections(SCRAPED_BLOG)]
+    assert headings == ["Introduction", "Multi-Step Aggregation"], headings
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):
