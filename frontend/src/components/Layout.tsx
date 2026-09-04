@@ -1,5 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
-import { prefetchRoute } from "../lib/routeChunks";
+import { Link, NavLink, useLocation, useSearchParams } from "react-router-dom";
 import {
   useEffect,
   useLayoutEffect,
@@ -11,116 +10,131 @@ import {
 } from "react";
 import {
   BarChart3,
+  BookOpen,
   GraduationCap,
   Keyboard,
   Library,
-  PanelLeft,
   Search as SearchIcon,
   Settings as SettingsIcon,
   StickyNote,
   Sun,
+  SunMoon,
 } from "lucide-react";
+import { prefetchRoute } from "../lib/routeChunks";
 import { CommandPalette } from "./CommandPalette";
 import { SettingsPanel } from "./SettingsPanel";
 import { CardFromSelection } from "./CardFromSelection";
 import { ShortcutHelp } from "./ShortcutHelp";
 import { Button } from "./ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "./ui/breadcrumb";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Separator } from "./ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from "./ui/sidebar";
 import { useProgress } from "../hooks/useProgress";
 import { useNotes } from "../hooks/useNotes";
 import { useScrollDirection } from "../hooks/useScrollDirection";
+import { useSettings } from "../hooks/useSettings";
 import { isDue } from "../lib/srs";
-import { lockBodyScroll } from "../lib/scroll";
+import { MODES, toStudyMode } from "../lib/studyModes";
+import { THEME_OPTIONS, type ThemeMode } from "../lib/theme";
+import { cn } from "../lib/utils";
 
 /**
- * The app shell: a collapsible left nav, a slim app bar that survives the nav
- * being closed, and the routed page.
+ * The app shell, on shadcn's Sidebar: a nav that collapses to an icon rail on
+ * desktop and becomes a sheet on a phone, an app bar with a breadcrumb that
+ * says where you are, and the routed page.
  *
- * The app bar exists so that hiding the nav does not hide navigation itself —
- * it always carries the toggle and the current page name. It publishes its own
- * MEASURED height as --app-bar-h so sticky page chrome can park against it
- * without anyone hardcoding a constant that goes stale the first time the bar
- * gains a line.
+ * The Sidebar primitive owns open/closed state, Ctrl+B, the mobile sheet and
+ * its scrim, and the rail you can drag to toggle. This file owns only what the
+ * primitive cannot know: which routes exist, what the badges count, focus mode,
+ * and the MEASURED app-bar height that sticky page chrome parks against
+ * (--app-bar-h). Measured, not assumed — the bar slides out of the way on a
+ * downward scroll, and while it is gone its height is 0.
  */
 
 interface NavItem {
   to: string;
   label: string;
   /** Any 24px stroke icon from lucide. */
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
+  icon: ComponentType<{ className?: string }>;
 }
 
-const NAV: NavItem[] = [
-  { to: "/", label: "Today", icon: Sun },
-  { to: "/study", label: "Study", icon: GraduationCap },
-  { to: "/library", label: "Library", icon: Library },
-  { to: "/notes", label: "Notes", icon: StickyNote },
-  { to: "/progress", label: "Progress", icon: BarChart3 },
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Practice",
+    items: [
+      { to: "/", label: "Today", icon: Sun },
+      { to: "/study", label: "Study", icon: GraduationCap },
+      { to: "/progress", label: "Progress", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Material",
+    items: [
+      { to: "/library", label: "Library", icon: Library },
+      { to: "/reader", label: "Reader", icon: BookOpen },
+      { to: "/notes", label: "Notes", icon: StickyNote },
+    ],
+  },
 ];
+const NAV = NAV_GROUPS.flatMap((g) => g.items);
+
+/** The second crumb: a view the URL carries, named the way the page's own tabs name it. */
+const VIEW_LABELS: Record<string, Record<string, string>> = {
+  "/library": { questions: "Questions", saved: "Saved", collections: "Collections", feed: "Feed" },
+  "/notes": { graph: "Graph" },
+};
 
 const SIDEBAR_KEY = "pf-sidebar-open";
 
+function isActivePath(item: NavItem, pathname: string): boolean {
+  return item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+}
+
 export function Layout({ children }: { children: ReactNode }) {
-  const loc = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  // Default open on a wide screen — a nav you have to discover is a nav you do
-  // not use — but never on a phone, where 240px is most of the viewport.
-  const [navOpen, setNavOpen] = useState(() => {
-    const saved = localStorage.getItem(SIDEBAR_KEY);
-    if (saved !== null) return saved === "1" && window.matchMedia("(min-width: 768px)").matches;
-    return window.matchMedia("(min-width: 768px)").matches;
-  });
   const [focus, setFocus] = useState(false);
-  const { progress } = useProgress();
-  const { notes } = useNotes();
-  const barRef = useRef<HTMLElement>(null);
-  const { hidden: barHidden } = useScrollDirection();
-
+  // Remembered across visits. The primitive hides itself on a phone, so the
+  // only choice stored is "did you close it on desktop".
+  const [navOpen, setNavOpen] = useState(() => localStorage.getItem(SIDEBAR_KEY) !== "0");
   useEffect(() => {
     localStorage.setItem(SIDEBAR_KEY, navOpen ? "1" : "0");
   }, [navOpen]);
-
-  // On a phone the nav covers the page, so following a link must close it —
-  // otherwise you tap through and land on a page you cannot see.
-  useEffect(() => {
-    if (!window.matchMedia("(min-width: 768px)").matches) setNavOpen(false);
-  }, [loc.pathname]);
-
-  // ...and while it covers the page, the page must not scroll under it. Only
-  // below md, where the nav is an overlay; above it the nav is a real column
-  // and locking the body would freeze the whole app.
-  useEffect(() => {
-    if (!navOpen || focus) return;
-    if (window.matchMedia("(min-width: 768px)").matches) return;
-    return lockBodyScroll();
-  }, [navOpen, focus]);
-
-  /**
-   * Publish the app bar's EFFECTIVE height for sticky page chrome. Measured,
-   * not assumed — the bar wraps at narrow widths and grows by a line.
-   *
-   * Effective, because the bar slides itself out of the way on a downward
-   * scroll. While it is gone its height is 0, and publishing 61px anyway is
-   * what put a 69px band of nothing at the top of the viewport with the answer
-   * scrolling through it in full view — text sliced in half at the sticky
-   * question header's top edge, which reads as a rendering fault. Every sticky
-   * offset in the app is derived from this one value, so correcting it here
-   * fixes all of them at once.
-   */
-  useLayoutEffect(() => {
-    const el = barRef.current;
-    if (!el) return;
-    const publish = () =>
-      document.documentElement.style.setProperty(
-        "--app-bar-h",
-        barHidden || focus ? "0px" : `${el.offsetHeight}px`,
-      );
-    publish();
-    const ro = new ResizeObserver(publish);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [focus, barHidden]);
 
   // Focus mode hides our chrome; the browser's chrome is chrome too, so take
   // the real screen. A failed request (iframe, permission) is not fatal — the
@@ -144,20 +158,14 @@ export function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   // Global keys. Ignored while typing so "f" in a search box is just an f.
+  // Ctrl+B is not here: SidebarProvider binds it.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const el = e.target as HTMLElement | null;
       const typing =
         el?.tagName === "INPUT" || el?.tagName === "TEXTAREA" || el?.isContentEditable;
-      // Cmd/Ctrl+B toggles the nav even from inside a field — it is a window
-      // command, not a text command, and nothing in a text field claims it.
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        setNavOpen((v) => !v);
-        return;
-      }
-      // Cmd/Ctrl+K likewise: the search box you want is often the one you are
-      // not typing in. Toggles, so the same keystroke closes it.
+      // Cmd/Ctrl+K even from inside a field: the search box you want is often
+      // the one you are not typing in. Toggles, so the same keystroke closes it.
       if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
@@ -178,198 +186,35 @@ export function Layout({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Counted over the SRS cards, not over the bank. A due count is a property of
-  // what you have graded, and every graded card already carries its own due
-  // date — so the shell needs no questions at all, and the badge is right on the
-  // first frame instead of after 17 MB of answers land.
-  const dueCount = useMemo(
-    () => Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
-    [progress.srs],
-  );
-
-  function navBadge(to: string): number | null {
-    if (to === "/study") return dueCount || null;
-    if (to === "/library") return progress.bookmarks.length || null;
-    if (to === "/notes") return notes.length || null;
-    return null;
-  }
-
-  const current = NAV.find((n) => (n.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(n.to)));
-
   return (
     // `focus-mode` is the hook the reading tier reads: components that cap
     // their own measure (StudyCard, the spine above it) release the cap when
     // this class is on an ancestor. One class, no prop threaded through pages.
-    <div className={`relative flex min-h-screen ${focus ? "focus-mode" : ""}`}>
+    <SidebarProvider
+      open={navOpen && !focus}
+      onOpenChange={setNavOpen}
+      className={cn(focus && "focus-mode")}
+    >
       <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-
       {/* Once, for the whole app: a copy per reading surface would be four
           selection watchers to keep in step. */}
       <CardFromSelection />
       <ShortcutHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
-      {/* ---- side nav ---------------------------------------------------- */}
-      {/* Below md the nav overlays the page, so it needs a scrim to dismiss.
-          Above md it is a real column and the scrim must not exist. */}
-      {navOpen && !focus && (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          onClick={() => setNavOpen(false)}
-          className="fixed inset-0 z-30 bg-crust/60 md:hidden"
+      <AppSidebar
+        focus={focus}
+        onSettings={() => setSettingsOpen(true)}
+        onHelp={() => setHelpOpen(true)}
+      />
+
+      <SidebarInset>
+        <AppBar
+          focus={focus}
+          onSearch={() => setPaletteOpen(true)}
+          onSettings={() => setSettingsOpen(true)}
+          onHelp={() => setHelpOpen(true)}
         />
-      )}
-
-      <nav
-        aria-label="Main"
-        // Animating width (not display) is what lets the content column glide
-        // into the reclaimed space instead of snapping. Collapsed is width 0 and
-        // `invisible`, so nothing inside stays in the tab order.
-        className={`fixed inset-y-0 left-0 z-40 h-screen shrink-0 overflow-hidden border-r border-surface0 bg-mantle transition-[width,visibility] duration-200 md:sticky md:top-0 md:z-30 ${
-          focus ? "invisible w-0 border-r-0" : navOpen ? "w-60 visible" : "invisible w-0 border-r-0"
-        }`}
-      >
-        <div className="flex h-full w-60 flex-col justify-between px-3 py-3">
-          <div className="min-h-0 flex-1 overflow-y-auto">
-            <div className="mb-5 flex items-center gap-2 px-2 py-1">
-              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-mauve text-micro font-bold text-on-accent">
-                P
-              </span>
-              <span className="text-small font-semibold tracking-tight text-text">PrepForge</span>
-            </div>
-
-            <ul className="flex flex-col gap-0.5">
-              {NAV.map((item) => {
-                const badge = navBadge(item.to);
-                const Icon = item.icon;
-                return (
-                  <li key={item.to}>
-                    <NavLink
-                      to={item.to}
-                      end={item.to === "/"}
-                      // The few hundred milliseconds between a pointer landing
-                      // on a link and the click that follows is enough to have
-                      // the route's chunk in memory before it renders, so the
-                      // Suspense fallback never appears. `onFocus` as well as
-                      // hover: tabbing to a link is the same intent, and a
-                      // keyboard user should not be the one who waits.
-                      onMouseEnter={() => prefetchRoute(item.to)}
-                      onFocus={() => prefetchRoute(item.to)}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-small transition-colors duration-100 ${
-                          isActive
-                            ? "bg-surface0 font-medium text-text"
-                            : "text-subtext0 hover:bg-surface0/60 hover:text-text"
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <Icon
-                            aria-hidden="true"
-                            className={`size-4 shrink-0 ${isActive ? "text-mauve" : "text-overlay1"}`}
-                          />
-                          <span className="truncate">{item.label}</span>
-                          {badge !== null && (
-                            <span className="ml-auto tabular-nums text-micro text-overlay0">
-                              {badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          <div className="shrink-0 border-t border-surface0 pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => setSettingsOpen(true)}
-            >
-              <SettingsIcon aria-hidden="true" />
-              Settings
-            </Button>
-            <p className="mt-2 px-2 text-micro leading-relaxed text-overlay0">
-              Local-first. Progress stays in this browser.
-            </p>
-          </div>
-        </div>
-      </nav>
-
-      {/* ---- main -------------------------------------------------------- */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header
-          ref={barRef}
-          style={{ transitionProperty: "transform, visibility" }}
-          // Opaque, not bg-base/95: content scrolls UNDER a sticky bar, so the
-          // bar has to occlude it. At 95% with a blur the answer still ghosted
-          // through — the same defect #47 fixed on the question header, left in
-          // place one element above it.
-          className={`sticky top-0 z-30 flex items-center gap-2 border-b border-surface0 bg-base px-3 py-2 duration-200 ${
-            focus ? "hidden" : ""
-          } ${barHidden ? "invisible -translate-y-full" : "visible translate-y-0"}`}
-        >
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setNavOpen((v) => !v)}
-            aria-expanded={navOpen}
-            aria-label={navOpen ? "Hide navigation" : "Show navigation"}
-            title={`${navOpen ? "Hide" : "Show"} navigation  (Ctrl+B)`}
-          >
-            <PanelLeft aria-hidden="true" />
-          </Button>
-          {/* Only when the nav is closed. With it open the active nav item
-              already says where you are, and printing the page name twice on
-              one screen reads as a bug. */}
-          {!navOpen && (
-            <span className="truncate text-small font-medium text-subtext1">
-              {current?.label ?? "PrepForge"}
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-1">
-            {/* A keystroke nobody can see is a keystroke nobody presses. On a
-                phone this IS the search entry point, so it is a real control,
-                not a hint. */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPaletteOpen(true)}
-              aria-label="Search questions and jump to a page"
-              title="Search  (Ctrl+K)"
-            >
-              <SearchIcon aria-hidden="true" />
-              <span className="hidden sm:inline text-overlay1">Search</span>
-              <kbd className="ml-1 hidden rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0 sm:inline">
-                Ctrl K
-              </kbd>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setHelpOpen(true)}
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts  (?)"
-            >
-              <Keyboard aria-hidden="true" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              aria-label="Settings"
-              title="Settings"
-            >
-              <SettingsIcon aria-hidden="true" />
-            </Button>
-          </div>
-        </header>
 
         {focus && (
           <Button
@@ -384,14 +229,277 @@ export function Layout({ children }: { children: ReactNode }) {
           </Button>
         )}
 
-        <main
-          className={`w-full flex-1 px-4 py-6 sm:px-6 lg:px-10 ${
-            focus ? "" : "max-w-[84rem]"
-          }`}
+        {/* `.reading-wide .app-page` in index.css lifts the measure when an
+            answer is the only thing on screen. */}
+        <div
+          className={cn(
+            "app-page w-full flex-1 px-4 py-6 sm:px-6 lg:px-10",
+            !focus && "max-w-[84rem]",
+          )}
         >
           {children}
-        </main>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
+
+function AppSidebar({
+  focus,
+  onSettings,
+  onHelp,
+}: {
+  focus: boolean;
+  onSettings: () => void;
+  onHelp: () => void;
+}) {
+  const loc = useLocation();
+  const { setOpenMobile } = useSidebar();
+  const { progress } = useProgress();
+  const { notes } = useNotes();
+
+  // On a phone the nav is a sheet over the page, so following a link must
+  // close it — otherwise you tap through and land on a page you cannot see.
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [loc.pathname, setOpenMobile]);
+
+  // Counted over the SRS cards, not over the bank. A due count is a property of
+  // what you have graded, and every graded card already carries its own due
+  // date — so the shell needs no questions at all, and the badge is right on the
+  // first frame instead of after 17 MB of answers land.
+  const dueCount = useMemo(
+    () => Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
+    [progress.srs],
+  );
+
+  function badge(to: string): number | null {
+    if (to === "/study") return dueCount || null;
+    if (to === "/library") return progress.bookmarks.length || null;
+    if (to === "/notes") return notes.length || null;
+    return null;
+  }
+
+  return (
+    // Focus mode wants NO chrome, and an icon rail is chrome: switch to
+    // offcanvas so the closed state is fully off screen.
+    <Sidebar collapsible={focus ? "offcanvas" : "icon"}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild tooltip="PrepForge">
+              <Link to="/">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-mauve text-small font-bold text-on-accent">
+                  P
+                </span>
+                <span className="flex min-w-0 flex-col leading-tight">
+                  <span className="truncate font-semibold text-text">PrepForge</span>
+                  <span className="truncate text-micro text-overlay1">AI/ML interview prep</span>
+                </span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {NAV_GROUPS.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const count = badge(item.to);
+                  return (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActivePath(item, loc.pathname)}
+                        tooltip={item.label}
+                      >
+                        <NavLink
+                          to={item.to}
+                          end={item.to === "/"}
+                          // The few hundred milliseconds between a pointer
+                          // landing on a link and the click that follows is
+                          // enough to have the route's chunk in memory before
+                          // it renders. `onFocus` as well: tabbing to a link is
+                          // the same intent.
+                          onMouseEnter={() => prefetchRoute(item.to)}
+                          onFocus={() => prefetchRoute(item.to)}
+                        >
+                          <Icon />
+                          <span>{item.label}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                      {count !== null && <SidebarMenuBadge>{count}</SidebarMenuBadge>}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={onHelp} tooltip="Keyboard shortcuts">
+              <Keyboard />
+              <span>Shortcuts</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={onSettings} tooltip="Settings">
+              <SettingsIcon />
+              <span>Settings</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <p className="px-2 pb-1 text-micro leading-relaxed text-overlay0 group-data-[collapsible=icon]:hidden">
+          Local-first. Progress stays in this browser.
+        </p>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
+
+function AppBar({
+  focus,
+  onSearch,
+  onSettings,
+  onHelp,
+}: {
+  focus: boolean;
+  onSearch: () => void;
+  onSettings: () => void;
+  onHelp: () => void;
+}) {
+  const loc = useLocation();
+  const [params] = useSearchParams();
+  const { settings, update } = useSettings();
+  const barRef = useRef<HTMLElement>(null);
+  const { hidden: barHidden } = useScrollDirection();
+
+  /**
+   * Publish the app bar's EFFECTIVE height for sticky page chrome. Every
+   * sticky offset in the app is derived from this one value: publishing 61px
+   * while the bar was slid away is what once put a band of nothing at the top
+   * of the viewport with the answer scrolling through it.
+   */
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--app-bar-h",
+        barHidden || focus ? "0px" : `${el.offsetHeight}px`,
+      );
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [focus, barHidden]);
+
+  const current = NAV.find((n) => isActivePath(n, loc.pathname));
+  const view =
+    current?.to === "/study"
+      ? MODES[toStudyMode(params.get("mode"))].label
+      : VIEW_LABELS[current?.to ?? ""]?.[params.get("view") ?? ""];
+
+  return (
+    <header
+      ref={barRef}
+      // Opaque, not bg-base/95: content scrolls UNDER a sticky bar, so the bar
+      // has to occlude it.
+      className={cn(
+        "sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3 transition-[transform,visibility] duration-200",
+        focus && "hidden",
+        barHidden ? "invisible -translate-y-full" : "visible translate-y-0",
+      )}
+    >
+      <SidebarTrigger className="-ml-1" title="Toggle navigation  (Ctrl+B)" />
+      <Separator orientation="vertical" className="mr-1 h-4" />
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem className="hidden sm:inline-flex">
+            <BreadcrumbLink asChild>
+              <Link to="/">PrepForge</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator className="hidden sm:block" />
+          {current && view ? (
+            <>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to={current.to}>{current.label}</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{view}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </>
+          ) : (
+            <BreadcrumbItem>
+              <BreadcrumbPage>{current?.label ?? "Not found"}</BreadcrumbPage>
+            </BreadcrumbItem>
+          )}
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <div className="ml-auto flex items-center gap-1">
+        {/* Looks like a search field, is a button: the field itself lives in
+            the palette, and on a phone this IS the search entry point. */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onSearch}
+          aria-label="Search questions and jump to a page"
+          title="Search  (Ctrl+K)"
+          className="w-8 px-0 font-normal text-overlay1 sm:w-56 sm:justify-start sm:px-2.5"
+        >
+          <SearchIcon />
+          <span className="hidden sm:inline">Search…</span>
+          <kbd className="ml-auto hidden rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0 sm:inline">
+            Ctrl K
+          </kbd>
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Appearance and settings" title="Appearance">
+              <SunMoon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Theme</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={settings.theme}
+              onValueChange={(v) => update({ theme: v as ThemeMode })}
+            >
+              {THEME_OPTIONS.map((t) => (
+                <DropdownMenuRadioItem key={t.value} value={t.value}>
+                  {t.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onHelp}>
+              <Keyboard />
+              Keyboard shortcuts
+              <kbd className="ml-auto font-mono text-micro text-overlay0">?</kbd>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={onSettings}>
+              <SettingsIcon />
+              Settings
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </div>
+    </header>
   );
 }

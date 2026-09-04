@@ -2,6 +2,22 @@
 
 Update this when you STOP working, not when you start.
 
+- **Last touched:** 2026-09-04.
+- **Where I stopped:** branch `feat/shadcn-shell`, PR open — the app shell moved onto shadcn's
+  `Sidebar` / `Breadcrumb` / `DropdownMenu` / `Command`, and shadcn is initialised
+  (`frontend/components.json`). Full account at the top of [`docs/WORKLOG.md`](docs/WORKLOG.md).
+- **Next action:** the pages. The shell is on shadcn; the pages still hand-roll `Segmented`,
+  `Chip`, the settings form and the stat rows. Candidates, one branch each: Settings on
+  `Field`/`Select`/`Switch`, Library's view switch on `Tabs`, the orient bar on `Card`.
+- **Traps, this session:** `npx shadcn add` corrupts `tailwind.config.js` (comments gone, quotes
+  broken) — `git checkout` it after every add. Tailwind config edits need a Vite restart. Never
+  answer the CLI's "overwrite button.tsx?" with yes: ours has the five tiers the app is built on.
+- **Plane was down** (`localhost:8080` refused) — the shell work has no work item yet.
+
+---
+
+## Previous entry (2026-09-02)
+
 - **Last touched:** 2026-09-02.
 - **Where I stopped:** **nothing is unmerged, and there are no open PRs.** Twenty-seven commits
   landed on `main` today, in four waves — the full account is the top entry of

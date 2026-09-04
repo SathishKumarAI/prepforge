@@ -1,6 +1,54 @@
 # Worklog
 
-## 2026-09-02 (last) — a local model answers the 99 questions that had none
+## 2026-09-04 (last) — the app shell on shadcn: sidebar, breadcrumb, command palette
+
+**Summary:** the hand-rolled nav (397 lines of `Layout.tsx` owning open/closed state, Ctrl+B, a
+phone scrim and a body-scroll lock) is replaced by shadcn's `Sidebar`, `Breadcrumb`, `DropdownMenu`
+and `Command` (cmdk). shadcn is initialised for real now — `components.json`, `npx shadcn add`
+works — and the components it writes pick up the existing palette through the semantic colour
+tokens `tailwind.config.js` already mapped. Branch `feat/shadcn-shell`.
+
+---
+
+### What changed, and why
+
+| Piece | Before | After |
+|---|---|---|
+| Nav | a 240px column that was either there or not | `Sidebar collapsible="icon"`: full labels, or a 3rem icon rail with tooltips, or a sheet on a phone. Two groups, *Practice* and *Material*, so six items read as two decisions |
+| Reader | reachable only from Library's corner link or Ctrl+K | a nav item |
+| App bar | a page name, three icon buttons | `SidebarTrigger` · breadcrumb (`PrepForge › Library › Questions`, the second crumb read from `?view=` / `?mode=`) · a search field that is a button · one menu for theme / shortcuts / settings |
+| Ctrl+K | a `Dialog` with a hand-written listbox | `CommandDialog` on cmdk, `shouldFilter={false}` so Fuse stays the ranker |
+| Today aside | two horizontal scrollbars under the fortnight strips (14 × 24px = 336px in a 304px column) | `table-fixed w-full`: the cells share whatever width they are given |
+| `border` with no colour | Tailwind's gray-200, on every theme | `borderColor.DEFAULT` = the palette hairline |
+
+### Traps hit
+
+- **`npx shadcn add` rewrites `tailwind.config.js` and breaks it.** It stripped every comment and
+  re-quoted `'"Fraunces"'` as `'Fraunces"'`. Restore the file from git after any `add`, then hand-edit.
+  The `--sidebar-*` hsl variables it appends to `index.css` were reverted too — the eight `sidebar.*`
+  colours in the config map straight onto `--ctp-*`, so the nav follows the theme switch for free.
+- **`add` prompts to overwrite `button.tsx` / `tooltip.tsx` / `dialog.tsx` and hangs without a tty.**
+  Move ours aside, run `add`, move ours back. Upstream copies are worth a diff, not an overwrite: the
+  button's five tiers are load-bearing across the app.
+- **Tailwind config changes do not reach the running Vite dev server.** `bg-sidebar` did not exist
+  until the server was restarted; the phone sheet rendered transparent for exactly that reason. The
+  production build was right the whole time.
+- **chrome-devtools `resize_page` resizes the window every tab shares**, and `take_screenshot` times
+  out on a background window. Keep one tab in front.
+
+### Verification
+
+- `npm run build` green (`index-*.js` 504 kB — cmdk, dropdown-menu, sheet and separator add ~15 kB
+  to the shell chunk); `npm test` 28/28; `npm run contrast` "All pairs clear their floor in 2 themes".
+- Driven at 1536px: expanded, icon rail (tooltips on hover), breadcrumb on every route, Ctrl+K →
+  typed `k` → "12 of 18,151 questions", theme menu switches to light. Driven at 502px: the trigger
+  opens the sheet, computed background `rgb(22, 26, 32)`, a link closes it.
+- Plane was unreachable (`localhost:8080` refused) — no work item filed; file `feat` +
+  `repo:interview_prep` when it is back.
+
+---
+
+## 2026-09-02 — a local model answers the 99 questions that had none
 
 **Summary:** 99 of the 18,284 questions in the bank had a question and no answer — vault-ingested SQL
 and PL/SQL cards that `has_answer: false` kept out of Study and left with a blank Answer tab. All 99

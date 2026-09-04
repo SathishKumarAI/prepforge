@@ -299,7 +299,7 @@ select:disabled {
   /* Reading an answer with the question list away: the answer IS the page, so
      the shell's 84rem measure is a gutter beside the only thing on screen.
      Set on <html> by QuestionsView, the same way Layout sets .focus-mode. */
-  .reading-wide main { max-width: none; }
+  .reading-wide .app-page { max-width: none; }
   .reading-lg .prose-answer {
     font-size: 1.075rem;
     line-height: 1.85;

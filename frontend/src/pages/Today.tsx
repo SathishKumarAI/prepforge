@@ -164,8 +164,8 @@ function Forecast({ days }: { days: ForecastDay[] }) {
 
   return (
     <div>
-      <div className="overflow-x-auto">
-        <table className="border-collapse">
+      <div>
+        <table className="w-full table-fixed border-collapse">
           <caption className="sr-only">Cards falling due on each of the next {FORECAST_DAYS} days</caption>
           <thead className="sr-only">
             <tr>
@@ -183,7 +183,7 @@ function Forecast({ days }: { days: ForecastDay[] }) {
                   {/* A day with nothing due still gets a hairline, so the strip
                       reads as fourteen days rather than as five bars. */}
                   <span
-                    className={`block w-5 rounded-sm ${d.today ? "bg-mauve" : "bg-subtext0"}`}
+                    className={`block rounded-sm ${d.today ? "bg-mauve" : "bg-subtext0"}`}
                     style={{
                       height: d.count
                         ? Math.max(3, Math.round((d.count / peak) * BAR_MAX_PX))
@@ -230,11 +230,12 @@ function StudyStrip({ days }: { days: string[] }) {
     return { key, studied: set.has(key), isToday: i === 13 };
   });
 
-  // Fourteen fixed cells are wider than a phone, so the strip scrolls inside
-  // its own container rather than pushing the page sideways.
+  // Fourteen cells share the column (`table-fixed`), so the strip is as wide as
+  // wherever it is put -- a 19rem aside or a phone -- instead of 336px with a
+  // scrollbar under it.
   return (
-    <div className="overflow-x-auto">
-      <table className="border-collapse">
+    <div>
+      <table className="w-full table-fixed border-collapse">
         <caption className="sr-only">Days studied over the last fortnight</caption>
         <thead className="sr-only">
           <tr>
@@ -250,7 +251,7 @@ function StudyStrip({ days }: { days: string[] }) {
             {cells.map((c) => (
               <td key={c.key} className="p-0 pr-1">
                 <span
-                  className={`block size-5 rounded-sm border ${
+                  className={`block h-5 rounded-sm border ${
                     c.isToday ? "border-mauve" : "border-transparent"
                   } ${c.studied ? "bg-subtext0" : "bg-surface0"}`}
                 >
