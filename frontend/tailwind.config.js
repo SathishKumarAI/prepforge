@@ -68,6 +68,25 @@ export default {
         border: "rgb(var(--ctp-surface1) / <alpha-value>)",
         input: "rgb(var(--ctp-surface1) / <alpha-value>)",
         ring: "rgb(var(--ctp-mauve) / <alpha-value>)",
+        // shadcn Sidebar reads these eight. Mapped straight onto the palette
+        // rather than onto the hsl --sidebar-* variables the CLI writes, so the
+        // nav follows the theme switch the same way every other surface does.
+        sidebar: {
+          DEFAULT: "rgb(var(--ctp-mantle) / <alpha-value>)",
+          foreground: "rgb(var(--ctp-subtext0) / <alpha-value>)",
+          primary: "rgb(var(--ctp-mauve) / <alpha-value>)",
+          "primary-foreground": "rgb(var(--ctp-on-accent) / <alpha-value>)",
+          accent: "rgb(var(--ctp-surface0) / <alpha-value>)",
+          "accent-foreground": "rgb(var(--ctp-text) / <alpha-value>)",
+          border: "rgb(var(--ctp-surface0) / <alpha-value>)",
+          ring: "rgb(var(--ctp-mauve) / <alpha-value>)",
+        },
+      },
+      // What a bare `border` / `border-b` paints. shadcn components write
+      // `border` and expect the theme to colour it; without this Tailwind's
+      // default is gray-200 on every theme.
+      borderColor: {
+        DEFAULT: "rgb(var(--ctp-surface0) / <alpha-value>)",
       },
       borderRadius: {
         lg: "var(--radius)",
