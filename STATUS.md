@@ -19,6 +19,14 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **The batch burned 49,342 pairs in ~2 minutes at 03:0x on 2026-09-05, and was restarted fixed.** LM
+  Studio blinked (276 × HTTP 400), the `local_model()` probe cached the miss for 10 s, every
+  `local_only` raised instantly, and four workers marked all of ELI5 and first-principles FAILED
+  without touching the GPU. `answer_lenses.generate_one` now waits out a down provider — backoff 5 s
+  → 60 s, ~8 minutes before giving up — and clears the probe cache before each retry. FAILED lines now
+  name their pair. Restarted as a new detached process (pid 5104, started 03:26, log `lenses_full2.log`); the
+  plan re-included the skipped pairs because they have no file. **Check `.err` as well as the log**:
+  FAILED goes to stderr, and the stdout counter only counts successes.
 - **Flicker fixed (2026-09-05, branch `fix/lens-flicker`).** Measured per frame in the browser: every
   hover-switch of a lens showed a one-frame spinner (article 709 → 463 → 892 px), a 300 ms fade, and a
   one-frame drop to opacity 0 at the fade's end; every question change flashed the `$` marker for

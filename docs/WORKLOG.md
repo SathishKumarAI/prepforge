@@ -1,6 +1,52 @@
 # Worklog
 
-## 2026-09-05 (last) — the flicker, measured frame by frame, and removed
+## 2026-09-05 (last) — the batch that failed 49,342 pairs in two minutes, and the retry that stops it
+
+**Summary:** the 03:18 hourly tick showed the run on the `thinking` lens with `star` unfinished. The
+stdout counter said 0 failed; stderr had 49,342 FAILED lines. Branch `fix/lens-batch-retry`.
+
+### What happened
+
+| Count | Error | Meaning |
+|---|---|---|
+| 276 | `Client error '400 Bad Request'` from `/v1/chat/completions` | LM Studio stopped accepting requests for a few seconds — mid-reload, most likely |
+| 49,066 | `LM Studio is not answering at http://localhost:1234/v1` | the `local_model()` probe (1.5 s timeout) failed under load and cached `None` for 10 s; inside that window every `local_only` raised before any HTTP call |
+
+Four workers, instant failures, no GPU: the remaining 8,912 STAR pairs, all 17,827 ELI5, all 17,827
+first-principles and 1,476 `thinking` pairs were marked failed in about two minutes. Then the probe
+refreshed and the run carried on writing `thinking` at 31/min as if nothing had happened. All 40 of
+the "failed" pairs re-tried by hand succeeded, so the pairs were fine; the provider had blinked.
+
+### What changed
+
+- `generate_one()` in `answer_lenses.py`: a `RuntimeError` (the probe's "not answering") or any
+  `httpx.HTTPError` is waited out — 5, 10, 20, 40, 60 s… — with `generate._probe` cleared before each
+  retry so the 10 s TTL cannot replay the miss. Gives up after `RETRIES = 10` (~8 minutes of silence:
+  a machine that went to sleep), and that failure names its pair.
+- New `test_answer_lenses.py` (4 tests): down-then-up is waited for and written; a 400 is the same
+  event; a provider that never returns does fail; the probe cache is cleared before the retry.
+- The run was stopped (pid 17536, 9,328 written) and restarted on the fixed code (`lenses_full2.log`).
+  The plan re-included every skipped pair — 96,411 to write — because none of them has a file.
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `test_answer_lenses.py` | red (`no attribute generate_one`) → 4/4 |
+| `answer_lenses.py --dry-run` | 96,411 pairs, star/library first |
+| restarted run | first lines writing STAR library cards at the usual pace (see the pid in STATUS) |
+
+### Left
+
+- `local_model()`'s probe timeout (1.5 s) and 10 s negative cache are tuned for a hover in the UI, not
+  a saturated GPU. The retry makes the batch immune; the interactive path still sees "LM Studio is
+  off" for 10 s after a slow probe. Filed as COD-152.
+- Nothing about the 400s themselves — not reproducible afterwards, no body logged. If they recur,
+  `generate_one` will now wait rather than skip, and the `.err` line names the pair to inspect.
+
+---
+
+## 2026-09-05 — the flicker, measured frame by frame, and removed
 
 **Summary:** "there is flickering when the question moves forward in the bank." Reproduced with a
 requestAnimationFrame recorder that logged every DOM change on the detail pane, then fixed the two
