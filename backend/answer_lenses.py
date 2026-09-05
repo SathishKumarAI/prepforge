@@ -33,11 +33,42 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import httpx
+
 import generate
 import main as api
 
 DEFAULT_LENSES = "star,eli5,first_principles,thinking,faang,aws"
 SOURCE_ORDER = ("vault", "library")
+# A provider that is down is a reason to wait, not a verdict on the question.
+# On 2026-09-05 LM Studio blinked for a few seconds; the probe cached the miss
+# for 10 s, every call raised instantly, and four workers marked 49,066 pairs
+# FAILED in two minutes without touching the GPU. Retries back off 5 s → 60 s
+# and give up only after ~8 minutes of silence — a machine that went to sleep.
+RETRIES = 10
+MAX_NAP = 60
+
+
+def generate_one(q: dict, lens: str, sleep=time.sleep) -> tuple[str, str, int, float]:
+    """One answer, waiting out a provider that is not answering.
+
+    Retried: the probe's "not answering" RuntimeError and any httpx error (a
+    400 from a server mid-reload is the same event as no server). Not retried:
+    an empty answer or a bad lens — those are about the pair, not the provider.
+    The probe cache is cleared before each retry, or every retry inside the 10 s
+    TTL would read the same cached None.
+    """
+    t0 = time.time()
+    for attempt in range(RETRIES + 1):
+        try:
+            out = generate.local_only(q["question"], q.get("topic", ""), q["id"], lens)
+            return q["id"], lens, len(out["answer"].split()), time.time() - t0
+        except (RuntimeError, httpx.HTTPError):
+            if attempt == RETRIES:
+                raise
+            generate._probe = (0.0, None)
+            sleep(min(MAX_NAP, 5 * 2**attempt))
+    raise AssertionError("unreachable")
 
 
 def plan(lenses: list[str], sources: list[str], topic: str | None) -> list[tuple[dict, str]]:
@@ -108,15 +139,11 @@ def main() -> int:
     written = failed = 0
     started = time.time()
 
-    def one(q: dict, lens: str) -> tuple[str, str, int, float]:
-        t0 = time.time()
-        out = generate.local_only(q["question"], q.get("topic", ""), q["id"], lens)
-        return q["id"], lens, len(out["answer"].split()), time.time() - t0
-
     # Feed the pool a few at a time so the deadline stops NEW requests promptly:
     # a fully queued pool would run every remaining pair before noticing.
     it = iter(todo)
     pending = set()
+    jobs: dict = {}  # future → (question, lens), so a failure names its pair
     try:
         with ThreadPoolExecutor(max_workers=args.workers) as pool:
             while True:
@@ -124,11 +151,14 @@ def main() -> int:
                     nxt = next(it, None)
                     if nxt is None:
                         break
-                    pending.add(pool.submit(one, *nxt))
+                    fut = pool.submit(generate_one, *nxt)
+                    jobs[fut] = nxt
+                    pending.add(fut)
                 if not pending:
                     break
                 done = next(as_completed(pending))
                 pending.discard(done)
+                q, lens = jobs.pop(done)
                 try:
                     qid, lens, words, dt = done.result()
                     written += 1
@@ -136,7 +166,7 @@ def main() -> int:
                     print(f"[{written}/{len(todo)}] {lens:<17} {qid:<16} {words:>4} words {dt:5.1f}s   {rate:4.0f}/min", flush=True)
                 except Exception as exc:  # one bad question must not end the run
                     failed += 1
-                    print(f"FAILED  {exc}", file=sys.stderr, flush=True)
+                    print(f"FAILED  {lens:<17} {q['id']:<16} {exc}", file=sys.stderr, flush=True)
     except KeyboardInterrupt:
         print("\nstopped — every answer written so far is on disk, re-run to continue", flush=True)
 
