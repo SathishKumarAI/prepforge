@@ -39,7 +39,14 @@ sources:
 ```
 
 `_read_answer()` parses the frontmatter with YAML and returns `{answer, sources, meta}`; on a read
-it stamps `meta.cached = true` so the UI shows **"✓ cached · no API call."**
+it stamps `meta.cached = true` so the UI shows **"✓ saved on disk · no API call."**
+
+**Nothing is ever overwritten.** A regenerate (the *new answer* row under a lens: Local · Claude ·
+Claude + web search) writes a second file, `<qid><suffix>__YYYYMMDDTHHMMSS.md`, and `versions()`
+returns every file for that question+lens newest first — the unstamped original, the `__local` one,
+and every stamped regenerate. Each carries `generated_at` (the file's mtime when the frontmatter
+predates the field), `model`, `provider`, tokens and `cost_usd`; the UI's ⓘ shows them. Delete a
+file by hand if you truly want it gone — there is no button for that on purpose.
 
 ## The flow
 

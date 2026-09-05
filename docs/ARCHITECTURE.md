@@ -62,7 +62,8 @@ FastAPI  ── GZipMiddleware ── ETag/304
    ├── GET  /resources          aggregated feed (data/resources.json)
    ├── POST /scrape/refresh     run RSS + YouTube + HTML scrapers, dedupe, persist
    ├── POST /ingest             markdown in content/library/ → pipeline cards
-   └── POST /generate/answer    cache-first; local model or Claude per mode
+   └── POST /generate/answer    disk-first; local model or Claude per mode, or the caller's
+                                pick; a regenerate adds a version, never overwrites
 ```
 
 Twenty-five routes in total — the full list is in the root [README](../README.md).

@@ -1,6 +1,62 @@
 # Worklog
 
-## 2026-09-04 (last) — the app shell on shadcn: sidebar, breadcrumb, command palette
+## 2026-09-04 (last) — every generated answer is kept: versions, provenance, a regenerate row
+
+**Summary:** the request was "do not cache the answers, save them to local files" — and measuring
+showed they already were: 814 Markdown files under `backend/content/answers/`, served disk-first. The
+pill saying **"cached"** was the lie. What was missing: a way to ask for a *new* answer, a choice of
+who writes it, and a history so the old one is never lost. Branch `feat/answer-history`.
+
+### What changed, and why
+
+| Piece | Before | After |
+|---|---|---|
+| Regenerate | delete the `.md` by hand | **new answer ›** row under every lens: `↻ Local · free` (hidden when LM Studio is off) · `↻ Claude` · `↻ Claude + web search` |
+| Overwrite | a second write replaced the file | never. `force` writes `<qid><lens>__YYYYMMDDTHHMMSS.md`; `versions()` lists every file for the lens newest first |
+| Two files per lens | `__local` shadowed the Claude file whenever LM Studio was up | both are versions; the newest opens, the other is one click away |
+| Provenance | model · tokens · cost as pills | **ⓘ info** panel: model · provider · written (local time) · tokens in/out · cost · web searches · file name. `generated_at` is stamped into the frontmatter on write; older files read their mtime |
+| Web search | `deep` only | `provider=claude_search` puts the web_search tool on any lens |
+| Provider promise | `local` silently fell back to Claude | an explicit `local` returns `no_local_model` / `generation_failed`, bills nothing |
+| Pill | "✓ cached · no API call" | "✓ saved on disk · no API call" |
+
+`POST /generate/answer` gains `provider` (`auto|local|claude|claude_search`) and `force`; the
+response gains `versions`. `_claude_generate()` is the old inline Claude body, extracted so both
+providers share one persist step. `cached_modes()` now counts every file shape through the same
+`_version_paths()` regex, anchored at both ends so `deep` (no suffix) cannot swallow `q001__star.md`
+and `q001` cannot swallow `q0011.md`.
+
+### Found on the way
+
+- **A failed regenerate wiped the answer on screen.** The error replaced `slot.data`, and with it the
+  versions row and the regenerate row — a dead end after a billing attempt. Now the error lives in
+  `slot.error`, drawn above the answer that stays. Found by pressing ↻ Claude on a machine without
+  credentials; fixed in the same branch.
+
+### Verified
+
+| Check | Before | After |
+|---|---|---|
+| `backend/test_answer_history.py` (new) | — | 5/5 |
+| `test_local_provider.py`, `test_local_answers.py` | all passed, 13/13 | all passed, 13/13 |
+| the other ten backend test files | green | green |
+| `npm test` | 12/12 · 8/8 · 8/8 | 12/12 · 8/8 · 8/8 |
+| `npm run build`, `tsc --noEmit` | green | green |
+| q001 · STAR via the live API | `versions` absent | 2 versions: `q001__star__local.md` (2026-08-28, gpt-oss-20b), `q001__star.md` (2026-07-11, authored) |
+| q001 · First-principles in the browser | — | versions row v2/v1; picking v1 swaps body and ⓘ file to `q001__fp.md`; ↻ Claude → credentials error, answer + rows stay |
+
+**Not verified:** a billed regenerate end to end — no API key on this machine. The write path it
+would take is the one `test_a_regenerate_keeps_the_old_answer_and_adds_the_new_one` exercises.
+
+### Deliberately not done
+
+- **No delete.** Files are removed by hand or not at all; a button would make the history optional.
+- **No diff between versions.** Two clicks show two answers; add a side-by-side when that is not enough.
+- **Local + web search.** LM Studio has no search tool. When a local model gains one, `claude_search`
+  is the shape to copy.
+
+---
+
+## 2026-09-04 — the app shell on shadcn: sidebar, breadcrumb, command palette
 
 **Summary:** the hand-rolled nav (397 lines of `Layout.tsx` owning open/closed state, Ctrl+B, a
 phone scrim and a body-scroll lock) is replaced by shadcn's `Sidebar`, `Breadcrumb`, `DropdownMenu`

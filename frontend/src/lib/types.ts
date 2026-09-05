@@ -83,6 +83,9 @@ export interface AnswerMeta {
   web_searches?: number;
   cost_usd?: number;
   cached?: boolean; // served from a pre-written .md, no API call
+  provider?: string; // "anthropic" | "lmstudio"
+  generated_at?: string; // ISO, local time — when this version was written
+  file?: string; // its name in backend/content/answers/
 }
 
 export interface GeneratedAnswer {
@@ -91,7 +94,12 @@ export interface GeneratedAnswer {
   meta?: AnswerMeta;
   error?: string;
   message?: string;
+  /** Every answer on disk for this question+lens, newest first. Includes this one. */
+  versions?: GeneratedAnswer[];
 }
+
+/** Who writes a regenerated answer. `auto` is the per-lens default. */
+export type Provider = "auto" | "local" | "claude" | "claude_search";
 
 export interface Resource {
   id: string;

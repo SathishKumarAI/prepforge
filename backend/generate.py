@@ -17,6 +17,7 @@ Falls back to Claude for any lens if LM Studio is not running.
 """
 from __future__ import annotations
 
+import datetime as dt
 import logging
 import os
 import re
@@ -45,9 +46,17 @@ PRICE_SEARCH = 10.0 / 1_000
 LOCAL_URL = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1").rstrip("/")
 LOCAL_MODEL = os.getenv("LMSTUDIO_MODEL", "").strip()
 LOCAL_TIMEOUT = float(os.getenv("LMSTUDIO_TIMEOUT", "180"))
-# A local answer is cached under its own suffix so it cannot shadow the Claude
-# one for the same lens. Delete the __local file to force a re-generation.
+# A local answer written by the auto route or a batch script keeps its own
+# suffix, so the batch scripts can resume on it. It is one version among the
+# others — see `versions`; the regenerate row is how you ask for a new one.
 LOCAL_SUFFIX = "__local"
+# A regenerate never overwrites. The new answer gets its own file, stamped with
+# the second it was written: `q001__star__20260904T143012.md`. The unstamped
+# file (and the `__local` one) is simply the oldest version. Nothing is deleted.
+VERSION_STAMP = "%Y%m%dT%H%M%S"
+# Who writes the answer. `auto` is the per-lens default described above; the
+# other three are the learner's explicit choice from the regenerate row.
+PROVIDERS = ("auto", "local", "claude", "claude_search")
 # LM Studio's model types that can take a chat completion. `embeddings` cannot,
 # and it is listed alongside the rest — see `_chat_model_from_native`.
 CHAT_TYPES = ("llm", "vlm")
@@ -196,21 +205,12 @@ def local_model() -> str | None:
 def cached_modes(qid: str) -> list[str]:
     """Lenses already on disk for this question — free, whatever the provider is.
 
-    `generate()` is cache-first: a mode whose .md exists costs nothing and calls
-    nobody. The tab row could not know that, so it marked every billed-provider
-    lens as billed, including ones it would have served from a file. Both file
-    shapes count: `<qid><suffix>.md` (Claude) and `<qid><suffix>__local.md` (a
-    local model), because either one short-circuits the same way.
+    `generate()` is disk-first: a mode with any version on disk costs nothing
+    and calls nobody. The tab row could not know that, so it marked every
+    billed-provider lens as billed, including ones it would have served from a
+    file. Every file shape counts — see `_version_paths`.
     """
-    if not qid:
-        return []
-    safe = _safe_qid(qid)
-    out = []
-    for mode, (_, suffix, _) in MODES.items():
-        base = f"{safe}{suffix}"
-        if (ANSWERS_DIR / f"{base}.md").exists() or (ANSWERS_DIR / f"{base}{LOCAL_SUFFIX}.md").exists():
-            out.append(mode)
-    return out
+    return [mode for mode in MODES if _version_paths(qid, mode)]
 
 
 def free_modes() -> list[str]:
@@ -324,15 +324,60 @@ def _read_answer(qid: str) -> dict | None:
 def _write_answer(qid: str, question: str, topic: str, out: dict) -> None:
     """Persist an answer as Markdown with YAML frontmatter."""
     ANSWERS_DIR.mkdir(parents=True, exist_ok=True)
+    out.setdefault("meta", {}).setdefault("generated_at", _now())
     fm = {
         "qid": qid,
         "question": question,
         "topic": topic,
-        **out.get("meta", {}),
+        **out["meta"],
         "sources": out.get("sources", []),
     }
     md = "---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n" + out["answer"].strip() + "\n"
     _answer_path(qid).write_text(md, encoding="utf-8")
+
+
+def _now() -> str:
+    return dt.datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def version_qid(cache_qid: str) -> str:
+    """The file id for a NEW version of `cache_qid`: the same id, stamped."""
+    return f"{cache_qid}__{dt.datetime.now().strftime(VERSION_STAMP)}"
+
+
+def _version_paths(qid: str, mode: str) -> list[Path]:
+    """Every file that is an answer to this question in this lens: the unstamped
+    original, the `__local` one, and any stamped regenerate. Anchored at both
+    ends so `deep` (no suffix) cannot swallow `q001__star.md`, and `q001` cannot
+    swallow `q0011.md`."""
+    if not qid or mode not in MODES or not ANSWERS_DIR.exists():
+        return []
+    base = re.escape(_safe_qid(qid) + MODES[mode][1])
+    pat = re.compile(rf"^{base}(?:{LOCAL_SUFFIX})?(?:__\d{{8}}T\d{{6}})?\.md$")
+    return [p for p in ANSWERS_DIR.iterdir() if pat.match(p.name)]
+
+
+def versions(qid: str, mode: str = "deep") -> list[dict]:
+    """Every answer on disk for this question+lens, newest first — the history the
+    regenerate row shows. Each carries `generated_at` (the file's mtime when the
+    frontmatter predates the field) and `file`, so the learner can find it in
+    `content/answers/` with any editor."""
+    out = []
+    for p in _version_paths(qid, mode):
+        got = _read_answer(p.stem)
+        if not got or not got.get("answer"):
+            continue
+        meta = got["meta"]
+        stamp = meta.get("generated_at")
+        if isinstance(stamp, dt.datetime):  # YAML parsed an unquoted timestamp
+            stamp = stamp.isoformat(timespec="seconds")
+        if not stamp:
+            stamp = dt.datetime.fromtimestamp(p.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+        meta["generated_at"] = stamp
+        meta["file"] = p.name
+        out.append(got)
+    out.sort(key=lambda a: a["meta"]["generated_at"], reverse=True)
+    return out
 
 
 # A machine-written answer must never read like a curated one. This rides on the
@@ -398,14 +443,28 @@ def _prompt(question: str, topic: str, persona: str) -> str:
     return prompt
 
 
-def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "", mode: str = "deep") -> dict:
+def generate(
+    question: str,
+    topic: str = "AI",
+    persona: str = "",
+    qid: str = "",
+    mode: str = "deep",
+    provider: str = "auto",
+    force: bool = False,
+) -> dict:
     """Return a deep answer. mode="deep" → grounded/web-sourced; mode="star" → a
-    STAR-method interview answer (no web search). Cache-first: a pre-authored .md
-    is served with NO API call. Cache-misses (when creds exist) hit the live API
-    and are then persisted so they're free next time.
+    STAR-method interview answer (no web search). Disk-first: the newest answer
+    on disk for this question+lens is served with NO API call, and every answer
+    ever written rides along in `versions`, newest first.
 
-    Provider: every lens except `deep` goes to LM Studio when it is running, for
-    free; `deep` and any local failure go to Claude.
+    `force` regenerates even though an answer exists — and writes the new one to
+    its own stamped file, so the old one stays readable (see `versions`).
+
+    Provider `auto`: every lens except `deep` goes to LM Studio when it is
+    running, for free; `deep` and any local failure go to Claude. `local`,
+    `claude` and `claude_search` are the learner's explicit choice: `local`
+    never falls back to a billed model, and `claude_search` is the only way to
+    get web citations on a lens other than `deep`.
 
     Credentials for the live path resolve automatically: ANTHROPIC_API_KEY →
     ANTHROPIC_AUTH_TOKEN → an `ant auth login` developer profile. A Claude Code
@@ -413,30 +472,63 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
     """
     if mode not in MODES:
         mode = "deep"
+    if provider not in PROVIDERS:
+        provider = "auto"
     system, suffix, use_search = MODES[mode]
+    cache_qid = (qid + suffix) if qid else ""
+
+    if cache_qid and not force:
+        vs = versions(qid, mode)
+        if vs:
+            hit = dict(vs[0])
+            hit["meta"] = {**hit["meta"], "cached": True}
+            hit["versions"] = vs
+            return hit
 
     # `deep` is the grounded lens; web search is the whole point of it, so it
-    # never routes local. Everything else prefers the free provider.
-    model = None if use_search else local_model()
+    # never routes local on its own. Everything else prefers the free provider.
+    if provider == "auto":
+        use_local = not use_search
+    else:
+        use_local = provider == "local"
+        use_search = provider == "claude_search"
+    model = local_model() if use_local else None
+    if use_local and not model and provider == "local":
+        return {
+            "error": "no_local_model",
+            "message": f"LM Studio is not answering at {LOCAL_URL}. Start its server and load a chat model.",
+        }
+
+    prompt = _prompt(question, topic, persona)
+    out = None
+    file_qid = version_qid(cache_qid) if (cache_qid and force) else cache_qid
     if model:
-        local_qid = (qid + suffix + LOCAL_SUFFIX) if qid else ""
-        hit = _cached(local_qid)
-        if hit:
-            return hit
         try:
-            out = _local_generate(system, _prompt(question, topic, persona), model)
-            if local_qid:
-                _write_answer(local_qid, question, topic, out)
-            return out
+            out = _local_generate(system, prompt, model)
+            # The unstamped local file keeps its own suffix: `local_only` and the
+            # batch scripts resume on it. A stamped regenerate needs no suffix —
+            # the provider is in its frontmatter.
+            if file_qid and not force:
+                file_qid += LOCAL_SUFFIX
         except Exception as exc:
+            if provider == "local":
+                return {"error": "generation_failed", "message": str(exc)}
             # Not an error the learner should see: Claude answers it instead.
             log.warning("local generation failed (%s), falling back to Claude: %s", model, exc)
+    if out is None:
+        out = _claude_generate(system, prompt, use_search)
+        if out.get("error"):
+            return out
+    if file_qid and out["answer"]:  # persist as Markdown so it's free next time
+        _write_answer(file_qid, question, topic, out)
+    if qid:
+        out["versions"] = versions(qid, mode)
+    return out
 
-    cache_qid = (qid + suffix) if qid else ""
-    hit = _cached(cache_qid)
-    if hit:
-        return hit
 
+def _claude_generate(system: str, prompt: str, use_search: bool) -> dict:
+    """One answer from Claude, with the web_search server tool when asked.
+    Returns an `error` dict rather than raising, so the learner sees why."""
     import anthropic  # imported lazily so the app runs without the dep when unused
 
     try:
@@ -448,8 +540,9 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
             "error": "no_credentials",
             "message": "No API credentials. Set ANTHROPIC_API_KEY in backend/.env, or run `ant auth login`.",
         }
-    messages = [{"role": "user", "content": _prompt(question, topic, persona)}]
-    # only the grounded "deep" mode searches the web; the rest are cheaper/faster
+    messages = [{"role": "user", "content": prompt}]
+    # by default only the grounded "deep" mode searches the web; the rest are
+    # cheaper/faster — unless the learner asked for `claude_search` explicitly
     tools = [{"type": "web_search_20260209", "name": "web_search", "max_uses": 4}] if use_search else []
 
     in_tok = out_tok = 0
@@ -486,11 +579,12 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
         return {"error": "generation_failed", "message": str(exc)}
 
     cost = in_tok * PRICE_IN + out_tok * PRICE_OUT + result["searches"] * PRICE_SEARCH
-    out = {
+    return {
         "answer": result["answer"],
         "sources": result["sources"],
         "meta": {
             "model": MODEL,
+            "provider": "anthropic",
             "input_tokens": in_tok,
             "output_tokens": out_tok,
             "total_tokens": in_tok + out_tok,
@@ -498,6 +592,3 @@ def generate(question: str, topic: str = "AI", persona: str = "", qid: str = "",
             "cost_usd": round(cost, 5),
         },
     }
-    if cache_qid and out["answer"]:  # persist as Markdown so it's free next time
-        _write_answer(cache_qid, question, topic, out)
-    return out

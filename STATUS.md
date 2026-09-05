@@ -2,6 +2,31 @@
 
 Update this when you STOP working, not when you start.
 
+- **Last touched:** 2026-09-04 (later the same day).
+- **Where I stopped:** branch `feat/answer-history`, PR open — generated answers keep every version.
+  A regenerate writes `<qid><lens>__YYYYMMDDTHHMMSS.md` and never overwrites; `generate()` serves the
+  newest and returns them all in `versions`. The lens body has a **versions** row, an **ⓘ info** panel
+  (model · provider · written · tokens · cost · file) and a **new answer** row: Local · Claude ·
+  Claude + web search. Full account at the top of [`docs/WORKLOG.md`](docs/WORKLOG.md).
+- **Unverified, and why:** the billed regenerate. This Windows machine has no `backend/.env` and no
+  `ant auth` profile, so pressing **↻ Claude** ends in the credentials error — which is what exposed
+  the bug where a failed regenerate wiped the answer on screen (fixed: the error sits above the
+  answer, versions and row all stay). The write-a-new-file path is covered by `test_answer_history.py`
+  and by the API with `force` + `provider=local` (returns `no_local_model`, writes nothing). First run
+  on a machine with a key: press ↻ Claude on any lens, expect a `v3` pill and a stamped file.
+- **Traps, this session:** the frontend on `:5173` was a *different* project (an EMI tracker); this
+  repo's Vite was not running. Two `uvicorn main:app --port 8787` processes were up **without
+  `--reload`**, so backend edits were invisible until both were killed and one restarted through
+  `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
+  **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **Plane was down** (`localhost:8080` refused) — no work item for this branch either.
+- **Left alone:** `backend/generate_missing_local.py`, untracked, not mine — it fakes `__local` files by
+  copying the AWS lens and labels them `generated_by: ChatGPT`. Delete or gitignore before it lands.
+
+---
+
+## Previous entry (2026-09-04, earlier)
+
 - **Last touched:** 2026-09-04.
 - **Where I stopped:** branch `feat/shadcn-shell`, PR open — the app shell moved onto shadcn's
   `Sidebar` / `Breadcrumb` / `DropdownMenu` / `Command`, and shadcn is initialised

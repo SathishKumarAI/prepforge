@@ -301,7 +301,8 @@ resolve in order: `ANTHROPIC_API_KEY` (put it in `backend/.env`) → `ANTHROPIC_
 
 **The other six run on a local model** — pure prose against a system prompt, which a 14–20B model
 does well. Start LM Studio's server (Developer tab → **Start Server**, port 1234) and they generate
-for free; local answers cache under a further `__local` suffix so they can never shadow a Claude one.
+for free; an auto-routed local answer lands under a further `__local` suffix, and the newest file
+for a lens is what opens. Every older file stays and is one click away in the **versions** row.
 `LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT` override the defaults; leaving `LMSTUDIO_MODEL`
 blank uses whatever is loaded. With LM Studio off, all six fall back to Claude exactly as before.
 
@@ -393,7 +394,9 @@ GET  /questions/batch?ids=    whole questions, in the order asked for — a stud
 GET  /questions/{id}          one question, `related` expanded with titles
 GET  /resources               aggregated feed
 POST /scrape/refresh          run RSS + YouTube + HTML scrapers, dedupe, persist
-POST /generate/answer         cache-first; mode = deep|star|eli5|first_principles|thinking|faang|aws
+POST /generate/answer         disk-first; mode = deep|star|eli5|first_principles|thinking|faang|aws
+                              provider = auto|local|claude|claude_search; force = true writes a NEW
+                              version and keeps the old one; every version rides along in `versions`
 GET  /generate/providers      which modes are free right now (local model up) + its id
 POST /resources/add           one URL → feed (used by the extension)
 POST /resources/read          URL → readable Markdown → library
