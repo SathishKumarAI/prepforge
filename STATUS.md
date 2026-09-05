@@ -31,7 +31,9 @@ Update this when you STOP working, not when you start.
   **~35 answers/min** with 4 workers. When it ends, the new `content/answers/*.md` are untracked —
   commit them (`git add backend/content/answers && git commit -m "docs(answers): N lenses pre-written by gpt-oss-20b"`).
   Re-run the same command any time; it skips what exists.
-- **Plane was down** (`localhost:8080` refused) — no work item for this branch either.
+- **Plane is back, items filed:** COD-146 (#90 versions + regenerate), COD-147 (#91 answer_lenses.py),
+  COD-148 (#92 track local answers) — all Done; **COD-149 the full lens run — In Progress**, move it
+  to Done when the backlog is written.
 - **Left alone:** `backend/generate_missing_local.py`, untracked, not mine — it fakes `__local` files by
   copying the AWS lens and labels them `generated_by: ChatGPT`. Delete or gitignore before it lands.
 
