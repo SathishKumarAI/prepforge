@@ -19,6 +19,15 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **Flicker fixed (2026-09-05, branch `fix/lens-flicker`).** Measured per frame in the browser: every
+  hover-switch of a lens showed a one-frame spinner (article 709 → 463 → 892 px), a 300 ms fade, and a
+  one-frame drop to opacity 0 at the fade's end; every question change flashed the `$` marker for
+  ~100 ms while `cached_modes` was fetched separately. Now: no framer-motion in the lens body, the
+  spinner waits 150 ms (`.spinner-late`), and `cached_modes` rides on `GET /questions/{qid}`. Hover
+  still switches lenses — deliberate (COD-30); say so if it should be press-only now that six are free.
+- **Trap: a killed `uvicorn --reload` leaves its worker alive and BOUND to 8787.** Two listeners on
+  the port, and the old one keeps answering, so code changes look ignored. Kill the worker too
+  (`Get-CimInstance Win32_Process | ? { $_.CommandLine -match 'main:app' }`), then start one.
 - **The lens run is now UNBOUNDED** (`answer_lenses.py --hours 0`, pid 17536, started 22:18 on
   2026-09-04, log `lenses_full.log` in the session scratchpad). 105,887 pairs at ~33/min is about
   **53 GPU-hours**: keep the machine awake and LM Studio loaded, or it stops and resumes on re-run.

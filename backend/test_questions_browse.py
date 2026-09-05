@@ -159,6 +159,15 @@ def test_related_is_expanded_with_titles():
         assert "id" in r and "score" in r, r  # additive, not a replacement
 
 
+def test_a_question_says_which_lenses_are_on_disk():
+    """`cached_modes` rides on the question, so the detail pane can draw its $
+    markers on the first frame. As a second request they arrived ~100 ms later
+    and the markers flashed on every question change."""
+    q = main.question("q001")
+    assert "star" in q.get("cached_modes", []), q.get("cached_modes")
+    assert main.question("no-such-question").get("error") == "not found"
+
+
 if __name__ == "__main__":
     passed = 0
     tests = [v for k, v in sorted(vars().copy().items()) if k.startswith("test_")]

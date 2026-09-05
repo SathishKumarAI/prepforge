@@ -9,7 +9,6 @@ import { Tabs, TabsList, TabsTrigger } from "../ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useProgress } from "../../hooks/useProgress";
 import { useProviders } from "../../hooks/useProviders";
-import { fetchCachedModes } from "../../lib/api";
 import type { Question, VaultSource } from "../../lib/types";
 
 /**
@@ -44,21 +43,10 @@ export function QuestionDetail({
   // before you have typed. Hovering the list does not count — that is a glance.
   useEffect(() => markRecent(q.id), [q.id, markRecent]);
   const { local_model: localModel, free_modes: freeModes, loaded: providersKnown } = useProviders();
-  // Which lenses this question already has on disk. Asked per question, because
-  // that is what it depends on; the answer is four fields of JSON.
-  const [cachedModes, setCachedModes] = useState<string[]>([]);
-  useEffect(() => {
-    let live = true;
-    setCachedModes([]);
-    fetchCachedModes(q.id)
-      .then((r) => live && setCachedModes(r.cached_modes))
-      .catch(() => {
-        /* unknown stays unknown: the row then marks by provider alone */
-      });
-    return () => {
-      live = false;
-    };
-  }, [q.id]);
+  // Which lenses this question already has on disk. Part of the question
+  // payload, not a second request: fetched separately it landed ~100 ms after
+  // the question, and the $ markers flashed on every question change.
+  const cachedModes = q.cached_modes ?? [];
   // The bank's own answer and your own content are files, not generations. Every
   // other lens is free only while LM Studio is serving one — `deep` never is,
   // because web search is the whole point of it and that runs on Claude.

@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useProgress } from "../hooks/useProgress";
 import { useProviders } from "../hooks/useProviders";
@@ -261,18 +260,13 @@ export function DeepAnswer({
         </div>
       )}
 
-      {/* The frame between selecting a lens and the effect firing its fetch.
-          Shows the same spinner the fetch itself will, so landing on a lens
-          reads as one continuous load rather than a flash of empty state. */}
-      {controlled && !slot && mode !== "custom" && (
-        <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />
-          {MODE_LOADING[mode]}
-        </div>
-      )}
-
-      {slot?.status === "loading" && (
-        <div className="flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
+      {/* Both the frame before the effect fires its fetch and the fetch itself.
+          `spinner-late`: a lens on disk lands in ~20 ms, and a spinner that
+          exists for one frame is not feedback, it is the flicker — measured
+          at 709 → 463 → 892 px of article height per hover-switch. It waits
+          150 ms, so only a real generation ever shows it. */}
+      {((controlled && !slot) || slot?.status === "loading") && mode !== "custom" && (
+        <div className="spinner-late flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface1 border-t-mauve" />
           {MODE_LOADING[mode]}
         </div>
@@ -289,9 +283,12 @@ export function DeepAnswer({
         </div>
       )}
 
+      {/* No fade. The 300 ms opacity ramp ended in a one-frame drop to 0 on
+          every lens switch (framer-motion remount, measured in the browser),
+          and six tabs switch on hover once LM Studio is up — so the fade was
+          the flicker, not the polish. */}
       {shown && (
-        <AnimatePresence mode="wait">
-          <motion.div key={`${mode}:${slot?.view ?? 0}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <div>
             <div className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
               {MODE_TITLE[mode]}
             </div>
@@ -387,8 +384,7 @@ export function DeepAnswer({
               <Regen onClick={() => load(mode, "claude")} busy={slot?.status === "loading"} label="↻ Claude" tip="Bills tokens, no web search" />
               <Regen onClick={() => load(mode, "claude_search")} busy={slot?.status === "loading"} label="↻ Claude + web search" tip="Bills tokens and up to 4 searches; adds citations" />
             </div>
-          </motion.div>
-        </AnimatePresence>
+        </div>
       )}
     </div>
   );

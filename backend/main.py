@@ -520,7 +520,13 @@ def question(qid: str):
     qs = _load_questions()
     for q in qs:
         if q.get("id") == qid:
-            return _with_related(q, {x.get("id"): x for x in qs})
+            out = _with_related(q, {x.get("id"): x for x in qs})
+            # Which lenses are on disk rides along, so the detail pane can draw
+            # its $ markers on the first frame. As a second request they landed
+            # ~100 ms after the question and the markers flashed on every
+            # question change — see docs/WORKLOG.md 2026-09-05.
+            out["cached_modes"] = generate_mod.cached_modes(qid)
+            return out
     return {"error": "not found"}
 
 

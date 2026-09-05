@@ -32,6 +32,8 @@ export interface Origin {
 }
 
 export interface Question {
+  /** Lenses already on disk for this question — free to open whatever the provider is. */
+  cached_modes?: string[];
   id: string;
   topic: string;
   difficulty: Difficulty;
