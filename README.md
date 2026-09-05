@@ -237,7 +237,18 @@ cd backend
 ./.venv/Scripts/python.exe answer_missing.py --limit 10    # try ten
 ./.venv/Scripts/python.exe answer_missing.py               # the rest
 ./.venv/Scripts/python.exe eval_answers.py --judge         # before trusting any of it
+
+./.venv/Scripts/python.exe answer_lenses.py --hours 1 --dry-run   # the lenses an hour would pre-write
+./.venv/Scripts/python.exe answer_lenses.py --hours 1             # write them: vault first, STAR first
 ```
+
+`answer_lenses.py` is the same idea for the **generated lenses** (STAR, ELI5, …): only the 100 curated
+questions have them on disk, so opening a lens on any other question waits for a model. Give it a
+time budget and it pre-writes the files with LM Studio, four requests at a time — measured at
+**~35 answers a minute on gpt-oss-20b**, so an hour covers about 2,000 of the 106,961 pairs. It is
+lens-major (every question gets STAR before any gets ELI5) and vault-first (your own notes before the
+library's "Explain:" cards); `--lenses`, `--source`, `--topic` narrow it. Resumable and never billed,
+like `answer_missing.py`.
 
 Each answer is cached as `content/answers/<qid>__local.md` — the same Markdown the interactive
 lenses write, so nothing new had to learn to read it — and `GET /questions/{id}` serves it for a

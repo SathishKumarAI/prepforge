@@ -1,6 +1,53 @@
 # Worklog
 
-## 2026-09-04 (last) — every generated answer is kept: versions, provenance, a regenerate row
+## 2026-09-04 (last) — pre-writing the lenses: LM Studio up, a one-hour batch, 35 answers a minute
+
+**Summary:** the ask was to make sure the local model works on this machine and then let it run for
+about an hour writing answers to disk, so study time is spent reading rather than waiting on a model.
+Branch `feat/answer-lenses-batch`.
+
+### What was found
+
+| Question | Answer |
+|---|---|
+| Is LM Studio running? | Installed, server **OFF**, no model loaded. Ollama was running instead (qwen3.8-27b), which nothing here talks to. |
+| Which models are on disk? | `openai/gpt-oss-20b` (12.1 GB — what every existing `__local` answer was written with), `qwen/qwen3.5-9b`, a nomic embedding model. |
+| What is missing? | Nothing in the *bank*: all 17,927 questions have an answer, and `answer_missing.py` has 0 to do (#89's junk filter took the last ones). What is missing is the **lenses**: only q001–q100 have them. 17,827 × 6 = **106,961** question+lens pairs with no file. |
+| How fast is it? | One request: 6.7 s, 410 tokens, 61 tok/s. Four concurrent (LM Studio's default `PARALLEL 4`): **35 answers/min**, so ~2,100 in an hour — about 2 % of the backlog. |
+
+### What changed
+
+`lms server start` + `lms load openai/gpt-oss-20b -y` brought the provider up; `/generate/providers`
+then reported six free lenses. New **`backend/answer_lenses.py`**: the lens counterpart of
+`answer_missing.py`. A time budget (`--hours`), a priority (vault questions before the library's
+"Explain: <heading>" cards; every question gets STAR before any gets ELI5), four workers fed a few at
+a time so the deadline stops *new* requests promptly, `--dry-run` printing the plan and an estimate.
+Same `generate.local_only()` underneath, so there is no billed path and every answer is the same
+Markdown the interactive path writes, with `generated_at`, model, tokens, cost in its frontmatter.
+
+One wrong turn recorded: the first plan checked the disk per pair through `generate._version_paths`
+— 106,961 directory walks of 800 files, **over two minutes just to print the plan**. Now one listing
+is reduced to a set of "bases" (name minus stamp minus `__local`) and the plan takes **1.1 s** with
+identical output.
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `answer_lenses.py --hours 1 --dry-run` | 106,961 pairs, vault STAR first; 1.15 s |
+| `--limit 8` smoke run, 4 workers | 8/8 written, 0 failed, 0.2 min, 37/min; a file inspected: frontmatter complete, STAR labels present, machine-written note at the end |
+| the one-hour run | detached at 21:45 (`Start-Process`, pid 14232), 16 answers at 35/min when this was written. **Its result is not in this entry** — see STATUS for how to commit the files it leaves |
+
+### Deliberately not done
+
+- Not the whole backlog: 106,961 pairs at 35/min is **51 hours** of GPU. Re-run `answer_lenses.py`
+  whenever the machine is idle; it resumes.
+- No quality pass: `eval_answers.py` exists for that and nothing here has been read by a human.
+- Ollama untouched. `generate.py` speaks LM Studio's OpenAI-compatible server only.
+
+---
+
+## 2026-09-04 — every generated answer is kept: versions, provenance, a regenerate row
 
 **Summary:** the request was "do not cache the answers, save them to local files" — and measuring
 showed they already were: 814 Markdown files under `backend/content/answers/`, served disk-first. The

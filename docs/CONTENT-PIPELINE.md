@@ -13,6 +13,7 @@ drop straight into Obsidian.
 | **STAR interview answer** | `backend/content/answers/<qid>__star.md` | `generate(mode="star")` | same cache-first read |
 | **A card that is not a question** | dropped — `ingest.usable_question()` | a split-sentence tail ("and how can it be improved?") or an outline number ("10).What are…"); applied at ingest AND at bank assembly, one definition, two call sites | 133 dropped, 57 tidied |
 | **An answer for a question that has none** | `backend/content/answers/<qid>__local.md` | `answer_missing.py` → `generate.local_only()` (LM Studio, never billed) | `_fill_missing_answers()` in `main.py` — only ever fills a gap, and the text carries its own machine-written line |
+| **A lens (STAR, ELI5, …) written ahead of time** | `backend/content/answers/<qid>__<lens>__local.md` | `answer_lenses.py --hours N` → `generate.local_only()`, 4 at a time, vault first, lens-major | `generate.versions()` — the lens opens from disk; the *new answer* row can still add a version |
 | **Captured / read resource** | `backend/content/library/<slug>.md` | `capture.read()` (in-app reader / manual URL) | ingestion + graph |
 | **Every page the bank cites** | `backend/content/library/<slug>.md` + `content/reading_fetch.json` | `fetch_reading.py` (batch, resumable) | ingestion + graph |
 | **Ingested book / notes** | `backend/content/library/*.md` (you drop them) | you | `POST /ingest` → cards |
