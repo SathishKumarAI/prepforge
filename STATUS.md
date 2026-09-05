@@ -19,7 +19,13 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
-- **A one-hour lens run was started at 21:45 on 2026-09-04** (`answer_lenses.py --hours 1`, detached,
+- **The lens run is now UNBOUNDED** (`answer_lenses.py --hours 0`, pid 17536, started 22:18 on
+  2026-09-04, log `lenses_full.log` in the session scratchpad). 105,887 pairs at ~33/min is about
+  **53 GPU-hours**: keep the machine awake and LM Studio loaded, or it stops and resumes on re-run.
+  Only the local model writes; nothing bills. **The files are tracked now** (`.gitignore` no longer
+  excludes `*__local.md`) — commit the new ones every so often:
+  `git add backend/content/answers && git commit -m "docs(answers): N more lenses by gpt-oss-20b"`.
+- *(superseded)* **A one-hour lens run was started at 21:45 on 2026-09-04** (`answer_lenses.py --hours 1`, detached,
   pid in the WORKLOG entry; log in this session's scratchpad). LM Studio serves `openai/gpt-oss-20b`,
   loaded through `lms load`; the server was OFF and nothing loaded when the session began. Measured
   **~35 answers/min** with 4 workers. When it ends, the new `content/answers/*.md` are untracked —

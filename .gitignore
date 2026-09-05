@@ -25,14 +25,13 @@ backend/content/vault_questions.json
 # state of the web on the day it ran — regenerate it, do not share it.
 backend/content/reading_fetch.json
 
-# Answers a LOCAL model wrote. The curated bank in content/answers/ ships with
-# the repo; these are this machine's LM Studio output, cached under __local so it
-# cannot shadow the Claude one, and they are not the same kind of thing.
-backend/content/answers/*__local.md
+# Answers a LOCAL model wrote (content/answers/*__local.md) ARE tracked since
+# 2026-09-04: the point of pre-writing them is never generating them again, and
+# a disk that is not in git is one bad day from generating them again. Each file
+# says in its frontmatter and its last line which model wrote it.
 
-# And the verdict on them. Derived from those files by eval_answers.py, so it is
-# regenerated, never shared: a report about answers that are not in the repo
-# describes nothing in another clone.
+# The verdict on them is derived data: eval_answers.py regenerates it from the
+# answer files in seconds, so it is never shared.
 backend/content/answers/_eval.md
 backend/content/answers/_eval.json
 
