@@ -1,6 +1,58 @@
 # Worklog
 
-## 2026-09-04 (last) — pre-writing the lenses: LM Studio up, a one-hour batch, 35 answers a minute
+## 2026-09-05 (last) — the flicker, measured frame by frame, and removed
+
+**Summary:** "there is flickering when the question moves forward in the bank." Reproduced with a
+requestAnimationFrame recorder that logged every DOM change on the detail pane, then fixed the two
+things it showed. Branch `fix/lens-flicker`.
+
+### What the recorder showed
+
+| Gesture | Frames | Verdict |
+|---|---|---|
+| ArrowDown to the next question | new heading with a `$` on Grounded → 92–114 ms later the `$` gone | **flicker**: `cached_modes` was a second request after the question |
+| hover a lens tab (400 ms) | spinner frame, article 709 → **463** px → answer 892 px, opacity 0 → 1 over 300 ms, then **0.999 → 0 → 1** | **flicker**: one-frame spinner, then a one-frame blackout when framer-motion settled |
+| hover rows in the peek overlay | nothing | clean |
+| click a row in the overlay | one frame | clean |
+| document shrinks under a deep scroll | list stays away | clean (`readingMode` from `?id=`) |
+
+Why tonight: LM Studio was off until this session. With it off, hover reached no lens (billed lenses
+need a press). With it on, six tabs switch on hover, and every pointer path across the row fires the
+spinner + fade + blackout.
+
+### What changed
+
+- `GET /questions/{qid}` carries `cached_modes`; `QuestionDetail` reads it from the question and the
+  separate effect + `fetchCachedModes` are deleted. First frame is the right frame.
+- `DeepAnswer`: `AnimatePresence`/`motion.div` gone — a plain `div`. The fade was the flicker.
+- One spinner element for both loading states, class `spinner-late`: `animation: pf-appear 0s linear
+  150ms both` holds `visibility: hidden` for 150 ms, so a disk hit (~20 ms) never paints one.
+
+### Verified
+
+| Check | Result |
+|---|---|
+| new `test_a_question_says_which_lenses_are_on_disk` | red (`None`) → green, 16/16 |
+| the other eleven backend test files | green |
+| `npm test`, `npm run build`, `tsc --noEmit` | green |
+| recorder, hover STAR then ELI5 | 2 frames each: spinner `visibility: hidden`, then answer. No opacity ramp, no 0 frame |
+| recorder, ArrowDown | 1 frame, `dollars` constant |
+
+**Left:** the article still collapses to 463 px for the one hidden-spinner frame, so content below the
+answer moves up for ~20 ms. Not visible in practice; the fix would be to keep the previous lens on
+screen while the next loads. Hover-to-switch stays — it is COD-30's deliberate design — but with six
+free lenses it now fires on every pointer path across the row, and press-only may be the better
+default. Not changed without being asked.
+
+### Trap
+
+A killed `uvicorn --reload` leaves its worker process alive and bound to 8787 beside the new server.
+`netstat` showed two LISTENING rows; the old one answered, so the new route "did not work" for ten
+minutes. Kill the worker (`CommandLine -match 'main:app'`), not just the reloader.
+
+---
+
+## 2026-09-04 — pre-writing the lenses: LM Studio up, a one-hour batch, 35 answers a minute
 
 **Summary:** the ask was to make sure the local model works on this machine and then let it run for
 about an hour writing answers to disk, so study time is spent reading rather than waiting on a model.

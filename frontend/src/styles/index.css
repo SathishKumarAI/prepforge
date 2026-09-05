@@ -238,6 +238,11 @@ select:disabled {
     @apply panel;
   }
 
+  /* Appears only if the wait is real. `both` holds the `from` state through
+     the 150 ms delay, so a fetch that lands first never paints a spinner. */
+  .spinner-late {
+    animation: pf-appear 0s linear 150ms both;
+  }
   .pill {
     @apply inline-flex items-center gap-1.5 rounded-full border border-surface0 px-2.5 py-1 text-micro font-medium;
     font-variant-numeric: tabular-nums;
@@ -430,4 +435,9 @@ select:disabled {
   .prose-answer .hljs-deletion { @apply text-red; }
   .prose-answer .hljs-emphasis { @apply italic; }
   .prose-answer .hljs-strong { @apply font-semibold; }
+}
+
+@keyframes pf-appear {
+  from { visibility: hidden; }
+  to { visibility: visible; }
 }
