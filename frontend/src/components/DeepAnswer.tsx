@@ -1,15 +1,23 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { useProgress } from "../hooks/useProgress";
+import { useProviders } from "../hooks/useProviders";
 import { useSettings } from "../hooks/useSettings";
 import { generateAnswer } from "../lib/api";
 import { personaHint } from "../lib/settings";
-import type { GeneratedAnswer } from "../lib/types";
+import type { GeneratedAnswer, Provider } from "../lib/types";
 import { Markdown } from "./Markdown";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 
 export type Mode = "deep" | "star" | "eli5" | "first_principles" | "aws" | "thinking" | "faang" | "custom";
-type Slot = { status: "loading" | "done"; data: GeneratedAnswer | null };
+/** `view` indexes `data.versions` — 0 is the newest, which is what a fresh load shows. */
+type Slot = {
+  status: "loading" | "done";
+  data: GeneratedAnswer | null;
+  view: number;
+  /** A regenerate that failed. Kept apart from `data` so the answer already on screen survives it. */
+  error?: GeneratedAnswer;
+};
 
 /** Exported so a caller can put these lenses in ITS tab row — see `controlled`. */
 export const LENS_TABS: { mode: Mode; label: string }[] = [
@@ -126,18 +134,31 @@ export function DeepAnswer({
   const [mode, setMode] = useState<Mode>(controlled ?? "deep");
   const [slots, setSlots] = useState<Partial<Record<Mode, Slot>>>({});
   const [customText, setCustomText] = useState("");
+  const [infoOpen, setInfoOpen] = useState(false);
   const { settings } = useSettings();
   const { progress, setCustom } = useProgress();
+  const providers = useProviders();
 
+  // A regenerate keeps the current answer on screen while the new one is
+  // written; the old one is not lost either way — the backend keeps every
+  // version on disk and sends them all back, newest first.
   const load = useCallback(
-    async (m: Mode) => {
-      setSlots((s) => ({ ...s, [m]: { status: "loading", data: null } }));
+    async (m: Mode, provider?: Provider) => {
+      setSlots((s) => ({ ...s, [m]: { status: "loading", data: provider ? s[m]?.data ?? null : null, view: 0 } }));
+      let res: GeneratedAnswer;
       try {
-        const res = await generateAnswer(question, topic, personaHint(settings), qid, m);
-        setSlots((s) => ({ ...s, [m]: { status: "done", data: res } }));
+        res = await generateAnswer(question, topic, personaHint(settings), qid, m, provider ? { provider, force: true } : {});
       } catch (e) {
-        setSlots((s) => ({ ...s, [m]: { status: "done", data: { error: "network", message: String(e) } } }));
+        res = { error: "network", message: String(e) };
       }
+      setSlots((s) => {
+        const prev = s[m];
+        // A regenerate that fails must not take the answer on screen with it.
+        if (res.error && provider && prev?.data && !prev.data.error) {
+          return { ...s, [m]: { status: "done", data: prev.data, view: prev.view, error: res } };
+        }
+        return { ...s, [m]: { status: "done", data: res, view: 0 } };
+      });
     },
     [question, topic, qid, settings]
   );
@@ -188,6 +209,10 @@ export function DeepAnswer({
   }
 
   const slot = slots[mode];
+  // What is on screen: the version the learner picked, else the newest.
+  const shown = slot?.data && !slot.data.error ? slot.data.versions?.[slot.view] ?? slot.data : null;
+  const versions = slot?.data?.versions ?? [];
+  const err = slot?.status === "done" ? slot.error ?? (slot.data?.error ? slot.data : null) : null;
 
   return (
     <div className={controlled ? "" : "mt-4 rounded-lg border border-surface0 bg-crust p-4"}>
@@ -253,10 +278,10 @@ export function DeepAnswer({
         </div>
       )}
 
-      {slot?.status === "done" && slot.data?.error && (
-        <div className="rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
-          {slot.data.message ?? "Generation failed."}
-          {slot.data.error === "no_credentials" && (
+      {err && (
+        <div className="mb-3 rounded-xl border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">
+          {err.message ?? "Generation failed."}
+          {err.error === "no_credentials" && (
             <div className="mt-1 text-micro text-red">
               Add ANTHROPIC_API_KEY to backend/.env, or run `ant auth login`, then restart the backend.
             </div>
@@ -264,9 +289,9 @@ export function DeepAnswer({
         </div>
       )}
 
-      {slot?.status === "done" && slot.data && !slot.data.error && (
+      {shown && (
         <AnimatePresence mode="wait">
-          <motion.div key={mode} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div key={`${mode}:${slot?.view ?? 0}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="mb-2 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
               {MODE_TITLE[mode]}
             </div>
@@ -282,27 +307,63 @@ export function DeepAnswer({
               ))}
             </div>
 
-            {slot.data.answer && <Markdown>{slot.data.answer}</Markdown>}
+            {shown.answer && <Markdown>{shown.answer}</Markdown>}
 
-            {slot.data.meta && (
-              <div className="mt-4 flex flex-wrap gap-1.5 border-t border-surface0 pt-3">
-                {slot.data.meta.model && <Meta label={slot.data.meta.model} />}
-                {typeof slot.data.meta.total_tokens === "number" && (
-                  <Meta label={`${slot.data.meta.total_tokens.toLocaleString()} tok`} tip={`${slot.data.meta.input_tokens ?? 0} in · ${slot.data.meta.output_tokens ?? 0} out`} />
-                )}
-                {typeof slot.data.meta.cost_usd === "number" && <Meta label={`$${slot.data.meta.cost_usd.toFixed(4)}`} accent />}
-                {(slot.data.meta.web_searches ?? 0) > 0 && <Meta label={`${slot.data.meta.web_searches} search${slot.data.meta.web_searches! > 1 ? "es" : ""}`} />}
-                {slot.data.meta.cached && <Meta label="✓ cached · no API call" accent />}
+            {/* Every version stays on disk; this row is the history. */}
+            {versions.length > 1 && (
+              <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-surface0 pt-3">
+                <span className="font-mono text-[9px] uppercase tracking-widest text-overlay0">versions ›</span>
+                {versions.map((v, i) => (
+                  <button
+                    key={v.meta?.file ?? i}
+                    onClick={() => setSlots((s) => ({ ...s, [mode]: { ...s[mode]!, view: i } }))}
+                    className={`pill transition-colors ${i === slot?.view ? "border-mauve/60 text-mauve" : "text-overlay1 hover:text-text"}`}
+                    title={v.meta?.file}
+                  >
+                    v{versions.length - i} · {when(v.meta?.generated_at)} · {shortModel(v.meta?.model)}
+                  </button>
+                ))}
               </div>
             )}
 
-            {slot.data.sources && slot.data.sources.length > 0 && (
+            {shown.meta && (
+              <div className="mt-4 border-t border-surface0 pt-3">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {typeof shown.meta.cost_usd === "number" && <Meta label={`$${shown.meta.cost_usd.toFixed(4)}`} accent />}
+                  {shown.meta.cached && <Meta label="✓ saved on disk · no API call" accent />}
+                  <button
+                    onClick={() => setInfoOpen((o) => !o)}
+                    aria-expanded={infoOpen}
+                    aria-label="How this answer was made"
+                    className={`pill transition-colors ${infoOpen ? "border-mauve/60 text-mauve" : "text-overlay1 hover:text-text"}`}
+                  >
+                    ⓘ info
+                  </button>
+                </div>
+                {infoOpen && (
+                  <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-0.5 rounded-lg bg-mantle/50 px-3 py-2 font-mono text-[11px] text-subtext0">
+                    <dt className="text-overlay0">model</dt>
+                    <dd>{shown.meta.model ?? "—"}{shown.meta.provider ? ` · ${shown.meta.provider}` : ""}</dd>
+                    <dt className="text-overlay0">written</dt>
+                    <dd>{shown.meta.generated_at ? new Date(shown.meta.generated_at).toLocaleString() : "—"}</dd>
+                    <dt className="text-overlay0">tokens</dt>
+                    <dd>{(shown.meta.input_tokens ?? 0).toLocaleString()} in · {(shown.meta.output_tokens ?? 0).toLocaleString()} out</dd>
+                    <dt className="text-overlay0">cost</dt>
+                    <dd>{typeof shown.meta.cost_usd === "number" ? `$${shown.meta.cost_usd.toFixed(4)}` : "—"}{(shown.meta.web_searches ?? 0) > 0 ? ` · ${shown.meta.web_searches} web search${shown.meta.web_searches! > 1 ? "es" : ""}` : ""}</dd>
+                    <dt className="text-overlay0">file</dt>
+                    <dd className="truncate">{shown.meta.file ?? "—"}</dd>
+                  </dl>
+                )}
+              </div>
+            )}
+
+            {shown.sources && shown.sources.length > 0 && (
               <div className="mt-4">
                 <div className="mb-2 font-mono text-[11px] uppercase tracking-widest text-overlay0">
-                  Sources · {slot.data.sources.length}
+                  Sources · {shown.sources.length}
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  {slot.data.sources.map((s, i) => (
+                  {shown.sources.map((s, i) => (
                     <a key={s.url} href={s.url} target="_blank" rel="noreferrer" className="group flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-surface0/50">
                       <span className="mt-0.5 grid size-4 shrink-0 place-items-center rounded bg-surface0 font-mono text-micro text-subtext0">{i + 1}</span>
                       <span className="min-w-0">
@@ -314,11 +375,43 @@ export function DeepAnswer({
                 </div>
               </div>
             )}
+
+            {/* A new answer, kept alongside this one. Local is free and hidden
+                when LM Studio is off; Claude bills, and web search bills more —
+                the press itself is the confirmation, as everywhere else here. */}
+            <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-surface0 pt-3">
+              <span className="font-mono text-[9px] uppercase tracking-widest text-overlay0">new answer ›</span>
+              {providers.local_model && (
+                <Regen onClick={() => load(mode, "local")} busy={slot?.status === "loading"} label="↻ Local · free" tip={providers.local_model} />
+              )}
+              <Regen onClick={() => load(mode, "claude")} busy={slot?.status === "loading"} label="↻ Claude" tip="Bills tokens, no web search" />
+              <Regen onClick={() => load(mode, "claude_search")} busy={slot?.status === "loading"} label="↻ Claude + web search" tip="Bills tokens and up to 4 searches; adds citations" />
+            </div>
           </motion.div>
         </AnimatePresence>
       )}
     </div>
   );
+}
+
+function Regen({ onClick, busy, label, tip }: { onClick: () => void; busy: boolean; label: string; tip?: string }) {
+  return (
+    <button onClick={onClick} disabled={busy} title={tip} className="pill text-overlay1 transition-colors hover:text-text disabled:opacity-50">
+      {label}
+    </button>
+  );
+}
+
+function when(iso?: string): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+/** `claude-opus-4-8` → `opus-4-8`; a long LM Studio id keeps its last segment. */
+function shortModel(model?: string): string {
+  if (!model) return "?";
+  return model.replace(/^claude-/, "").split("/").pop()!.slice(0, 24);
 }
 
 function Meta({ label, tip, accent }: { label: string; tip?: string; accent?: boolean }) {

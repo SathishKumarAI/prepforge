@@ -539,12 +539,16 @@ class GenerateReq(BaseModel):
     persona: str = ""
     qid: str = ""
     mode: str = "deep"  # "deep" (grounded) or "star" (STAR interview answer)
+    provider: str = "auto"  # see generate.PROVIDERS
+    force: bool = False  # regenerate even though an answer exists; the old one is kept
 
 
 @app.post("/generate/answer")
 def generate_answer(req: GenerateReq):
-    """Answer + metadata. Cache-first (reads content/answers/*.md), no API call on a hit."""
-    return generate_mod.generate(req.question, req.topic, req.persona, req.qid, req.mode)
+    """Answer + metadata + every earlier version. Disk-first (reads
+    content/answers/*.md), no API call on a hit; `force` writes a NEW file and
+    never overwrites — see generate.versions."""
+    return generate_mod.generate(req.question, req.topic, req.persona, req.qid, req.mode, req.provider, req.force)
 
 
 @app.get("/generate/providers")

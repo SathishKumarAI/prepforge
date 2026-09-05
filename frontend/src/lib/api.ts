@@ -1,4 +1,4 @@
-import type { DeepLink, GeneratedAnswer, Question, QuestionRowLite, Resource } from "./types";
+import type { DeepLink, GeneratedAnswer, Provider, Question, QuestionRowLite, Resource } from "./types";
 
 const BASE = "/api";
 
@@ -74,12 +74,14 @@ export async function generateAnswer(
   topic: string,
   persona = "",
   qid = "",
-  mode = "deep"
+  mode = "deep",
+  /** `force` regenerates (the old answer is kept as a version); `provider` picks who writes it. */
+  opts: { provider?: Provider; force?: boolean } = {}
 ): Promise<GeneratedAnswer> {
   const res = await fetch(`${BASE}/generate/answer`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, topic, persona, qid, mode }),
+    body: JSON.stringify({ question, topic, persona, qid, mode, ...opts }),
   });
   if (!res.ok) throw new Error(`generate → ${res.status}`);
   return res.json();
