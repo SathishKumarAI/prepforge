@@ -19,6 +19,12 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **A one-hour lens run was started at 21:45 on 2026-09-04** (`answer_lenses.py --hours 1`, detached,
+  pid in the WORKLOG entry; log in this session's scratchpad). LM Studio serves `openai/gpt-oss-20b`,
+  loaded through `lms load`; the server was OFF and nothing loaded when the session began. Measured
+  **~35 answers/min** with 4 workers. When it ends, the new `content/answers/*.md` are untracked —
+  commit them (`git add backend/content/answers && git commit -m "docs(answers): N lenses pre-written by gpt-oss-20b"`).
+  Re-run the same command any time; it skips what exists.
 - **Plane was down** (`localhost:8080` refused) — no work item for this branch either.
 - **Left alone:** `backend/generate_missing_local.py`, untracked, not mine — it fakes `__local` files by
   copying the AWS lens and labels them `generated_by: ChatGPT`. Delete or gitignore before it lands.
