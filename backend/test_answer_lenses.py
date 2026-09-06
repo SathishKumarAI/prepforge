@@ -53,9 +53,10 @@ def test_a_transport_error_is_waited_for_too():
     assert out[2] == 1 and naps == [5]
 
 
-def test_a_400_that_persists_fails_after_two_naps_not_ten():
-    """LM Studio answered 400 for one prompt on every attempt (its parser
-    rejected the model's output). Ten retries held a worker for eight minutes."""
+def test_a_400_that_persists_fails_after_five_naps_not_ten():
+    """LM Studio's 400s come in bursts of tens of seconds; five spaced naps
+    outlast a burst, while ten held a worker eight minutes on a pair that
+    fails every time."""
     saved = g.local_only
 
     def always_400(*_):
@@ -71,7 +72,7 @@ def test_a_400_that_persists_fails_after_two_naps_not_ten():
             pass
     finally:
         g.local_only = saved
-    assert naps == [5, 10], naps
+    assert naps == [5, 10, 20, 40, 60], naps
 
 
 def test_a_provider_that_never_comes_back_does_fail_eventually():
@@ -120,7 +121,7 @@ if __name__ == "__main__":
     for fn in [
         test_a_provider_that_is_down_is_waited_for_not_failed,
         test_a_transport_error_is_waited_for_too,
-        test_a_400_that_persists_fails_after_two_naps_not_ten,
+        test_a_400_that_persists_fails_after_five_naps_not_ten,
         test_a_provider_that_never_comes_back_does_fail_eventually,
         test_the_probe_cache_is_cleared_before_a_retry,
     ]:

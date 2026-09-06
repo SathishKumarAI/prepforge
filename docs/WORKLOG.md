@@ -1,6 +1,24 @@
 # Worklog
 
-## 2026-09-06 (last) — a 400 that is about the prompt, not the provider
+## 2026-09-06 (last) — the 400s are bursts, so five spaced retries, not two
+
+**Summary:** run v3's first hour, on the two-retry budget from the previous entry, failed 43 pairs
+with HTTP 400. Both pairs re-tried by hand succeeded first try, at `max_tokens` 1500 and 4096 alike
+(443 completion tokens, 24 reasoning tokens — nowhere near a cap). So the 400s are not about the
+prompt and not truncation: LM Studio's parser error arrives in bursts of tens of seconds, and the
+two retries (5 + 10 s) sat inside one. Branch `fix/lens-batch-400-bursts`.
+
+`RETRIES_400 = 5` — 5, 10, 20, 40, 60 s, two minutes total, outlasts a burst; the one pair in 54k that
+fails deterministically now costs a worker two minutes rather than eight. Test renamed and
+re-asserted (`naps == [5, 10, 20, 40, 60]`), 5/5 green. Run v3 stopped at 1,109 written / 43 failed;
+run v4 started on this code with the 43 back in the plan.
+
+The previous entry's diagnosis stands for its pair (deterministic for the MRoPE question); it was
+wrong to generalise it to every 400.
+
+---
+
+## 2026-09-06 — a 400 that is about the prompt, not the provider
 
 **Summary:** the 11:27 tick showed a third failure and a slow hour. The failure was a persistent 400
 from LM Studio for one question; the ten-retry ladder from yesterday's fix had held a worker on it
