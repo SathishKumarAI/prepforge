@@ -47,13 +47,13 @@ SOURCE_ORDER = ("vault", "library")
 # and give up only after ~8 minutes of silence — a machine that went to sleep.
 RETRIES = 10
 MAX_NAP = 60
-# A 400 gets two retries, not ten. Measured 2026-09-06: LM Studio answered 400
-# ("output does not match the expected peg-native format") for one question on
-# every attempt — the model's output for THAT prompt breaks the server's
-# parser — and the ten-retry ladder held a worker for eight minutes on a pair
-# that was never going to work. Two retries (15 s) still cover a 400 from a
-# server mid-reload; a longer outage is a connect error, which keeps the ten.
-RETRIES_400 = 2
+# A 400 gets five retries (5+10+20+40+60 s), not ten and not two. Measured
+# 2026-09-06: LM Studio's 400s ("output does not match the expected peg-native
+# format") come in BURSTS of tens of seconds — 43 pairs failed three attempts
+# inside a 15 s window in one hour, and every one of them succeeded first try
+# afterwards. Two minutes outlasts a burst. The rare pair that fails
+# deterministically (one in 54k so far) costs a worker two minutes, not eight.
+RETRIES_400 = 5
 
 
 def generate_one(q: dict, lens: str, sleep=time.sleep) -> tuple[str, str, int, float]:

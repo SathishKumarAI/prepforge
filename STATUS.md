@@ -19,7 +19,11 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
-- **Run v3 (2026-09-06 11:30, pid 21712, log `lenses_full3.log`).** Restarted on `fix/lens-batch-400`:
+- **Run v4 (2026-09-06 ~12:45, log `lenses_full4.log`)** on `fix/lens-batch-400-bursts`: a 400 gets
+  FIVE spaced retries (two minutes). Run v3's two-retry budget failed 43 pairs in its first hour —
+  the 400s come in bursts of tens of seconds and all three attempts fell inside one; every failed
+  pair succeeded first try afterwards. Those 43 have no file and are back in the plan.
+- **Run v3 (2026-09-06 11:30, pid 21712, log `lenses_full3.log`)**, superseded. Restarted on `fix/lens-batch-400`:
   a 400 now gets two retries, not ten. LM Studio answered 400 ("output does not match the expected
   peg-native format") for ONE question on every attempt — its parser rejects what the model writes
   for that prompt — and the ten-retry ladder held a worker for eight minutes. Three per-pair failures
