@@ -1,6 +1,47 @@
 # Worklog
 
-## 2026-09-05 (last) — the batch that failed 49,342 pairs in two minutes, and the retry that stops it
+## 2026-09-06 (last) — a 400 that is about the prompt, not the provider
+
+**Summary:** the 11:27 tick showed a third failure and a slow hour. The failure was a persistent 400
+from LM Studio for one question; the ten-retry ladder from yesterday's fix had held a worker on it
+for eight minutes. Branch `fix/lens-batch-400`.
+
+### What the body said
+
+Reproduced by hand with the model id given explicitly:
+
+    Engine protocol predict stream returned an error: {"code":500,"message":"The model produced
+    output that does not match the expected peg-native format","type":"server_error"}
+
+LM Studio's parser rejects what gpt-oss-20b writes for that prompt (a Qwen2.5-VL / MRoPE question,
+`thinking` lens), and it did so on every attempt. That is a per-pair failure wearing a provider
+status code. A first attempt without the explicit id returned a different 400 — `Failed to load model
+"null"` — because the probe had blinked and returned None at that moment: more evidence for COD-152.
+
+### What changed
+
+`generate_one()`: an `httpx.HTTPStatusError` with status 400 gets `RETRIES_400 = 2` (15 s), which
+still covers a 400 from a server mid-reload; connect errors and the probe's RuntimeError keep the
+ten. New test `test_a_400_that_persists_fails_after_two_naps_not_ten`, 5/5 green. Run v2 (pid 5104,
+54,491 written, 3 failed) stopped; run v3 started on the new code.
+
+### Coverage at the restart
+
+| Lens | Files | State |
+|---|---|---|
+| STAR · ELI5 · first-principles | 17,927 each | complete |
+| thinking | ~10,800 | in progress, ~16/min — the lens makes the model reason longer |
+| FAANG · AWS | 101 · 102 (curated) | queued |
+
+### Left
+
+- The three failed pairs (two empty answers, one parser rejection) have no file; a later run tries
+  each once more. If the parser rejection repeats, that question simply has no `thinking` lens.
+- COD-152 stands: the probe blinked again under load during the repro.
+
+---
+
+## 2026-09-05 — the batch that failed 49,342 pairs in two minutes, and the retry that stops it
 
 **Summary:** the 03:18 hourly tick showed the run on the `thinking` lens with `star` unfinished. The
 stdout counter said 0 failed; stderr had 49,342 FAILED lines. Branch `fix/lens-batch-retry`.
