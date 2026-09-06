@@ -53,6 +53,27 @@ def test_a_transport_error_is_waited_for_too():
     assert out[2] == 1 and naps == [5]
 
 
+def test_a_400_that_persists_fails_after_two_naps_not_ten():
+    """LM Studio answered 400 for one prompt on every attempt (its parser
+    rejected the model's output). Ten retries held a worker for eight minutes."""
+    saved = g.local_only
+
+    def always_400(*_):
+        raise httpx.HTTPStatusError("400", request=None, response=httpx.Response(400))
+
+    g.local_only = always_400
+    naps = []
+    try:
+        try:
+            a.generate_one(_q(), "thinking", sleep=naps.append)
+            assert False, "should have raised"
+        except httpx.HTTPStatusError:
+            pass
+    finally:
+        g.local_only = saved
+    assert naps == [5, 10], naps
+
+
 def test_a_provider_that_never_comes_back_does_fail_eventually():
     saved = g.local_only
 
@@ -99,6 +120,7 @@ if __name__ == "__main__":
     for fn in [
         test_a_provider_that_is_down_is_waited_for_not_failed,
         test_a_transport_error_is_waited_for_too,
+        test_a_400_that_persists_fails_after_two_naps_not_ten,
         test_a_provider_that_never_comes_back_does_fail_eventually,
         test_the_probe_cache_is_cleared_before_a_retry,
     ]:

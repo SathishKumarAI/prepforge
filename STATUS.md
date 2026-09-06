@@ -19,6 +19,12 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **Run v3 (2026-09-06 11:30, pid 21712, log `lenses_full3.log`).** Restarted on `fix/lens-batch-400`:
+  a 400 now gets two retries, not ten. LM Studio answered 400 ("output does not match the expected
+  peg-native format") for ONE question on every attempt — its parser rejects what the model writes
+  for that prompt — and the ten-retry ladder held a worker for eight minutes. Three per-pair failures
+  in 54k so far (two empty answers, this one); none has a file, so a later run retries them once.
+  Coverage at the restart: STAR, ELI5, first-principles complete; thinking ~60%; FAANG, AWS queued.
 - **The batch burned 49,342 pairs in ~2 minutes at 03:0x on 2026-09-05, and was restarted fixed.** LM
   Studio blinked (276 × HTTP 400), the `local_model()` probe cached the miss for 10 s, every
   `local_only` raised instantly, and four workers marked all of ELI5 and first-principles FAILED

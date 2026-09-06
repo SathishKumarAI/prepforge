@@ -47,28 +47,40 @@ SOURCE_ORDER = ("vault", "library")
 # and give up only after ~8 minutes of silence — a machine that went to sleep.
 RETRIES = 10
 MAX_NAP = 60
+# A 400 gets two retries, not ten. Measured 2026-09-06: LM Studio answered 400
+# ("output does not match the expected peg-native format") for one question on
+# every attempt — the model's output for THAT prompt breaks the server's
+# parser — and the ten-retry ladder held a worker for eight minutes on a pair
+# that was never going to work. Two retries (15 s) still cover a 400 from a
+# server mid-reload; a longer outage is a connect error, which keeps the ten.
+RETRIES_400 = 2
 
 
 def generate_one(q: dict, lens: str, sleep=time.sleep) -> tuple[str, str, int, float]:
     """One answer, waiting out a provider that is not answering.
 
-    Retried: the probe's "not answering" RuntimeError and any httpx error (a
-    400 from a server mid-reload is the same event as no server). Not retried:
-    an empty answer or a bad lens — those are about the pair, not the provider.
-    The probe cache is cleared before each retry, or every retry inside the 10 s
-    TTL would read the same cached None.
+    Retried: the probe's "not answering" RuntimeError and any httpx error. A
+    400 is retried only twice — see RETRIES_400. Not retried: an empty answer
+    or a bad lens — those are about the pair, not the provider. The probe
+    cache is cleared before each retry, or every retry inside the 10 s TTL
+    would read the same cached None.
     """
     t0 = time.time()
     for attempt in range(RETRIES + 1):
         try:
             out = generate.local_only(q["question"], q.get("topic", ""), q["id"], lens)
             return q["id"], lens, len(out["answer"].split()), time.time() - t0
-        except (RuntimeError, httpx.HTTPError):
-            if attempt == RETRIES:
+        except (RuntimeError, httpx.HTTPError) as exc:
+            budget = RETRIES_400 if _is_400(exc) else RETRIES
+            if attempt >= budget:
                 raise
             generate._probe = (0.0, None)
             sleep(min(MAX_NAP, 5 * 2**attempt))
     raise AssertionError("unreachable")
+
+
+def _is_400(exc: BaseException) -> bool:
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 400
 
 
 def plan(lenses: list[str], sources: list[str], topic: str | None) -> list[tuple[dict, str]]:
