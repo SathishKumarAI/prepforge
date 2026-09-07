@@ -19,7 +19,14 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
-- **Run v4 (2026-09-06 12:33, pid 50932, log `lenses_full4.log`)** on `fix/lens-batch-400-bursts`: a 400 gets
+- **THE LENS BACKLOG IS DONE (2026-09-07 15:07).** Every one of the 17,927 questions has all six
+  prose lenses on disk and in git: 107,776 files under `backend/content/answers/`, 460 MB, every
+  one written by `openai/gpt-oss-20b` on this machine, nothing billed. Run v4 ended after 26.4 h
+  (40,730 written, 16 failed); a one-minute final pass wrote those 16 (0 failed, 0 left). COD-149 Done.
+  `answer_lenses.py --dry-run` now prints `0 answers to write` — re-run it after ingesting new
+  questions and it writes only theirs. Next, deliberately not started: `eval_answers.py`, and the
+  Claude evaluation the user wants later. Nothing here has been read by a human.
+- *(history)* **Run v4 (2026-09-06 12:33, pid 50932, log `lenses_full4.log`)** on `fix/lens-batch-400-bursts`: a 400 gets
   FIVE spaced retries (two minutes). Run v3's two-retry budget failed 43 pairs in its first hour —
   the 400s come in bursts of tens of seconds and all three attempts fell inside one; every failed
   pair succeeded first try afterwards. Those 43 have no file and are back in the plan.
