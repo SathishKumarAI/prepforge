@@ -1,6 +1,65 @@
 # Worklog
 
-## 2026-09-06 (last) — the 400s are bursts, so five spaced retries, not two
+## 2026-09-07 (last) — every question has every lens: 107,776 answers by a local model, nothing billed
+
+**Summary:** the run that began as "let it go for about an hour" on the evening of 2026-09-04 finished
+at 15:07 on 2026-09-07. All 17,927 questions now carry all six prose lenses (STAR, ELI5,
+first-principles, thinking, FAANG, AWS), written by `openai/gpt-oss-20b` through LM Studio on the
+RTX 5070 Ti, saved as Markdown with model, time, tokens and cost in the frontmatter, and committed to
+`main` in hourly slices (PR #94 through #160). COD-149 → Done.
+
+### The runs
+
+| Run | Window | Written | Failed | What ended it |
+|---|---|---|---|---|
+| one-hour | 09-04 21:45 – 22:18 | 1,074 | 0 | replaced by an unbounded run |
+| v1 | 09-04 22:18 – 09-05 03:26 | 9,328 | 49,342 | a provider blink drained the queue in 2 min (#98) |
+| v2 | 09-05 03:26 – 09-06 11:30 | 54,491 | 3 | a persistent 400 held a worker 8 min (#132) |
+| v3 | 09-06 11:30 – 12:33 | 1,109 | 43 | two retries sat inside a 400 burst (#134) |
+| v4 | 09-06 12:33 – 09-07 15:07 | 40,730 | 16 | finished |
+| final pass | 09-07 15:08, 0.9 min | 16 | 0 | 0 left |
+
+Pace: 33–37/min on STAR, ELI5, FAANG, AWS; ~16/min on `thinking` (the lens makes the model reason
+longer); ~30/min on first-principles. About 55 GPU-hours in total.
+
+### Coverage
+
+| Lens | Files |
+|---|---|
+| STAR | 17,931 |
+| ELI5 | 17,928 |
+| first-principles | 17,930 |
+| thinking | 17,929 |
+| FAANG | 17,928 |
+| AWS | 17,929 |
+
+The few above 17,927 are the curated questions' original Claude-written files sitting beside the
+local ones — both are versions, both open from the versions row (#90).
+
+### What the three days taught
+
+- **A provider that is down is a reason to wait, not a verdict on the pair.** 49,342 failures in two
+  minutes, all because a 10 s negative cache made every call raise instantly (#98).
+- **Read stderr.** The stdout counter said 0 failed while stderr held 49,342 lines. Every later
+  watcher counted both.
+- **A 400 can be three different things:** a server mid-reload (retry), a burst of parser errors
+  (retry, spaced — five naps), or a prompt the parser rejects every time (give up). #132 got the
+  third right and generalised it wrongly; #134 measured the second.
+- **Kill the worker, not just the reloader.** A dead `uvicorn --reload` left its worker bound to
+  8787 and answering old code.
+- **The UI's probe has the same weakness** (COD-152, open): one slow probe under GPU load shows
+  "LM Studio is off" for 10 s.
+
+### Deliberately not done
+
+- No quality pass. `eval_answers.py` exists; the user wants a Claude evaluation later, not now.
+- No re-generation of the curated 100's lenses — they already had Claude-authored versions.
+- Hover-to-switch on the lens tabs unchanged (COD-30), noted in #96 as worth revisiting now that
+  every lens opens from disk in ~20 ms.
+
+---
+
+## 2026-09-06 — the 400s are bursts, so five spaced retries, not two
 
 **Summary:** run v3's first hour, on the two-retry budget from the previous entry, failed 43 pairs
 with HTTP 400. Both pairs re-tried by hand succeeded first try, at `max_tokens` 1500 and 4096 alike
