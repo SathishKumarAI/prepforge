@@ -14,7 +14,6 @@ import { useLibrarySession } from "../hooks/useLibrarySession";
 import { useProgress } from "../hooks/useProgress";
 import { fetchBrowse, fetchSources } from "../lib/api";
 import { isDue } from "../lib/srs";
-import { APP_NAME } from "../lib/brand";
 
 /**
  * Everything you can study from, at four granularities.
@@ -177,7 +176,6 @@ export function Library() {
   return (
     <Page
       title="Library"
-      eyebrow={APP_NAME}
       actions={
         <>
           {facts[view]}

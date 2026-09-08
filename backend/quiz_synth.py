@@ -8,8 +8,10 @@ question (hygiene.py).
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
+import re
 from collections import Counter
 
 from ingest_words import STOPWORDS, _LEAD_NUM, _QTOKEN

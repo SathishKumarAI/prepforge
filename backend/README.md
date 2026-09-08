@@ -19,6 +19,7 @@ scripts: `./.venv/Scripts/python.exe test_<name>.py` (each prints `N/N pass`).
 | Markdown → sections → cards; links, tags, topic; the LLM card writers; `ingest()` | `ingest.py` |
 | "Is this text a question at all" (`usable_question`, `is_fragment`) | `hygiene.py` |
 | Zero-token multiple-choice quizzes from cards | `quiz_synth.py` |
+| A bank whose titles read `—` (written before 2026-09-08): decode in place, once | `repair_titles.py` |
 | Stopwords and the two token regexes ingest and quiz_synth share | `ingest_words.py` |
 | The related-questions / reading index (TF-IDF) | `pipeline.py` |
 | Obsidian vault → questions; which vault files count (`config/vault.yaml`) | `vault.py` |
