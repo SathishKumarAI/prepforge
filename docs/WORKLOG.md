@@ -8,6 +8,7 @@ This entry grows one row per PR.
 | Item | PR | What landed | Measured |
 |---|---|---|---|
 | COD-109 | dead hook | `hooks/useQuestions.ts` deleted. Its only live export, `reloadQuestions()`, downloaded the whole 39.7 MB bank into a map nothing read; `CollectionsView` and `FeedView` now call `reloadQuestionIndex()` (new, in `useQuestionIndex`): drop the ETag, conditional refetch of the 1.17 MB index, every consumer re-renders. `fetchQuestions` removed from `api.ts` — no page requests `GET /questions` any more, in any path | tsc (noUnusedLocals) clean, build ok, 8/8; after an ingest the refetch is the index, not the bank |
+| COD-152 | probe grace | `generate.local_model()` keeps the last model it SAW (`_seen`: when, id, URL, 60 s grace). A probe that fails within a minute of a hit at the same URL is a slow GPU, not an absent server, so the hit is served and the miss is not cached. A different URL still forgets it | new test `test_one_slow_probe_does_not_forget_a_model_seen_a_moment_ago`: red (`one slow probe forgot the model`) → green; `test_local_provider` all passed incl. the dead-port case; `test_local_answers` 13/13; `test_answer_lenses` passed |
 
 ---
 
