@@ -565,6 +565,15 @@ def generate_providers():
     return {"local_model": generate_mod.local_model(), "free_modes": generate_mod.free_modes()}
 
 
+@app.get("/generate/stats")
+def generate_stats():
+    """Totals over every generated answer on disk — count by lens and by model,
+    tokens, cost, an estimated GPU-hours figure with the rate it assumed. The
+    first call after the folder changes answers `computing: true` and starts
+    the 30 s scan; poll until it does not."""
+    return generate_mod.answer_stats()
+
+
 @app.get("/generate/cached/{qid}")
 def generate_cached(qid: str):
     """Which lenses this question already has on disk. Those cost nothing to

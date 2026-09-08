@@ -1,6 +1,43 @@
 # Worklog
 
-## 2026-09-07 (last) — every question has every lens: 107,776 answers by a local model, nothing billed
+## 2026-09-07 (last) — what the answers add up to, in Settings and under ⓘ
+
+**Summary:** "add a status of this to Settings and the information icon: how answers are reflecting,
+what model, the cost, hours, tokens." Branch `feat/answer-stats`.
+
+### What changed
+
+- `generate._compute_stats(dir)`: one pass over the folder reading the first 700 bytes of each file
+  (the whole frontmatter) with a regex — YAML at 107k files was 10× slower. Counts by lens (from the
+  filename suffix) and by model (`model`, `provider`, tokens in/out, cost), totals, first→last
+  `generated_at`, and `local_hours_estimate` = local output tokens ÷ 61 tok/s ÷ 3600 ÷ 4 slots, with
+  `estimate_basis` in the payload so nobody mistakes it for a clock.
+- `generate.answer_stats()`: serves `_stats.json` when its stamp (file count, newest mtime) matches
+  the folder; otherwise returns `computing: true` and starts the scan in a thread. `_stats.json` is
+  gitignored beside `_eval.json`.
+- `GET /generate/stats`; `useAnswerStats(enabled)` (module cache, 3 s poll while computing, gated so
+  the dialog that mounts on every route never starts a scan uninvited).
+- Settings → **Generated answers**: three headline numbers, a pill per lens, a table per model, and
+  the window + estimate line. Under a lens's ⓘ: one more row, "of N answers by this model · total on
+  disk · billed · ≈ GPU-hours — full table in Settings".
+
+### Verified
+
+| Check | Result |
+|---|---|
+| `test_answer_stats.py` (new) | red (`no attribute _compute_stats`) → 2/2 |
+| `tsc --noEmit` | clean |
+| `GET /generate/stats` on the real folder | `computing: true`, then the totals (numbers in the PR) |
+| Settings in the browser | see the PR |
+
+### Trap, again
+
+`uvicorn --reload` did not pick up `main.py`; the route was 404 until the server was restarted. Third
+time this session — `dev.sh` should probably not rely on WatchFiles on this machine.
+
+---
+
+## 2026-09-07 — every question has every lens: 107,776 answers by a local model, nothing billed
 
 **Summary:** the run that began as "let it go for about an hour" on the evening of 2026-09-04 finished
 at 15:07 on 2026-09-07. All 17,927 questions now carry all six prose lenses (STAR, ELI5,

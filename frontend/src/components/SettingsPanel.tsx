@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useAnswerStats } from "../hooks/useAnswerStats";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -18,6 +19,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   // bank on first paint for a dialog nobody had asked for — and the only thing
   // wanted here is the topic names, which the 1.17 MB projection carries.
   const { rows, loading } = useQuestionIndex(open);
+  const stats = useAnswerStats(open);
   const topics = useMemo(
     () => [...new Set(rows.map((r) => r.topic))].sort((a, b) => a.localeCompare(b)),
     [rows],
@@ -108,6 +110,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <Field label="Your data">
             <BackupControls />
           </Field>
+
+          <Field label="Generated answers">
+            <AnswerStatsView stats={stats} />
+          </Field>
         </div>
 
         <div className="mt-2 flex items-center justify-between border-t border-surface0 pt-3">
@@ -120,6 +126,66 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** What the lens files on disk add up to: how many, by which model, what they
+ *  cost, and how long the GPU ran for them — the last one an estimate from
+ *  tokens, and it says so. */
+function AnswerStatsView({ stats }: { stats: ReturnType<typeof useAnswerStats> }) {
+  if (!stats) return <span className="text-small text-overlay0">Reading the answers folder…</span>;
+  if (stats.computing) {
+    return (
+      <span className="text-small text-overlay0">
+        Counting {stats.answers.toLocaleString()} answer files — about 30 seconds the first time…
+      </span>
+    );
+  }
+  const lenses = Object.entries(stats.by_lens ?? {}).sort((a, b) => b[1] - a[1]);
+  const day = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—");
+  return (
+    <div className="space-y-3 text-small">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span><span className="font-semibold text-text">{stats.answers.toLocaleString()}</span> answers on disk</span>
+        <span><span className="font-semibold text-text">{(stats.local_answers ?? 0).toLocaleString()}</span> by the local model</span>
+        <span><span className="font-semibold text-text">${(stats.cost_usd ?? 0).toFixed(2)}</span> billed in total</span>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {lenses.map(([lens, n]) => (
+          <span key={lens} className="pill text-overlay1">{lens} · {n.toLocaleString()}</span>
+        ))}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full font-mono text-[11px] text-subtext0">
+          <thead>
+            <tr className="text-overlay0">
+              <th className="pb-1 text-left font-normal">model</th>
+              <th className="pb-1 text-right font-normal">answers</th>
+              <th className="pb-1 text-right font-normal">tokens in</th>
+              <th className="pb-1 text-right font-normal">tokens out</th>
+              <th className="pb-1 text-right font-normal">cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(stats.by_model ?? []).map((m) => (
+              <tr key={m.model}>
+                <td className="truncate pr-2">{m.model}{m.provider ? ` · ${m.provider}` : ""}</td>
+                <td className="text-right">{m.answers.toLocaleString()}</td>
+                <td className="text-right">{m.input_tokens.toLocaleString()}</td>
+                <td className="text-right">{m.output_tokens.toLocaleString()}</td>
+                <td className="text-right">${m.cost_usd.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="text-micro text-overlay1">
+        Written {day(stats.first_generated_at)} → {day(stats.last_generated_at)}. The local model's{" "}
+        {(stats.output_tokens ?? 0).toLocaleString()} output tokens ≈{" "}
+        <span className="text-text">{stats.local_hours_estimate} GPU-hours</span>, estimated at the measured{" "}
+        {stats.estimate_basis?.tokens_per_second} tok/s × {stats.estimate_basis?.parallel} parallel slots — not a clock.
+      </div>
+    </div>
   );
 }
 
