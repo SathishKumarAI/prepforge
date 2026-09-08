@@ -341,14 +341,25 @@ export function QuestionDetail({
       {/* The mechanic the name promises: what you just read becomes a card the
           scheduler knows about. Same three-step shape as Study's rating row,
           fewer words. Once rated, the row says so rather than inviting a
-          second grade — one reading, one grade. */}
+          second grade — one reading, one grade — and offers the next question,
+          so read → grade → next is a loop you can see, not one you have to
+          know j for. In recall mode a grade already moves on, and the row
+          says so before you press. */}
       {revealed && (
         <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-surface0 pt-4">
           {rated ? (
-            <p className="text-small text-overlay1">
-              Rated <span className="text-text">{RATINGS.find((r) => r.key === rated.key)?.label}</span>{" "}
-              — back in {rated.next}.
-            </p>
+            <>
+              <p className="text-small text-overlay1">
+                Rated <span className="text-text">{RATINGS.find((r) => r.key === rated.key)?.label}</span>{" "}
+                — back in {rated.next}.
+              </p>
+              {onNext && (
+                <Button variant="ghost" size="sm" className="ml-auto" onClick={onNext}>
+                  Next question
+                  <Kbd>j</Kbd>
+                </Button>
+              )}
+            </>
           ) : (
             <>
               <span className="mr-1 text-small text-overlay1">How did that go?</span>
@@ -361,6 +372,9 @@ export function QuestionDetail({
                   <Kbd>{String(i + 1)}</Kbd>
                 </Button>
               ))}
+              {recall && (
+                <span className="text-micro text-overlay0">grading moves to the next question</span>
+              )}
             </>
           )}
         </div>
