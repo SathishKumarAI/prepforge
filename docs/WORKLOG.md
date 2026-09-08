@@ -1,5 +1,34 @@
 # Worklog
 
+## 2026-09-08 (later) — QuestionsView split by concern (COD-161)
+
+**Summary:** `QuestionsView.tsx` had grown to 805 lines (ceiling 500). Split by concern, behaviour
+preserved, rendered output diffed before and after. Branch `refactor/questions-view-split`.
+
+| Concern | Now lives in | Lines |
+|---|---|---|
+| paging: page one, debounce, next page, scroll sentinel | `hooks/useQuestionPages.ts` | 114 |
+| search, chips, Clear filters, Recall, Hide list, the `/` key | `components/library/FilterBand.tsx` | 181 |
+| gutter handle + hover overlay for a put-away list | `components/library/ListPeek.tsx` | 102 |
+| the "Go deeper" disclosure | `components/library/DeepStudyLinks.tsx` | 71 |
+| selection, list-away rules, two-pane grid, j/k, recall on/off | `components/library/QuestionsView.tsx` | 450 (was 805) |
+
+`FilterBand` owns no state (values in, changes out). `ListPeek` owns its own open/closed and the
+Escape that closes it — the two `setPeeking(false)` calls the view used to make are gone because the
+overlay unmounts when the list comes back, which is the same thing. `components/library/README.md`
+(new) carries the change → file table; COD-110 asked for it.
+
+### Verified
+
+| Check | Result |
+|---|---|
+| rendered `.page` outerHTML, four states (two-pane, list hidden, recall on, empty), before vs after | text stripped: identical except the row the baseline's hover had selected, that question's answer markup and tags, and a trailing space my normaliser left. No markup change in the band, the list, the handle, or the empty state |
+| peek overlay, live | hover opens it with `60 questions` and 60 rows; Escape closes; reopens; Keep open puts the list back and the toggle reads `Hide list` |
+| `/` focuses search; Clear filters restores 66 rows | yes / yes |
+| `tsc` / `vite build` / `npm run contrast` / `npm test` | clean / ok (2.7s) / clear / 8/8 |
+
+---
+
 ## 2026-09-08 — the Recall redesign brief, filed and built (COD-154 to COD-160)
 
 **Summary:** a design brief for the Library ("Recall — Library Redesign Brief") arrived describing a

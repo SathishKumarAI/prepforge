@@ -1,29 +1,33 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  ChevronRight,
-  ExternalLink,
-  EyeOff,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Search,
-  X,
-} from "lucide-react";
+import { DeepStudyLinks } from "./DeepStudyLinks";
+import { FilterBand } from "./FilterBand";
+import { ListPeek } from "./ListPeek";
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
-import { StickyChrome, UNDER_APP_BAR } from "../page/StickyChrome";
+import { UNDER_APP_BAR } from "../page/StickyChrome";
 import { Button } from "../ui/button";
-import { Chip } from "../ui/chip";
 import { useProgress } from "../../hooks/useProgress";
-import { useScrollDirection } from "../../hooks/useScrollDirection";
 import { useQuestion } from "../../hooks/useQuestion";
-import { fetchBrowse, type Browse } from "../../lib/api";
+import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
+import { useScrollDirection } from "../../hooks/useScrollDirection";
 import { isDue } from "../../lib/srs";
-import { ACCENT_DOT, topicColor } from "../../lib/topics";
-import type { DeepLink, QuestionRowLite } from "../../lib/types";
 
-const DIFFS = ["easy", "medium", "hard"];
+/**
+ * The Questions view of the Library: a filter band, a server-paged list on the
+ * left, one question's detail on the right, and the rules for when the list
+ * gets out of the way.
+ *
+ * Owns: which question is selected, whether the list is away, recall mode, and
+ * the keys that walk the list. Does NOT own the fetching (hooks/useQuestionPages),
+ * the filter controls (FilterBand), the hover overlay for a put-away list
+ * (ListPeek), the reading list (DeepStudyLinks), or a row or the detail.
+ *
+ * Change → file: search/chips/Recall/Hide list → FilterBand; paging, page size
+ * or the sentinel → useQuestionPages; the gutter handle and overlay → ListPeek;
+ * the two-pane grid, selection, list-away rules, j/k → here.
+ */
 
 /** Whether the list pane is put away. Same shape as Layout's `pf-sidebar-open`. */
 const LIST_HIDDEN_KEY = "pf-library-list-hidden";
@@ -36,25 +40,11 @@ const LIST_HIDDEN_KEY = "pf-library-list-hidden";
 const RECALL_KEY = "pf-library-recall";
 
 /**
- * Hover intent, for both the row peek and the list peek. One number, because
- * two hover delays on one screen is two different feels for the same gesture.
+ * Hover intent for the row peek. ListPeek carries the same value for the list
+ * peek: two hover delays on one screen is two different feels for the same
+ * gesture, so if this changes, that changes.
  */
 const PEEK_MS = 250;
-
-
-/**
- * Rows per page. Small on purpose: this is now a real page from the server, not
- * a window onto rows already in memory, so the first screen costs one page and
- * the rest arrive only if you scroll to them.
- */
-const PAGE = 60;
-
-/**
- * Long enough that typing "kafka" is one request rather than five, short enough
- * that the list feels like it is keeping up. Not PEEK_MS — that is hover intent,
- * a different question with a different right answer.
- */
-const TYPING_MS = 180;
 
 export function QuestionsView() {
   const { progress } = useProgress();
@@ -76,99 +66,12 @@ export function QuestionsView() {
     const q = params.get("q");
     if (q !== null) setQuery(q);
   }, [params]);
-  const searchRef = useRef<HTMLInputElement>(null);
 
-  // press "/" anywhere (outside a text field) to jump to search
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
-      const el = document.activeElement;
-      const typing = el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
-      if (typing) return;
-      e.preventDefault();
-      searchRef.current?.focus();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  /**
-   * The rows, the topic list and the "go deeper" links, from one call.
-   *
-   * This used to be a client-side Fuse index over the whole 39.7 MB bank, and
-   * the ONLY reason the bank had to be here was that Fuse searched `answer`
-   * text — which `/questions/index` does not carry. Moving the search to the
-   * server removes the reason, so the answers never come down at all.
-   *
-   * `error` is kept separate from an empty result: "nothing matches kafka" and
-   * "the backend is not answering" look identical otherwise, and one of them is
-   * a lie the reader cannot tell from the truth.
-   */
-  const [rows, setRows] = useState<QuestionRowLite[]>([]);
-  /** What the whole match looks like: total, topic list, links. Page one only. */
-  const [meta, setMeta] = useState<Browse | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [paging, setPaging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const sentinel = useRef<HTMLDivElement>(null);
-
-  // Page one, debounced. Changing the filter restarts the walk from the top —
-  // keeping the old rows while a new filter loads would show results that do not
-  // match what the box says.
-  useEffect(() => {
-    let live = true;
-    const timer = window.setTimeout(() => {
-      fetchBrowse({ q: query.trim(), topic, difficulty: diff, limit: PAGE, offset: 0 })
-        .then((res) => {
-          if (!live) return;
-          setRows(res.questions);
-          setMeta(res);
-          setHasMore(res.has_more);
-          setError(null);
-        })
-        .catch((e) => live && setError(String(e)))
-        .finally(() => live && setLoading(false));
-    }, TYPING_MS);
-    return () => {
-      live = false;
-      window.clearTimeout(timer);
-    };
-  }, [query, topic, diff]);
-
-  /**
-   * The next page, appended.
-   *
-   * `paging` is the guard that makes this safe to call from an observer: the
-   * sentinel can intersect several times while a request is in flight, and
-   * without it the same offset would be fetched three times and appended three
-   * times. The offset comes from `rows.length` rather than a counter, so a
-   * failed page is retried rather than skipped.
-   */
-  const loadMore = useCallback(() => {
-    if (paging || !hasMore) return;
-    setPaging(true);
-    fetchBrowse({
-      q: query.trim(),
-      topic,
-      difficulty: diff,
-      limit: PAGE,
-      offset: rows.length,
-    })
-      .then((res) => {
-        setRows((prev) => {
-          // Belt and braces: an id already held is dropped rather than rendered
-          // twice, so a duplicate can never become a duplicate React key.
-          const seen = new Set(prev.map((r) => r.id));
-          return [...prev, ...res.questions.filter((r) => !seen.has(r.id))];
-        });
-        setHasMore(res.has_more);
-      })
-      .catch(() => setHasMore(false))
-      .finally(() => setPaging(false));
-  }, [paging, hasMore, query, topic, diff, rows.length]);
-
-  const filtered = rows;
+  const { rows, meta, hasMore, loading, paging, error, sentinel } = useQuestionPages(
+    query,
+    topic,
+    diff,
+  );
   const total = meta?.total ?? 0;
   const topics = meta?.topics ?? [];
 
@@ -221,9 +124,7 @@ export function QuestionsView() {
   // ---- the list pane, put away -------------------------------------------
   // Above lg the two panes are fixed, so a long answer is capped at whatever
   // width the list leaves it even once you have finished choosing. Hidden, the
-  // answer takes the whole column and the list comes back on a hover — as an
-  // OVERLAY, never a push: reflowing the paragraph under the cursor is what
-  // makes the push version of this unusable.
+  // answer takes the whole column and the list comes back on a hover (ListPeek).
   const [listHidden, setListHidden] = useState(
     () => localStorage.getItem(LIST_HIDDEN_KEY) === "1",
   );
@@ -233,12 +134,10 @@ export function QuestionsView() {
    * have meant nothing.
    */
   const [pinOpen, setPinOpen] = useState(false);
-  const [peeking, setPeeking] = useState(false);
   const [recall, setRecall] = useState(() => localStorage.getItem(RECALL_KEY) === "1");
   useEffect(() => {
     localStorage.setItem(RECALL_KEY, recall ? "1" : "0");
   }, [recall]);
-  const revealTimer = useRef<number>();
   // Hover selects on a real pointer only. On touch, mouseenter fires from the
   // tap that is already selecting, so honouring it would do the work twice.
   const canHover = window.matchMedia("(hover: hover)").matches;
@@ -306,9 +205,6 @@ export function QuestionsView() {
 
   useEffect(() => {
     localStorage.setItem(LIST_HIDDEN_KEY, listHidden ? "1" : "0");
-    // Showing the list for real ends the peek, or the overlay would sit on top
-    // of the column it is a stand-in for.
-    if (!listHidden) setPeeking(false);
   }, [listHidden]);
 
   /** One place for "the list is back and stays back", so the peek panel, the
@@ -317,7 +213,6 @@ export function QuestionsView() {
     setListHidden(false);
     setReadingMode(false);
     setPinOpen(true);
-    setPeeking(false);
   }, []);
 
   /** And its opposite. Pinning is dropped so the auto-hide can work again. */
@@ -326,62 +221,23 @@ export function QuestionsView() {
     setPinOpen(false);
   }, []);
 
-  useEffect(() => () => window.clearTimeout(revealTimer.current), []);
-
-  // Escape closes the peek. It is an overlay over the thing you were reading,
-  // so it needs the same way out as every other overlay in the app.
-  useEffect(() => {
-    if (!peeking) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setPeeking(false);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [peeking]);
-
-  /**
-   * Hover is an accelerator here, never the only way in: the handle it sits on
-   * is a real button, and the chrome carries a real toggle. A pointer that
-   * cannot hover simply never calls this.
-   */
-  function peekList(on: boolean) {
-    window.clearTimeout(revealTimer.current);
-    if (!canHover) return;
-    if (on) revealTimer.current = window.setTimeout(() => setPeeking(true), PEEK_MS);
-    else setPeeking(false);
-  }
-  // 800px of lead time, so the next page is usually already there by the time
-  // you reach the bottom rather than being a wait you watch.
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => entries[0]?.isIntersecting && loadMore(),
-      { rootMargin: "800px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [loadMore]);
-  // Everything loaded so far. There is no separate render window any more: the
-  // server decides what exists, and a row on screen is a row that was fetched.
-  const shown = filtered;
   // The row drives the list's own state — which one is highlighted, and what the
   // arrow keys step through. It exists only if that question is on a page that
   // has been fetched.
   const selectedRow = useMemo(
-    () => filtered.find((q) => q.id === selectedId) ?? null,
-    [filtered, selectedId],
+    () => rows.find((q) => q.id === selectedId) ?? null,
+    [rows, selectedId],
   );
   /**
    * The detail follows the URL, NOT the loaded rows.
    *
-   * Falling back to `filtered[0]` when the id is not in the list was survivable
+   * Falling back to `rows[0]` when the id is not in the list was survivable
    * while the client held every matching row; with real paging it is a silent
    * lie — a shared link to question 900 would open question 1 and say nothing.
    * The id is asked for directly, and the list highlights it if and when its
    * page arrives.
    */
-  const { question: selected } = useQuestion(selectedId ?? filtered[0]?.id ?? null);
+  const { question: selected } = useQuestion(selectedId ?? rows[0]?.id ?? null);
 
   /**
    * One step through the loaded rows. Shared by the arrow keys, j/k, and the
@@ -390,12 +246,12 @@ export function QuestionsView() {
    */
   const step = useCallback(
     (dir: 1 | -1) => {
-      const i = shown.findIndex((q) => q.id === selectedRow?.id);
+      const i = rows.findIndex((q) => q.id === selectedRow?.id);
       if (i === -1) return;
-      const next = shown[i + dir];
+      const next = rows[i + dir];
       if (next) select(next.id);
     },
-    [shown, selectedRow, select],
+    [rows, selectedRow, select],
   );
 
   // Arrow keys walk the list, so the whole surface is reachable without a mouse
@@ -404,7 +260,8 @@ export function QuestionsView() {
   // drilling session should be the cheapest one.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      const dir = e.key === "ArrowDown" || e.key === "j" ? 1 : e.key === "ArrowUp" || e.key === "k" ? -1 : 0;
+      const dir =
+        e.key === "ArrowDown" || e.key === "j" ? 1 : e.key === "ArrowUp" || e.key === "k" ? -1 : 0;
       if (!dir || e.metaKey || e.ctrlKey || e.altKey) return;
       const el = document.activeElement;
       if (
@@ -436,7 +293,11 @@ export function QuestionsView() {
       />
     );
 
-  const activeFilters = Boolean(topic || diff || query.trim());
+  function clearFilters() {
+    setQuery("");
+    setTopic(null);
+    setDiff(null);
+  }
 
   // The rows themselves, so the in-grid column and the hover peek render the
   // same list rather than two that drift apart. Only ever one is mounted, so
@@ -444,7 +305,7 @@ export function QuestionsView() {
   const listPane = (
     <>
       <ul className="flex flex-col gap-0.5">
-        {shown.map((q) => (
+        {rows.map((q) => (
           <QuestionRow
             key={q.id}
             q={q}
@@ -463,12 +324,12 @@ export function QuestionsView() {
           className="py-6 text-center text-micro text-overlay0"
           aria-live="polite"
         >
-          <span className="tabular-nums">{filtered.length}</span> of{" "}
+          <span className="tabular-nums">{rows.length}</span> of{" "}
           <span className="tabular-nums">{total.toLocaleString()}</span>
           {paging ? " — loading more" : " — keep scrolling"}
         </div>
       ) : (
-        filtered.length > 0 &&
+        rows.length > 0 &&
         total > PAGE && (
           <div className="py-6 text-center text-micro text-overlay0">
             all <span className="tabular-nums">{total.toLocaleString()}</span> loaded
@@ -493,121 +354,20 @@ export function QuestionsView() {
         </div>
       )}
 
-      {/* Search and filters slide away while you read the deck and come back
-          the moment you scroll up. They are wanted for two seconds and pinned
-          for the whole session otherwise.
-
-          In focus mode they go entirely. Focus mode's whole promise is that the
-          screen holds the thing you are reading and nothing else — it already
-          takes the app bar and the nav, and leaving a search box and eleven
-          topic chips pinned above the answer breaks that promise on the one page
-          where most reading happens. `focus-mode` is set on an ancestor by
-          Layout, so this reads it rather than being told. */}
-      <StickyChrome className="mb-5 py-2 [.focus-mode_&]:hidden">
-        <div className="relative mb-2.5 max-w-xl">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-overlay0"
-          />
-          <input
-            ref={searchRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="Search questions"
-            placeholder="Search questions, answers, tags"
-            className="input h-10 pl-9 pr-16"
-          />
-          {query ? (
-            <button
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-              className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-overlay0 hover:text-text"
-            >
-              <X aria-hidden="true" className="size-4" />
-            </button>
-          ) : (
-            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0">
-              /
-            </kbd>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Chip active={!topic} onClick={() => setTopic(null)} label="All topics" />
-          {topics.map((t) => (
-            <Chip
-              key={t}
-              active={topic === t}
-              onClick={() => setTopic(topic === t ? null : t)}
-              className="capitalize"
-              label={
-                <>
-                  <span className={`size-1.5 shrink-0 rounded-full ${ACCENT_DOT[topicColor(t)]}`} />
-                  {t}
-                </>
-              }
-            />
-          ))}
-          <span className="mx-1 h-4 w-px bg-surface0" />
-          {DIFFS.map((d) => (
-            <Chip
-              key={d}
-              active={diff === d}
-              onClick={() => setDiff(diff === d ? null : d)}
-              label={d}
-              className="capitalize"
-            />
-          ))}
-          {activeFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setQuery("");
-                setTopic(null);
-                setDiff(null);
-              }}
-            >
-              Clear filters
-            </Button>
-          )}
-          {/* The study switch for this list. Pressed state is a fill, not a
-              hue: a second accent on the filter row would make the one accent
-              mean less. */}
-          <Button
-            variant={recall ? "secondary" : "ghost"}
-            size="sm"
-            className="ml-auto"
-            onClick={() => setRecall((v) => !v)}
-            aria-pressed={recall}
-            title="Recall mode — each answer stays hidden until you press Space, then you rate yourself"
-          >
-            <EyeOff aria-hidden="true" />
-            Recall
-          </Button>
-          {/* lg-only: below it the panes never share the screen, so `detailOnly`
-              already owns this and a second control would contradict it. */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="hidden lg:inline-flex"
-            onClick={() => (listAway ? showListForGood() : hideList())}
-            aria-pressed={listAway}
-            title={
-              listAway
-                ? "Show the question list"
-                : "Hide the question list — hover the left edge to peek at it"
-            }
-          >
-            {listAway ? (
-              <PanelLeftOpen aria-hidden="true" />
-            ) : (
-              <PanelLeftClose aria-hidden="true" />
-            )}
-            {listAway ? "Show list" : "Hide list"}
-          </Button>
-        </div>
-      </StickyChrome>
+      <FilterBand
+        query={query}
+        onQuery={setQuery}
+        topic={topic}
+        onTopic={setTopic}
+        topics={topics}
+        diff={diff}
+        onDiff={setDiff}
+        recall={recall}
+        onRecall={setRecall}
+        listAway={listAway}
+        onShowList={showListForGood}
+        onHideList={hideList}
+      />
 
       <DeepStudyLinks
         links={meta?.links ?? []}
@@ -615,19 +375,11 @@ export function QuestionsView() {
         label={topic ?? (query.trim() ? "these results" : "everything")}
       />
 
-      {filtered.length === 0 ? (
+      {rows.length === 0 ? (
         <Empty
           title="No question matches those filters."
           action={
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setQuery("");
-                setTopic(null);
-                setDiff(null);
-              }}
-            >
+            <Button variant="secondary" size="sm" onClick={clearFilters}>
               Clear filters
             </Button>
           }
@@ -671,49 +423,10 @@ export function QuestionsView() {
             </div>
           )}
 
-          {/* The peek. One element owns both the handle and the panel, and it
-              is the element that grows — so moving from the handle onto the
-              list never crosses a gap that would count as leaving.
-
-              Parked in the page gutter (`lg:px-10` on main), not at the grid's
-              left edge. At left-0 the handle sat on the answer's first glyph and
-              its hover box swallowed the first 12px of every line, so you could
-              not select from the start of a paragraph. */}
           {listAway && (
-            <div
-              onMouseEnter={() => peekList(true)}
-              onMouseLeave={() => peekList(false)}
-              className={`absolute inset-y-0 -left-6 z-20 hidden lg:block ${
-                peeking ? "w-[22rem]" : "w-6"
-              }`}
-            >
-              <div style={UNDER_APP_BAR} className="sticky">
-                {peeking ? (
-                  <div className="panel ml-1 max-h-[calc(100vh-var(--app-bar-h,0px)-2rem)] overflow-y-auto p-2 shadow-pop">
-                    <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                      <span className="text-micro text-overlay1">
-                        <span className="tabular-nums">{filtered.length}</span> question
-                        {filtered.length === 1 ? "" : "s"}
-                      </span>
-                      <Button variant="ghost" size="sm" onClick={showListForGood}>
-                        Keep open
-                      </Button>
-                    </div>
-                    {listPane}
-                  </div>
-                ) : (
-                  // Visible, so the hover zone is discoverable rather than a
-                  // secret. A button, so it also answers a click and a Tab.
-                  <button
-                    type="button"
-                    onClick={showListForGood}
-                    aria-label="Show the question list"
-                    title="Show the question list"
-                    className="ml-2 h-24 w-1.5 rounded-full bg-surface0 transition-colors duration-100 hover:bg-surface2"
-                  />
-                )}
-              </div>
-            </div>
+            <ListPeek count={rows.length} onKeepOpen={showListForGood}>
+              {listPane}
+            </ListPeek>
           )}
 
           <div className={detailOnly ? "" : "hidden lg:block"}>
@@ -733,73 +446,5 @@ export function QuestionsView() {
         </div>
       )}
     </>
-  );
-}
-
-/**
- * Every "go deeper" link the matched questions cite, deduped and ranked by how
- * many of them cite it — the reading list for whatever you are looking at.
- *
- * Deduped and counted on the SERVER now. It used to walk every question's
- * `links` and `reading` arrays in the browser, which meant this one disclosure
- * was a second reason the whole bank had to be in memory: those arrays are not
- * in the index projection either.
- */
-function DeepStudyLinks({
-  links,
-  total,
-  label,
-}: {
-  links: (DeepLink & { count: number })[];
-  /** Distinct links before the server's cap, so the count does not lie. */
-  total: number;
-  label: string;
-}) {
-  const [open, setOpen] = useState(false);
-  if (links.length === 0) return null;
-  const shown = open ? links : links.slice(0, 6);
-
-  // A quiet disclosure, not a titled card: this is a side door off the deck.
-  // Giving it card chrome gave six links the same weight as the deck itself.
-  return (
-    <details
-      // Also gone in focus mode: it sits in the same band as the search box and
-      // is the same kind of thing — a side door off the deck, not the reading.
-      className="mb-5 border-b border-surface0 pb-3 [.focus-mode_&]:hidden"
-      open={open}
-      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
-    >
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-micro text-overlay1 marker:content-none hover:text-subtext0 [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          aria-hidden="true"
-          className={`size-3.5 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
-        />
-        <span className="font-semibold uppercase tracking-[0.14em]">Go deeper</span>
-        <span>
-          <span className="tabular-nums">{total.toLocaleString()}</span> link
-          {total !== 1 ? "s" : ""} the sources cite for {label}
-        </span>
-      </summary>
-      <ul className="mt-2 flex flex-col gap-0.5">
-        {shown.map((l) => (
-          <li key={l.url}>
-            <a
-              href={l.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-small text-subtext0 transition-colors duration-100 hover:bg-surface0 hover:text-text"
-            >
-              <ExternalLink aria-hidden="true" className="size-3.5 shrink-0 text-overlay0" />
-              <span className="truncate">{l.title}</span>
-              {l.count > 1 && (
-                <span className="shrink-0 tabular-nums text-micro text-overlay0">
-                  cited {l.count}×
-                </span>
-              )}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </details>
   );
 }
