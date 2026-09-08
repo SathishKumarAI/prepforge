@@ -13,6 +13,10 @@ Update this when you STOP working, not when you start.
 - **COD-168 done (2026-09-08, later):** Library header compact — the review row under the tabs is
   gone (the header fact is the button), the filter band is two deliberate rows. List starts at
   346px, was 440.
+- **COD-169 done (2026-09-08, later):** a Next question · j button after a grade in the Library;
+  Recall mode says a grade moves on. Deliberately not done: centring Study's card (the empty right
+  column is the reading measure; `page/README.md` one-left-gutter rule).
+- **Next action:** nothing queued. Read the app as a user for ten minutes before adding anything.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,
