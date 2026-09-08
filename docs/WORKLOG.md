@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-09-08 — the Recall redesign brief, filed and built (COD-154 to COD-160)
+
+**Summary:** a design brief for the Library ("Recall — Library Redesign Brief") arrived describing a
+mockup: brand eyebrow, stats in the header row, liquid-glass chrome, a settings gear, and seven study
+features. Reconciled against the repo (themes, text size, focus mode and flip cards already existed;
+no timer existed; the brief's tokens were not adopted), filed one Plane item per increment, built
+each on its own branch. This entry grows one line per PR.
+
+| Item | PR | What landed | Measured |
+|---|---|---|---|
+| COD-154 | header row | `Recall` eyebrow over the title (`lib/brand.ts`, the one source of the name; sidebar, breadcrumb, tab title read it); the question count and an **All caught up** pill sit right of the title (`Orient compact`) | Library content starts at 206px, was 264px — one line reclaimed; `tsc`, build, contrast all clean |
+
+---
+
 ## 2026-09-07 (last) — what the answers add up to, in Settings and under ⓘ
 
 **Summary:** "add a status of this to Settings and the information icon: how answers are reflecting,

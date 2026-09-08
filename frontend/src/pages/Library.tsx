@@ -12,6 +12,7 @@ import { FeedView } from "../components/library/FeedView";
 import { useProgress } from "../hooks/useProgress";
 import { fetchBrowse, fetchSources } from "../lib/api";
 import { isDue } from "../lib/srs";
+import { APP_NAME } from "../lib/brand";
 
 /**
  * Everything you can study from, at four granularities.
@@ -19,7 +20,10 @@ import { isDue } from "../lib/srs";
  * Slot table
  *   route    /library?view=questions|saved|collections|feed
  *   job      find the material you want
- *   orient   counts that CHANGE with the view — see below
+ *   orient   counts that CHANGE with the view — see below. Rendered COMPACT,
+ *            in the header row beside the title rather than as a bar under it:
+ *            the row had empty space on the right and the bar cost a line
+ *            (COD-154). Same facts, same cap of four.
  *   act      the view switch, plus one link out to the Reader
  *   review   the list itself
  *   accent   the active view segment only
@@ -112,7 +116,7 @@ export function Library() {
    */
   const facts: Record<View, ReactNode> = {
     questions: (
-      <Orient>
+      <Orient compact>
         {/* null until the count lands — an em dash, not a 0. A zero here would
             say the bank is empty during the half-second before it answers. */}
         <Fact
@@ -120,17 +124,23 @@ export function Library() {
           value={counts.questions || null}
           emphasis={(counts.questions ?? 0) > 0}
         />
-        <Fact label="due for review" value={counts.due || null} />
+        {/* Zero due is not an absent number, it is the good state, so it gets
+            words rather than an em dash. Green is status, not a second accent. */}
+        {counts.due > 0 ? (
+          <Fact label="due for review" value={counts.due} />
+        ) : (
+          <span className="pill border-green/30 text-green">All caught up</span>
+        )}
       </Orient>
     ),
     saved: (
-      <Orient>
+      <Orient compact>
         <Fact label="bookmarked" value={counts.saved || null} emphasis={counts.saved > 0} />
         <Fact label="with a note" value={counts.noted || null} />
       </Orient>
     ),
     collections: (
-      <Orient>
+      <Orient compact>
         <Fact
           label="collections"
           value={library?.collections ?? null}
@@ -141,7 +151,7 @@ export function Library() {
       </Orient>
     ),
     feed: (
-      <Orient>
+      <Orient compact>
         <Fact label="saved items" value={feed?.total ?? null} emphasis={Boolean(feed?.total)} />
         <Fact label="videos" value={feed?.videos ?? null} />
         <Fact
@@ -155,14 +165,17 @@ export function Library() {
   return (
     <Page
       title="Library"
-      orient={facts[view]}
+      eyebrow={APP_NAME}
       actions={
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/reader">
-            <BookOpen aria-hidden="true" />
-            Open the reader
-          </Link>
-        </Button>
+        <>
+          {facts[view]}
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/reader">
+              <BookOpen aria-hidden="true" />
+              Open the reader
+            </Link>
+          </Button>
+        </>
       }
     >
       <Segmented
