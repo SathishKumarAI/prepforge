@@ -17,7 +17,7 @@ and share the in-flight request.
 | One whole question by id | `useQuestion.ts` |
 | The Library's server-paged list: page one, next page, the sentinel | `useQuestionPages.ts` |
 | A running study session: transitions, countdown, keys | `useStudySession.ts` |
-| A timed Library session and its derived counts | `useLibrarySession.ts` |
+| The focus timer: countdown, pause, per-day minutes, the run's counts | `useFocusTimer.ts` |
 | Which lenses are free right now (LM Studio probe) | `useProviders.ts` |
 | Totals over generated answers on disk | `useAnswerStats.ts` |
 | Single-key page shortcuts (ignores fields, buttons, open dialogs) | `useHotkeys.ts` |
@@ -33,5 +33,6 @@ and share the in-flight request.
   to close makes every key look broken.
 - A mapped hotkey is `preventDefault`-ed. Bind Space only while it means something,
   or the page stops scrolling.
-- `useLibrarySession` diffs the progress store against the previous render: exactly
-  one mounted caller, or counts double.
+- `useFocusTimer(progress)` diffs the progress store against the previous render:
+  exactly one caller passes `progress` (shell/FocusTimer), or counts double. Everyone
+  else calls it with no argument and only reads.
