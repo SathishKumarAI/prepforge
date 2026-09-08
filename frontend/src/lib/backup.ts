@@ -308,6 +308,29 @@ export function countsOf(
   };
 }
 
+/**
+ * A few lines a person can recognise, so "is this the right backup?" is
+ * answered by what is in it and not by the filename: the newest card you
+ * wrote, the newest note, the last day you studied. Counts say how much;
+ * these say whose. At most three lines, each clipped — this is a glance, not
+ * a listing.
+ */
+export function sampleOf(
+  file: Pick<BackupFile, "progress" | "notes"> & { cards?: UserCard[] },
+): string[] {
+  const clip = (s: string, n = 90) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
+  const out: string[] = [];
+  const newestCard = [...(file.cards ?? [])].sort((a, b) => b.created.localeCompare(a.created))[0];
+  if (newestCard?.question) out.push(`Newest card you wrote: “${clip(newestCard.question)}”`);
+  const newestNote = [...file.notes].sort((a, b) => (b.updated ?? "").localeCompare(a.updated ?? ""))[0];
+  const noteText = (newestNote?.title || newestNote?.body || "").trim();
+  if (noteText) out.push(`Newest note: “${clip(noteText)}”`);
+  const days = [...file.progress.studyDays].sort();
+  const lastDay = days[days.length - 1];
+  if (lastDay) out.push(`Last studied: ${lastDay}`);
+  return out;
+}
+
 /** `prepforge-backup-2026-09-02.json` — sorts chronologically in a folder. */
 export function backupFilename(exported: string): string {
   const day = /^\d{4}-\d{2}-\d{2}/.exec(exported)?.[0] ?? "export";

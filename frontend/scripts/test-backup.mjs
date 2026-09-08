@@ -26,6 +26,7 @@ const {
   mergeNotes,
   mergeCards,
   countsOf,
+  sampleOf,
   backupFilename,
   BACKUP_VERSION,
 } = await import(pathToFileURL(lib).href);
@@ -66,6 +67,34 @@ const file = (over = {}) => ({
 });
 
 const tests = {
+  test_the_sample_names_the_newest_card_note_and_study_day() {
+    // "Is this the right backup?" is answered by your own words, not the filename.
+    const f = file({
+      cards: [
+        { id: "u-1", question: "Old one", answer: "a", created: "2026-08-01" },
+        { id: "u-2", question: "Why does attention scale quadratically?", answer: "a", created: "2026-09-02" },
+      ],
+      notes: [
+        { id: "n1", kind: "sticky", title: "", body: "older", tags: [], created: "", updated: "2026-08-01" },
+        { id: "n2", kind: "sticky", title: "Kafka offsets", body: "", tags: [], created: "", updated: "2026-09-01" },
+      ],
+      progress: progress({ studyDays: ["2026-08-30", "2026-09-02", "2026-09-01"] }),
+    });
+    const lines = sampleOf(f);
+    assert.equal(lines.length, 3);
+    assert.match(lines[0], /Why does attention scale quadratically\?/);
+    assert.match(lines[1], /Kafka offsets/);
+    assert.match(lines[2], /2026-09-02$/);
+  },
+  test_an_empty_backup_has_no_sample_lines() {
+    assert.deepEqual(sampleOf(file({ cards: [], notes: [], progress: progress() })), []);
+  },
+  test_a_long_card_is_clipped_not_dumped() {
+    const long = "x".repeat(300);
+    const [line] = sampleOf(file({ cards: [{ id: "u", question: long, answer: "", created: "2026-09-02" }], notes: [] }));
+    assert.ok(line.length < 120, line.length);
+    assert.ok(line.endsWith("…”"), line.slice(-5));
+  },
   test_a_file_we_wrote_reads_back_with_everything_in_it() {
     const r = parseBackup(JSON.stringify(file()));
     assert.equal(r.ok, true);
