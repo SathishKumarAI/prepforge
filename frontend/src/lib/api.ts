@@ -8,10 +8,6 @@ async function get<T>(path: string): Promise<T> {
   return res.json();
 }
 
-export async function fetchQuestions(): Promise<{ questions: Question[]; topics: string[] }> {
-  return get("/questions");
-}
-
 export interface Browse {
   questions: QuestionRowLite[];
   /** Matches across the whole filter, not this page — so counts stay honest. */

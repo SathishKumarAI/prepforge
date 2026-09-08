@@ -5,7 +5,7 @@ import { SourceDoc } from "../SourceDoc";
 import { Empty, Loader } from "../States";
 import { Button } from "../ui/button";
 import { addGithubSource, fetchSources, quizFromResource, type LibraryCollection } from "../../lib/api";
-import { reloadQuestions } from "../../hooks/useQuestions";
+import { reloadQuestionIndex } from "../../hooks/useQuestionIndex";
 import { toast } from "../ui/sonner";
 import type { VaultSource } from "../../lib/types";
 
@@ -73,7 +73,7 @@ export function CollectionsView() {
         toast.success(`Added “${r.title ?? value}”`, { id: t, description: `${r.synth_quizzes ?? 0} questions ready.` });
       }
       setUrl("");
-      await Promise.all([load(), reloadQuestions()]);
+      await Promise.all([load(), reloadQuestionIndex()]);
     } catch {
       toast.error("Failed — is the backend running?", { id: t });
     } finally {
