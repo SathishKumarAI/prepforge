@@ -7,6 +7,10 @@ path: "C:/Users/PRANAS/Documents/coding/learn/obsidian-vault"
 # a file is ingested if its folder is in include_folders OR its name matches a keyword
 include_folders: ["Interview"]
 include_keywords: ["interview", "question", "questions", "q&a", "qna"]
+# ...unless its path matches one of these. "questions" in a filename is not proof
+# of prep material: an English-learning book of 400 daily questions put 124 cards
+# about the weather in the bank as Behavioral (COD-34).
+exclude_keywords: ["daily native english"]
 
 max_pages_per_pdf: 80     # cap so huge books don't hang extraction
 max_questions: 2000       # safety cap on total questions

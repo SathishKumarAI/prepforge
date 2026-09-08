@@ -150,13 +150,28 @@ def _parse_questions(text: str) -> list[tuple[str, str]]:
     return pairs
 
 
-def _collect_files(root: Path, folders: list[str], keywords: list[str]) -> list[Path]:
+def _collect_files(
+    root: Path, folders: list[str], keywords: list[str], excludes: list[str] | None = None
+) -> list[Path]:
+    """Which vault files are prep material.
+
+    A file is in if its folder is in `folders` OR its name matches a keyword —
+    and OUT if its path matches an exclude, whichever way it got in. The
+    exclude exists because "questions" is a keyword and "Daily Native English:
+    400 Daily Questions & Answers" is an English-learning book: 124 cards about
+    the weather landed in the bank as Behavioral (COD-34).
+    """
     exts = {".pdf", ".md", ".markdown", ".txt", ".html", ".htm"}
     out: list[Path] = []
     for p in root.rglob("*"):
         if not p.is_file() or p.suffix.lower() not in exts:
             continue
-        rel = str(p.relative_to(root)).lower()
+        # Forward slashes whatever the OS: the folder test below is written
+        # with "/", and on Windows relative_to() yields "\\", so include_folders
+        # silently matched nothing there — only keyword hits were ingested.
+        rel = str(p.relative_to(root)).replace("\\", "/").lower()
+        if any(x.lower() in rel for x in excludes or []):
+            continue
         in_folder = any(rel.startswith(f.lower() + "/") or ("/" + f.lower() + "/") in ("/" + rel) for f in folders)
         in_name = any(k in p.name.lower() for k in keywords)
         if in_folder or in_name:
@@ -181,7 +196,12 @@ def ingest() -> dict:
         except Exception:
             pass
 
-    files = _collect_files(root, cfg.get("include_folders", []) or [], cfg.get("include_keywords", []) or [])
+    files = _collect_files(
+        root,
+        cfg.get("include_folders", []) or [],
+        cfg.get("include_keywords", []) or [],
+        cfg.get("exclude_keywords", []) or [],
+    )
     by_norm: dict[str, dict] = {}
     files_used = 0
 
