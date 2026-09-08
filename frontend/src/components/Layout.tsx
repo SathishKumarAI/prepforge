@@ -3,27 +3,29 @@ import { CommandPalette } from "./CommandPalette";
 import { SettingsPanel } from "./SettingsPanel";
 import { CardFromSelection } from "./CardFromSelection";
 import { ShortcutHelp } from "./ShortcutHelp";
-import { AppBar } from "./shell/AppBar";
 import { AppSidebar } from "./shell/AppSidebar";
 import { SIDEBAR_KEY } from "./shell/nav";
 import { Button } from "./ui/button";
-import { SidebarInset, SidebarProvider } from "./ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "./ui/sidebar";
 import { cn } from "../lib/utils";
 import { trackGlassCursor } from "../lib/glass";
 
 /**
  * The app shell, on shadcn's Sidebar: a nav that collapses to an icon rail on
- * desktop and becomes a sheet on a phone, an app bar with a breadcrumb that
- * says where you are, and the routed page.
+ * desktop and becomes a sheet on a phone, and the routed page. No app bar: it
+ * carried a breadcrumb that repeated the nav and the page title, a search
+ * button and a gear menu the nav already had — the user counted Settings
+ * twice on one screen. Search and Settings live in the nav only; on a phone a
+ * floating trigger opens the sheet, since the bar's toggle went with it.
  *
  * The Sidebar primitive owns open/closed state, Ctrl+B, the mobile sheet and
  * its scrim, and the rail you can drag to toggle. This file owns only the
  * composition and what spans the whole shell: focus mode, the global keys,
  * the dialogs the bar and nav open, and whether the nav was left open.
  *
- * Change → file: a route or its label → shell/nav.ts; the nav's contents or
- * badges → shell/AppSidebar.tsx; the breadcrumb, search button, gear menu or
- * --app-bar-h → shell/AppBar.tsx; a global key or focus mode → here.
+ * Change → file: a route or its label → shell/nav.ts; the nav's contents,
+ * the search item or badges → shell/AppSidebar.tsx; a global key or focus
+ * mode → here.
  */
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -110,17 +112,22 @@ export function Layout({ children }: { children: ReactNode }) {
 
       <AppSidebar
         focus={focus}
+        onSearch={() => setPaletteOpen(true)}
         onSettings={() => setSettingsOpen(true)}
         onHelp={() => setHelpOpen(true)}
       />
 
       <SidebarInset>
-        <AppBar
-          focus={focus}
-          onSearch={() => setPaletteOpen(true)}
-          onSettings={() => setSettingsOpen(true)}
-          onHelp={() => setHelpOpen(true)}
-        />
+        {/* Phone only: the nav is a sheet there and needs a way in. Desktop
+            has the rail and Ctrl+B. Bottom-left, not top-left: the top is
+            where a page's sticky heading parks, and the button sat on its
+            first word. */}
+        {!focus && (
+          <SidebarTrigger
+            className="glass fixed bottom-4 left-4 z-30 size-10 rounded-full shadow-pop md:hidden"
+            title="Menu"
+          />
+        )}
 
         {focus && (
           <Button

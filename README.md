@@ -119,16 +119,16 @@ and drop every card you had written.
 
 ### Reading mode in the Library
 
-The question list is a column that **stays where it is** and scrolls inside itself, parked under
-the app bar. Nothing hides it but the **Hide list** button, and nothing selects a row but a click or
+The question list is a column that **stays where it is** and scrolls inside itself, parked at the
+top of the viewport. There is no app bar any more: it repeated the nav (a breadcrumb, a second
+Settings) and cost 48px of every screen; Search and Settings live in the nav. Nothing hides the list but the **Hide list** button, and nothing selects a row but a click or
 j/k. It used to get out of the way by itself — on a downward scroll, on any `?id=` link (a reload is
 one), and rows switched the open answer on hover — and the three together read as the page moving
-under you whenever you scrolled the list to find something. The app bar and the filter band stopped
-sliding away on scroll for the same reason: every sticky offset is measured from the bar, so a bar
-that comes and goes is a list that jumps.
+under you whenever you scrolled the list to find something. The filter band stopped sliding away
+on scroll for the same reason.
 
 With the list hidden, the left edge keeps its hover-peek and **Keep open** brings the list back.
-Picking a question while deep in the previous answer scrolls the new one's heading under the bar.
+Picking a question while deep in the previous answer scrolls the new one's heading to the top.
 
 With the list hidden the page carries no 84rem cap — the header, the lens tabs and the related list
 use the whole width — while the **running prose caps at 100ch**. Uncapped, a 1,438px answer runs

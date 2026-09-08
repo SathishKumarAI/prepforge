@@ -19,7 +19,7 @@ below — diff before overwriting.
 | The Ctrl+K palette shell (cmdk) | `command.tsx` |
 | Toasts, themed | `sonner.tsx` |
 | The sidebar primitive (inner panel is `.glass`) | `sidebar.tsx` |
-| Breadcrumb, tabs, badge, card, input, label, separator, scroll-area, skeleton | the file of that name |
+| Tabs, badge, card, input, label, separator, scroll-area, skeleton | the file of that name |
 
 ## Edits that differ from upstream
 

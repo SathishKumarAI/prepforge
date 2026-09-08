@@ -75,7 +75,7 @@ export function ReadingPane({
         <nav className="hidden lg:block">
           <div
             className="sticky"
-            style={{ top: maxHeight ? "1rem" : "calc(var(--app-bar-h, 0px) + 1rem)" }}
+            style={{ top: "1rem" }}
           >
             <div className="mb-2 font-mono text-micro uppercase tracking-[0.14em] text-overlay1">
               On this page

@@ -1,7 +1,7 @@
 # `components` — what renders
 
 Subdirectories each carry their own README with a change → file table:
-`page/` (the three-zone contract), `shell/` (nav, app bar), `library/` (the
+`page/` (the three-zone contract), `shell/` (the nav), `library/` (the
 Library's views), `study/`, `card/`, `notes/`, `ui/` (shadcn primitives).
 
 ## Change → file

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { UNDER_APP_BAR } from "../page/underAppBar";
 import { Button } from "../ui/button";
 
 /** Hover intent for the list peek. */
@@ -66,9 +65,9 @@ export function ListPeek({
       onMouseLeave={() => peekList(false)}
       className={`absolute inset-y-0 -left-6 z-20 hidden lg:block ${peeking ? "w-[22rem]" : "w-6"}`}
     >
-      <div style={UNDER_APP_BAR} className="sticky">
+      <div className="sticky top-2">
         {peeking ? (
-          <div className="panel ml-1 max-h-[calc(100vh-var(--app-bar-h,0px)-2rem)] overflow-y-auto p-2 shadow-pop">
+          <div className="panel ml-1 max-h-[calc(100vh-1rem)] overflow-y-auto p-2 shadow-pop">
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <span className="text-micro text-overlay1">
                 <span className="tabular-nums">{count}</span> question

@@ -341,9 +341,9 @@ select:disabled {
        it and hides its first rows. */
     .page-aside {
       position: sticky;
-      top: calc(var(--app-bar-h, 0px) + 1rem);
+      top: 1rem;
       align-self: start;
-      max-height: calc(100vh - var(--app-bar-h, 0px) - 2rem);
+      max-height: calc(100vh - 2rem);
       overflow-y: auto;
     }
   }

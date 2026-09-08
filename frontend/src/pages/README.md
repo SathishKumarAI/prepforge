@@ -3,7 +3,7 @@
 Every page is `Page` from `components/page` with at most three zones (orient,
 act, review). Each file opens with a slot table saying what fills each zone
 and what was deliberately left out. Routes are listed in `../App.tsx`; the nav
-and breadcrumb read `../components/shell/nav.ts`.
+reads `../components/shell/nav.ts`.
 
 ## Change → file
 

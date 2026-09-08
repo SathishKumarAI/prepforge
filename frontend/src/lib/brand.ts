@@ -1,6 +1,6 @@
 /**
- * The product's name, once. The sidebar brand block, the breadcrumb and the
- * document title all read it from here, so a rename is one
+ * The product's name, once. The sidebar brand block and the document title
+ * read it from here, so a rename is one
  * edit and can never leave the tab saying one thing and the nav another.
  *
  * "Recall" replaced "PrepForge" on 2026-09-07 (COD-154): the name should say
