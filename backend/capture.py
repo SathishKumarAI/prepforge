@@ -28,7 +28,7 @@ _YT = ("youtube.com/watch", "youtu.be/", "youtube.com/shorts")
 # 403s generic bot agents by policy and asks for exactly this shape; 21 cited
 # Wikipedia pages failed under the old "+local" string.
 _UA = (
-    "PrepForge/1.0 (personal study tool; +https://github.com/SathishKumarAI/prepforge) "
+    "Recall/1.0 (personal study tool; +https://github.com/SathishKumarAI/prepforge) "
     "python-httpx"
 )
 

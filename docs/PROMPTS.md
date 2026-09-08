@@ -1,4 +1,4 @@
-# Prompts used in PrepForge
+# Prompts used in Recall
 
 Every place the app (or its build) uses an LLM prompt is documented here — the exact text, why it
 exists, and what it produces. Keep this in sync when prompts change.

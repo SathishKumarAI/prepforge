@@ -1,4 +1,4 @@
-# PrepForge — Architecture
+# Recall — Architecture
 
 **What it is.** A local-first interview-prep platform for AI, Machine Learning, Data Science, and
 Data Analytics roles. It combines a curated question bank, a spaced-repetition study pipeline, a

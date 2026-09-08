@@ -1,4 +1,4 @@
-# PrepForge
+# Recall
 
 Local-first interview-prep platform for **AI · Machine Learning · Data Science · Data Analytics**.
 

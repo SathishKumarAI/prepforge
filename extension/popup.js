@@ -1,4 +1,4 @@
-// PrepForge Clipper — sends {url, title, selection, topic} to the local backend.
+// Recall Clipper — sends {url, title, selection, topic} to the local backend.
 // Safety: only talks to 127.0.0.1:8787; only fires on your explicit click;
 // selection is read via activeTab (temporary, click-scoped) — no broad host access.
 
@@ -74,7 +74,7 @@ async function init() {
       const { [QUEUE_KEY]: queue = [] } = await chrome.storage.local.get(QUEUE_KEY);
       queue.push(payload);
       await chrome.storage.local.set({ [QUEUE_KEY]: queue });
-      setStatus("Backend offline — queued. It'll send when PrepForge is running.", true);
+      setStatus("Backend offline — queued. It'll send when Recall is running.", true);
     } finally {
       $("save").disabled = false;
     }

@@ -137,7 +137,7 @@ export function BackupControls() {
           accept="application/json,.json"
           className="sr-only"
           onChange={pick}
-          aria-label="Choose a PrepForge backup file"
+          aria-label="Choose a Recall backup file"
         />
       </div>
 

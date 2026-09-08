@@ -209,8 +209,8 @@ const tests = {
   },
 
   test_the_filename_carries_the_day_so_a_folder_sorts() {
-    assert.equal(backupFilename("2026-09-02T10:00:00.000Z"), "prepforge-backup-2026-09-02.json");
-    assert.equal(backupFilename(""), "prepforge-backup-export.json");
+    assert.equal(backupFilename("2026-09-02T10:00:00.000Z"), "recall-backup-2026-09-02.json");
+    assert.equal(backupFilename(""), "recall-backup-export.json");
   },
 };
 

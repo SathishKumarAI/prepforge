@@ -1,12 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "PrepForge Clipper",
+  "name": "Recall Clipper",
   "version": "1.0.0",
-  "description": "Send the current page (and any selection) to your local PrepForge resource feed.",
+  "description": "Send the current page (and any selection) to your local Recall resource feed.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["http://127.0.0.1:8787/*"],
   "action": {
-    "default_title": "Save to PrepForge",
+    "default_title": "Save to Recall",
     "default_popup": "popup.html"
   }
 }

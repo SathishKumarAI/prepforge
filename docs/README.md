@@ -1,9 +1,10 @@
-# PrepForge Docs
+# Recall Docs
 
 Start here, then read `../STATUS.md` — that is where you stopped, what to do next, and the traps.
 
-> The UI calls itself **Recall** since 2026-09-08 (`frontend/src/lib/brand.ts`, COD-154). The
-> repo, the package and these docs still say PrepForge — same app.
+> **Recall** was PrepForge until 2026-09-08 (COD-154). Everything a person reads says Recall now;
+> the GitHub repo is still `prepforge`, and every key on disk (`prepforge:` in localStorage, the
+> IndexedDB names, the backup file's `app` field) keeps the old name so nothing stops loading.
 
 | Doc | What's inside |
 |---|---|
@@ -29,7 +30,7 @@ is almost always the wrong shape; there are four narrower ones. See
 
 ## The 30-second version
 
-PrepForge helps you prep for **AI / ML / Data Science / Analytics** interviews. You *read* a
+Recall helps you prep for **AI / ML / Data Science / Analytics** interviews. You *read* a
 concept, *recall* it from memory, and a spaced-repetition scheduler decides when you see it again —
 the study loop that memory research says actually works. You can also drop in your own book/notes
 and the same pipeline builds itself on top of them.

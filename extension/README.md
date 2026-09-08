@@ -1,11 +1,11 @@
-# PrepForge Clipper — local browser extension
+# Recall Clipper — local browser extension
 
-One click sends the current page (and any selected text) to your **local** PrepForge
+One click sends the current page (and any selected text) to your **local** Recall
 backend's resource feed. Runs entirely on your machine — **not published to any store.**
 
 ## Install (Chrome or Brave)
 
-1. Start the PrepForge backend (must be on `http://127.0.0.1:8787`).
+1. Start the Recall backend (must be on `http://127.0.0.1:8787`).
 2. Open `chrome://extensions` (Brave: `brave://extensions`).
 3. Toggle **Developer mode** (top-right).
 4. Click **Load unpacked** → select this `extension/` folder.

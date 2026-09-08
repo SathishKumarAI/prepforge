@@ -1,4 +1,4 @@
-# Scaling PrepForge to 100M+ questions (and doing it token-cheap)
+# Scaling Recall to 100M+ questions (and doing it token-cheap)
 
 A data-engineering design for taking the current local-first prototype to hundreds of millions of
 questions sourced from PDFs, Markdown, HTML, and YouTube — while keeping LLM token spend low.
