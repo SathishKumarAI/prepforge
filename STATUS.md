@@ -21,8 +21,9 @@ Update this when you STOP working, not when you start.
   `repair_titles.py` for an existing bank. `quiz_synth.py` was missing `re`/`hashlib` since the
   split; `ingest()` works again. **Trap:** never `write_text` a 36 MB JSON in place without a
   temp file — a failed write leaves 0 bytes; the rebuild is 8 min.
-- **Queued:** one filter control after the search box instead of the chip rows (user asked);
-  a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
+- **COD-172 done (2026-09-08, later):** Topic and Difficulty are selects on the search row; list
+  starts at 247px.
+- **Queued:** a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
 - **Next action:** the two queued items above. Read the app as a user for ten minutes before adding anything.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
