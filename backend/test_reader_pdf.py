@@ -17,7 +17,7 @@ import asyncio
 from io import BytesIO
 
 import capture
-import main as api
+import api_content as api
 
 
 class _Upload:

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import eval_answers as ev
 import generate
-import main as api
+import bank as api
 
 NOTE = generate.MACHINE_NOTE.format(model="test-model")
 

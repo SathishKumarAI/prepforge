@@ -27,7 +27,7 @@ import sys
 import time
 
 import generate
-import main as api
+import bank as api
 
 
 def unanswered(topic: str | None = None) -> list[dict]:

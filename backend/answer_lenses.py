@@ -36,7 +36,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import httpx
 
 import generate
-import main as api
+import bank as api
 
 DEFAULT_LENSES = "star,eli5,first_principles,thinking,faang,aws"
 SOURCE_ORDER = ("vault", "library")
@@ -88,7 +88,7 @@ def plan(lenses: list[str], sources: list[str], topic: str | None) -> list[tuple
     qs = api._assemble_questions()
     if topic:
         qs = [q for q in qs if (q.get("topic") or "").lower() == topic.lower()]
-    # `origin.kind` is where a question came from — see `main._origin`.
+    # `origin.kind` is where a question came from — see `bank._origin`.
     by_source = {
         s: sorted((q for q in qs if (q.get("origin") or {}).get("kind") == s), key=lambda q: q.get("id", ""))
         for s in sources
