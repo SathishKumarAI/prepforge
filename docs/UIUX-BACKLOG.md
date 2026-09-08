@@ -4,6 +4,45 @@ A UI/UX-engineer pass focused on **craft**: hierarchy, motion, states, accessibi
 responsiveness, consistency. Complements the feature/bug audit in `AUDIT-BACKLOG.md`. Kanban-ready,
 checkbox tickets, no priority labels. Checked items are done this session.
 
+## Shipped 2026-09-08 — the "Recall" Library redesign brief (COD-154 to COD-160)
+
+A design brief arrived describing a Library mockup: a brand eyebrow, stats in the header row,
+liquid-glass chrome, a settings gear, and seven study features. It was written against a mockup,
+not this repo, so the first job was reconciling it. **Where the brief and the repo disagreed on a
+fact, the repo won and the disagreement is written here; where they disagreed on direction, the
+brief won and the code comments were rewritten rather than left contradicting it.**
+
+| Brief said | Repo had | What happened |
+|---|---|---|
+| App is "Recall" (was PrepForge) | PrepForge in the sidebar, breadcrumb, `<title>` | UI reads the name from `lib/brand.ts`, now "Recall". Repo/package/docs unchanged until the name sticks |
+| "Recall" eyebrow over "Library"; count + review status right of the title | `Page` forbade a kicker; orient bar sat under the title | `Page` gained `eyebrow` (product name only); `Orient compact` renders the facts in the header row; zero due prints **All caught up**. 58px reclaimed |
+| Dark and light themes | Already shipped (COD-63), measured by `npm run contrast` | Nothing redone |
+| Liquid glass on chrome, spring open, cursor highlight; never on content | `.glass` was a dead alias for `.panel`; comments said "no blur, no ambient gradient" | `.glass` is real (tint + fixed ambient blobs + `blur(20px) saturate(1.4)` + `::after` highlight + spring on `data-state=open`). Sidebar, app bar, filter band, menus, tooltips. Comments rewritten |
+| Settings gear in the top bar with the appearance toggle; reduce-motion next | A sun/moon icon opened the same menu | Gear; **Reduce motion** (`data-motion`, mirrors the OS rule, `MotionConfig` reads it); "All settings" link |
+| Adjustable font size / line height | Text size existed | **Line height (answers)** Tight / Normal / Airy in Settings |
+| Keyboard nav j/k, Space to reveal | ↑/↓ existed | j/k alias; Space reveals in Recall mode; 1 2 3 rate |
+| Self-rating feeding spaced repetition | SM-2 grading in Study only | **Got it / Shaky / Missed it** row under every Library answer → `rateCard` |
+| Flip-card review (guess, then check) | Study's Recall mode | Library **Recall** toggle hides every answer behind Reveal; a rating advances |
+| Focus / zen mode | `f` — fullscreen, no chrome | Nothing redone |
+| Read-aloud | Nothing | Speaker button, Web Speech API, sentence-queued |
+| End-of-session summary "pairing with the timer already built" | **No timer existed** | Start session → glass pill (clock, reviewed, End) → summary: time, reviewed, rated, saved |
+| Tokens: ember `#F0954C`, steel `#6E8AAE`, base `#14171C`, Source Serif 4, Inter | A measured palette (`DESIGN-THEMES.md`) and Fraunces / Public Sans | **Not adopted.** The brief's tokens were never measured against a contrast floor; the repo's were |
+
+**Rules the brief adds, kept as rules for whatever comes next**
+
+- Glass is for chrome — menus, tooltips, bars, floating controls. Lists, reading panes and dialogs
+  stay opaque. New floating UI takes `.glass`; new content-dense UI takes `.panel`.
+- The gear menu is where app-wide preferences go (a default session length would go there). The
+  Filters band is for "what am I looking at"; do not add always-visible chips to it.
+- Every new clickable affordance carries a visible pressed/selected state (`aria-pressed` + a fill).
+- Metadata stays one muted line; colours go through the token set in both theme blocks.
+- The hover-peek pattern (hover previews, click pins) is the app's interaction language for
+  collapsible chrome; the list peek and the collapsed sidebar already use it.
+
+**Found on the way, filed:** `QuestionsView.tsx` is 805 lines (COD-161).
+
+---
+
 ## Shipped 2026-09-02 — backup, leeches, forecast, highlight-to-card
 
 Four features landed (COD-112 to COD-115). The UI/UX decisions and the fixes each one turned up,
