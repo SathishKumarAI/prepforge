@@ -15,6 +15,7 @@ import type { ReactNode } from "react";
 
 export function Page({
   title,
+  eyebrow,
   actions,
   orient,
   children,
@@ -23,9 +24,16 @@ export function Page({
 }: {
   /**
    * The page's name. Small and quiet on purpose — in a study tool the content
-   * is the hero, and the page is furniture. No kicker above it.
+   * is the hero, and the page is furniture.
    */
   title: string;
+  /**
+   * One word above the title, smaller still. The only thing allowed here is
+   * the product's name: it lived in the sidebar and a breadcrumb, and neither
+   * survives a collapsed sidebar, so the page heading carries it. Not a kicker
+   * for a section name — that is what the breadcrumb is for.
+   */
+  eyebrow?: string;
   /** Page-level controls that are not the primary action (that lives in act). */
   actions?: ReactNode;
   /** Zone 1. At most four facts, each one that changes the next 30 seconds. */
@@ -40,7 +48,14 @@ export function Page({
   return (
     <div className="page">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-h3 font-semibold tracking-tight text-text">{title}</h1>
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
+              {eyebrow}
+            </p>
+          )}
+          <h1 className="text-h3 font-semibold tracking-tight text-text">{title}</h1>
+        </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </header>
 

@@ -11,7 +11,19 @@ import type { ReactNode } from "react";
 
 const MAX_FACTS = 4;
 
-export function Orient({ children }: { children: ReactNode }) {
+export function Orient({
+  children,
+  compact = false,
+}: {
+  children: ReactNode;
+  /**
+   * The same facts, sized to sit in the header row beside the title instead of
+   * as a bar under it. A header with the title on the left and nothing on the
+   * right reads top-heavy and spends a line the list below could use; the
+   * facts fill that space. No rule underneath — the header already ends it.
+   */
+  compact?: boolean;
+}) {
   const facts = Array.isArray(children) ? children.flat().filter(Boolean) : [children];
   if (import.meta.env.DEV && facts.length > MAX_FACTS) {
     console.warn(
@@ -20,7 +32,13 @@ export function Orient({ children }: { children: ReactNode }) {
     );
   }
   return (
-    <dl className="flex flex-wrap items-baseline gap-x-8 gap-y-2 border-b border-surface0 pb-4">
+    <dl
+      className={
+        compact
+          ? "orient-compact flex flex-wrap items-baseline gap-x-5 gap-y-1"
+          : "flex flex-wrap items-baseline gap-x-8 gap-y-2 border-b border-surface0 pb-4"
+      }
+    >
       {children}
     </dl>
   );
@@ -52,13 +70,13 @@ export function Fact({
   return (
     <div className="flex items-baseline gap-2">
       <dd
-        className={`text-h3 font-semibold tabular-nums ${
+        className={`text-h3 font-semibold tabular-nums [.orient-compact_&]:text-small ${
           emphasis ? "text-mauve" : "text-text"
         }`}
       >
         {shown}
       </dd>
-      <dt className="text-small text-overlay1">{label}</dt>
+      <dt className="text-small text-overlay1 [.orient-compact_&]:text-micro">{label}</dt>
     </div>
   );
 }

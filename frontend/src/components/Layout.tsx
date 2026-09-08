@@ -71,6 +71,7 @@ import { isDue } from "../lib/srs";
 import { MODES, toStudyMode } from "../lib/studyModes";
 import { THEME_OPTIONS, type ThemeMode } from "../lib/theme";
 import { cn } from "../lib/utils";
+import { APP_NAME, APP_TAGLINE } from "../lib/brand";
 
 /**
  * The app shell, on shadcn's Sidebar: a nav that collapses to an icon rail on
@@ -287,14 +288,14 @@ function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild tooltip="PrepForge">
+            <SidebarMenuButton size="lg" asChild tooltip={APP_NAME}>
               <Link to="/">
                 <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-mauve text-small font-bold text-on-accent">
-                  P
+                  {APP_NAME[0]}
                 </span>
                 <span className="flex min-w-0 flex-col leading-tight">
-                  <span className="truncate font-semibold text-text">PrepForge</span>
-                  <span className="truncate text-micro text-overlay1">AI/ML interview prep</span>
+                  <span className="truncate font-semibold text-text">{APP_NAME}</span>
+                  <span className="truncate text-micro text-overlay1">{APP_TAGLINE}</span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -427,7 +428,7 @@ function AppBar({
         <BreadcrumbList>
           <BreadcrumbItem className="hidden sm:inline-flex">
             <BreadcrumbLink asChild>
-              <Link to="/">PrepForge</Link>
+              <Link to="/">{APP_NAME}</Link>
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator className="hidden sm:block" />
