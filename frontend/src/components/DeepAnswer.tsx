@@ -115,7 +115,7 @@ const APPROACH: Record<Mode, { tag: string; desc: string }[]> = {
  * the mode it is handed — that is the Library detail pane, where the lenses are
  * the point and belong in the same row as the bank answer.
  *
- * Either way a lens generates as soon as it is selected — hovered or pressed,
+ * Either way a lens generates as soon as it is selected — one press,
  * no second confirmation. One tab, one call.
  */
 export function DeepAnswer({
@@ -266,7 +266,7 @@ export function DeepAnswer({
       {/* Both the frame before the effect fires its fetch and the fetch itself.
           `spinner-late`: a lens on disk lands in ~20 ms, and a spinner that
           exists for one frame is not feedback, it is the flicker — measured
-          at 709 → 463 → 892 px of article height per hover-switch. It waits
+          at 709 → 463 → 892 px of article height per lens switch. It waits
           150 ms, so only a real generation ever shows it. */}
       {((controlled && !slot) || slot?.status === "loading") && mode !== "custom" && (
         <div className="spinner-late flex items-center gap-3 px-1 py-4 text-sm text-subtext0">
@@ -288,7 +288,7 @@ export function DeepAnswer({
 
       {/* No fade. The 300 ms opacity ramp ended in a one-frame drop to 0 on
           every lens switch (framer-motion remount, measured in the browser),
-          and six tabs switch on hover once LM Studio is up — so the fade was
+          and a lens switch is one press away — so the fade was
           the flicker, not the polish. */}
       {shown && (
         <div>

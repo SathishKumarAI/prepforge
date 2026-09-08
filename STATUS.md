@@ -3,7 +3,12 @@
 Update this when you STOP working, not when you start.
 
 - **Last touched:** 2026-09-08.
-- **Where I stopped:** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
+- **COD-166 done (2026-09-08, later):** the Library's chrome stays put. The app bar no longer hides
+  on scroll, the filter band is not sticky, the list hides only from its button, and nothing selects
+  on hover (rows, lens tabs). `useScrollDirection` and `StickyChrome` are gone; the one sticky offset
+  is `components/page/underAppBar.ts`. Trap found on the way: Chrome fires `mouseover` when content
+  scrolls under a resting pointer, so any hover-select fires on scroll and on reflow.
+- **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,
   with the numbers, is the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md); the reconciliation of

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { EyeOff, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
-import { StickyChrome } from "../page/StickyChrome";
 import { Button } from "../ui/button";
 import { Chip } from "../ui/chip";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
@@ -8,16 +7,17 @@ import { ACCENT_DOT, topicColor } from "../../lib/topics";
 const DIFFS = ["easy", "medium", "hard"];
 
 /**
- * The sticky band above the question list: search, topic and difficulty chips,
+ * The band above the question list: search, topic and difficulty chips,
  * Clear filters, the Recall switch and the Hide/Show list toggle.
  *
  * Owns: the controls and the "/" key that focuses the search box. Does NOT own
  * any of the state it shows — every value comes in and every change goes out,
  * so the band cannot disagree with the list under it.
  *
- * Search and filters slide away while you read the deck and come back the
- * moment you scroll up (StickyChrome). They are wanted for two seconds and
- * pinned for the whole session otherwise.
+ * It scrolls with the page. It used to be sticky and slide away on a downward
+ * scroll, and the answer ran under a glass band that came and went with every
+ * change of direction; the list beside it is the thing that stays, and "/"
+ * brings the search box back into view from anywhere.
  *
  * In focus mode they go entirely. Focus mode's whole promise is that the
  * screen holds the thing you are reading and nothing else — it already takes
@@ -50,7 +50,7 @@ export function FilterBand({
   onDiff: (d: string | null) => void;
   recall: boolean;
   onRecall: (on: boolean) => void;
-  /** Whether the list pane is put away, however that happened. */
+  /** Whether the list pane is hidden (the Hide list button; nothing else hides it). */
   listAway: boolean;
   onShowList: () => void;
   onHideList: () => void;
@@ -76,7 +76,7 @@ export function FilterBand({
   const activeFilters = Boolean(topic || diff || query.trim());
 
   return (
-    <StickyChrome className="mb-5 py-2 [.focus-mode_&]:hidden">
+    <div className="mb-5 py-2 [.focus-mode_&]:hidden">
       <div className="relative mb-2.5 max-w-xl">
         <Search
           aria-hidden="true"
@@ -176,6 +176,6 @@ export function FilterBand({
           {listAway ? "Show list" : "Hide list"}
         </Button>
       </div>
-    </StickyChrome>
+    </div>
   );
 }

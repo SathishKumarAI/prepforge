@@ -6,27 +6,33 @@ import { ListPeek } from "./ListPeek";
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
-import { UNDER_APP_BAR } from "../page/StickyChrome";
+import { UNDER_APP_BAR } from "../page/underAppBar";
 import { Button } from "../ui/button";
 import { useProgress } from "../../hooks/useProgress";
 import { useQuestion } from "../../hooks/useQuestion";
 import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
-import { useScrollDirection } from "../../hooks/useScrollDirection";
+import { scrollToElement } from "../../lib/scroll";
 import { isDue } from "../../lib/srs";
 
 /**
  * The Questions view of the Library: a filter band, a server-paged list on the
- * left, one question's detail on the right, and the rules for when the list
- * gets out of the way.
+ * left that scrolls inside itself, one question's detail on the right.
  *
- * Owns: which question is selected, whether the list is away, recall mode, and
- * the keys that walk the list. Does NOT own the fetching (hooks/useQuestionPages),
- * the filter controls (FilterBand), the hover overlay for a put-away list
- * (ListPeek), the reading list (DeepStudyLinks), or a row or the detail.
+ * The list stays where it is. Three earlier rules put it away by themselves —
+ * a downward scroll, arriving with ?id= in the URL (which a reload also does),
+ * and a hover on a row switching the open question — and together they read as
+ * the page moving under you whenever you scrolled the list to find something.
+ * Now only the Hide list button hides it, and only a click or the keys select.
+ *
+ * Owns: which question is selected, whether the list is hidden, recall mode,
+ * and the keys that walk the list. Does NOT own the fetching
+ * (hooks/useQuestionPages), the filter controls (FilterBand), the hover overlay
+ * for a hidden list (ListPeek), the reading list (DeepStudyLinks), or a row or
+ * the detail.
  *
  * Change → file: search/chips/Recall/Hide list → FilterBand; paging, page size
  * or the sentinel → useQuestionPages; the gutter handle and overlay → ListPeek;
- * the two-pane grid, selection, list-away rules, j/k → here.
+ * the two-pane grid, selection, j/k → here.
  */
 
 /** Whether the list pane is put away. Same shape as Layout's `pf-sidebar-open`. */
@@ -38,13 +44,6 @@ const LIST_HIDDEN_KEY = "pf-library-list-hidden";
  * of working through the list rather than a per-question choice.
  */
 const RECALL_KEY = "pf-library-recall";
-
-/**
- * Hover intent for the row peek. ListPeek carries the same value for the list
- * peek: two hover delays on one screen is two different feels for the same
- * gesture, so if this changes, that changes.
- */
-const PEEK_MS = 250;
 
 export function QuestionsView() {
   const { progress } = useProgress();
@@ -100,51 +99,28 @@ export function QuestionsView() {
    */
   const [detailOnly, setDetailOnly] = useState(() => Boolean(params.get("id")));
 
-  /**
-   * Reading mode: arriving AT a question puts the list away.
-   *
-   * A deep link, a Ctrl+K pick or a back button says which question you want —
-   * the list of the other 18,283 is not the answer to anything you just asked.
-   * Browsing is the opposite: clicking a row means you are still choosing, and
-   * that path never sets this, because `select()` updates `selectedId` before
-   * the URL, so the effect below sees them already equal and does nothing.
-   */
-  const [readingMode, setReadingMode] = useState(() => Boolean(params.get("id")));
-
   // The URL is the source of truth for these, not just at mount.
   useEffect(() => {
     const id = params.get("id");
     if (!id || id === selectedId) return;
     setSelectedId(id);
     setDetailOnly(true);
-    setReadingMode(true);
   }, [params, selectedId]);
-  const peekTimer = useRef<number>();
 
-  // ---- the list pane, put away -------------------------------------------
+  // ---- the list pane, hidden ---------------------------------------------
   // Above lg the two panes are fixed, so a long answer is capped at whatever
   // width the list leaves it even once you have finished choosing. Hidden, the
   // answer takes the whole column and the list comes back on a hover (ListPeek).
   const [listHidden, setListHidden] = useState(
     () => localStorage.getItem(LIST_HIDDEN_KEY) === "1",
   );
-  /**
-   * Pinned by "Keep open", which is a promise this has to honour: without it the
-   * next downward scroll would put the list away again and the button would
-   * have meant nothing.
-   */
-  const [pinOpen, setPinOpen] = useState(false);
   const [recall, setRecall] = useState(() => localStorage.getItem(RECALL_KEY) === "1");
   useEffect(() => {
     localStorage.setItem(RECALL_KEY, recall ? "1" : "0");
   }, [recall]);
-  // Hover selects on a real pointer only. On touch, mouseenter fires from the
-  // tap that is already selecting, so honouring it would do the work twice.
-  const canHover = window.matchMedia("(hover: hover)").matches;
 
   const select = useCallback(
     (id: string) => {
-      window.clearTimeout(peekTimer.current);
       setSelectedId(id);
       setDetailOnly(true);
       // Merge: `Library` writes ?view= with a bare object, so anything written
@@ -162,33 +138,8 @@ export function QuestionsView() {
     [setParams],
   );
 
-  // Hover with intent. 250ms is long enough that crossing the list on the way
-  // to the scrollbar does not load six questions, short enough to feel direct.
-  function peek(on: boolean, id: string) {
-    window.clearTimeout(peekTimer.current);
-    if (!canHover || !on) return;
-    peekTimer.current = window.setTimeout(() => setSelectedId(id), PEEK_MS);
-  }
-  useEffect(() => () => window.clearTimeout(peekTimer.current), []);
-
   /**
-   * The list gets out of the way while you read, like the app bar and the
-   * filters above it — this was the one piece of chrome that stayed put.
-   *
-   * Only with a question open, because otherwise the list IS the page. Only on
-   * a downward scroll away from the top, which on a wide screen means you are
-   * reading: the list scrolls inside itself, so page scroll is the answer
-   * moving, never the list. And never once "Keep open" has been pressed.
-   *
-   * `listHidden` stays the persisted preference and is untouched by any of
-   * this; `listAway` is what the layout reads.
-   */
-  const { hidden: scrolledIntoTheAnswer } = useScrollDirection();
-  const listAway =
-    listHidden || readingMode || (!pinOpen && scrolledIntoTheAnswer && Boolean(selectedId));
-
-  /**
-   * With the list away, the answer is the only thing on the page, so it gets
+   * With the list hidden, the answer is the only thing on the page, so it gets
    * the whole page: the shell's 84rem measure is what leaves a 250px gutter on
    * a wide monitor next to a column that is already the sole content.
    *
@@ -199,27 +150,16 @@ export function QuestionsView() {
    */
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle("reading-wide", listAway);
+    root.classList.toggle("reading-wide", listHidden);
     return () => root.classList.remove("reading-wide");
-  }, [listAway]);
+  }, [listHidden]);
 
   useEffect(() => {
     localStorage.setItem(LIST_HIDDEN_KEY, listHidden ? "1" : "0");
   }, [listHidden]);
 
-  /** One place for "the list is back and stays back", so the peek panel, the
-   *  handle and the header toggle cannot drift apart. */
-  const showListForGood = useCallback(() => {
-    setListHidden(false);
-    setReadingMode(false);
-    setPinOpen(true);
-  }, []);
-
-  /** And its opposite. Pinning is dropped so the auto-hide can work again. */
-  const hideList = useCallback(() => {
-    setListHidden(true);
-    setPinOpen(false);
-  }, []);
+  const showList = useCallback(() => setListHidden(false), []);
+  const hideList = useCallback(() => setListHidden(true), []);
 
   // The row drives the list's own state — which one is highlighted, and what the
   // arrow keys step through. It exists only if that question is on a page that
@@ -238,6 +178,26 @@ export function QuestionsView() {
    * page arrives.
    */
   const { question: selected } = useQuestion(selectedId ?? rows[0]?.id ?? null);
+
+  /**
+   * Picking a question while deep in the previous answer: the new one's heading
+   * is above the viewport, and the first thing you would see of it is its
+   * fourth paragraph. Bring its top under the app bar. Skipped when the top is
+   * already on screen (the first pick from the top of the page), so the page
+   * does not twitch on every click.
+   *
+   * Keyed on the LOADED question, not on the click: between the two the pane
+   * is briefly short, the document shrinks and the scroll position clamps, and
+   * a scroll taken then lands 28px short once the answer is in.
+   */
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = detailRef.current;
+    if (!el || !selected) return;
+    const barH =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--app-bar-h")) || 0;
+    if (el.getBoundingClientRect().top < barH) scrollToElement(el, "start");
+  }, [selected?.id]);
 
   /**
    * One step through the loaded rows. Shared by the arrow keys, j/k, and the
@@ -311,7 +271,6 @@ export function QuestionsView() {
             q={q}
             selected={q.id === selectedId}
             onSelect={() => select(q.id)}
-            onPeek={(on) => peek(on, q.id)}
           />
         ))}
       </ul>
@@ -364,8 +323,8 @@ export function QuestionsView() {
         onDiff={setDiff}
         recall={recall}
         onRecall={setRecall}
-        listAway={listAway}
-        onShowList={showListForGood}
+        listAway={listHidden}
+        onShowList={showList}
         onHideList={hideList}
       />
 
@@ -387,27 +346,23 @@ export function QuestionsView() {
       ) : (
         // Two panes above lg, one below it. The grid's second track is
         // minmax(0,1fr) so the detail takes every pixel the list does not — the
-        // point of the layout is that nothing on this screen is empty. Away,
+        // point of the layout is that nothing on this screen is empty. Hidden,
         // the list's track goes entirely rather than collapsing to zero: a
-        // zero-width track still owns the gap beside it.
-        //
-        // Keyed on `listAway`, NOT on `listHidden`. Keyed on the stored
-        // preference, an auto-hidden or reading-mode list left both tracks
-        // declared — and the answer, as the only child, landed in the FIRST
-        // one: a 330px strip of text with 949px of empty page beside it.
-        // Measured on a 1536px window.
+        // zero-width track still owns the gap beside it, and with both tracks
+        // declared the answer, as the only child, lands in the FIRST one: a
+        // 330px strip of text with 949px of empty page beside it.
         <div
           className={`relative lg:grid lg:gap-6 ${
-            listAway
+            listHidden
               ? "lg:grid-cols-[minmax(0,1fr)]"
               : "lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
           }`}
         >
           {/* The list scrolls inside itself and parks under the app bar, so
               reading a long answer never scrolls the list away from you. Its
-              offset is --app-bar-h, the same measured value StickyChrome uses;
+              offset is --app-bar-h, the measured value the bar publishes;
               a constant here and the two would overlap by exactly one notch. */}
-          {!listAway && (
+          {!listHidden && (
             <div
               style={UNDER_APP_BAR}
               // `overscroll-contain`: reaching the end of the list must not hand
@@ -423,13 +378,17 @@ export function QuestionsView() {
             </div>
           )}
 
-          {listAway && (
-            <ListPeek count={rows.length} onKeepOpen={showListForGood}>
+          {listHidden && (
+            <ListPeek count={rows.length} onKeepOpen={showList}>
               {listPane}
             </ListPeek>
           )}
 
-          <div className={detailOnly ? "" : "hidden lg:block"}>
+          <div
+            ref={detailRef}
+            style={{ scrollMarginTop: "calc(var(--app-bar-h, 0px) + 1rem)" }}
+            className={detailOnly ? "" : "hidden lg:block"}
+          >
             {selected ? (
               <QuestionDetail
                 key={selected.id}

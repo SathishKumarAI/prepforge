@@ -10,7 +10,7 @@ Ten files. Read this table, not the code.
 | Selection, the two-pane grid, when the list is away, j/k, Recall on/off | `QuestionsView.tsx` |
 | Search box, topic/difficulty chips, Clear filters, the Recall and Hide-list buttons, the `/` key | `FilterBand.tsx` |
 | Page size, debounce, appending the next page, the scroll sentinel | `../../hooks/useQuestionPages.ts` |
-| The gutter handle and the hover overlay for a put-away list | `ListPeek.tsx` |
+| The gutter handle and the hover overlay for a hidden list | `ListPeek.tsx` |
 | The "Go deeper" reading-list disclosure | `DeepStudyLinks.tsx` |
 | One line in the list | `QuestionRow.tsx` |
 | Everything about one question: lens tabs, reveal, rating, read aloud, notes, related | `QuestionDetail.tsx` |
@@ -21,10 +21,12 @@ Ten files. Read this table, not the code.
 
 - **One list.** The in-grid column and the peek overlay render the same `listPane`
   element; only one is ever mounted, so the scroll sentinel has one owner.
-- **Hover intent is one number.** The row peek (`QuestionsView.PEEK_MS`) and the list
-  peek (`ListPeek.PEEK_MS`) are both 250 ms; change both or neither.
-- **`listAway` is derived, never stored.** `listHidden` is the preference; reading mode
-  and a downward scroll can also put the list away, and "Keep open" pins it back.
+- **The list stays put.** Only the Hide list button hides it; only a click or j/k
+  selects. Auto-hide on scroll, hide-on-deep-link and hover-select were all removed
+  together (COD-166): scrolling the list to find a question moved the page, took the
+  list away and switched the open answer under a stationary pointer.
+- **Chrome does not slide away on scroll.** The app bar stays; the filter band scrolls
+  with the page. Everything sticky parks at `page/underAppBar.ts`.
 - **The detail follows the URL, not the loaded rows.** A deep link to a question on
   page 15 opens that question; the list highlights it if and when its page arrives.
 - **`FilterBand` owns no state.** Every value comes in, every change goes out.

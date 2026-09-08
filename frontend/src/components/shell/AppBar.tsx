@@ -23,7 +23,6 @@ import {
 } from "../ui/dropdown-menu";
 import { Separator } from "../ui/separator";
 import { SidebarTrigger } from "../ui/sidebar";
-import { useScrollDirection } from "../../hooks/useScrollDirection";
 import { useSettings } from "../../hooks/useSettings";
 import { MODES, toStudyMode } from "../../lib/studyModes";
 import { THEME_OPTIONS, type ThemeMode } from "../../lib/theme";
@@ -33,13 +32,15 @@ import { NAV, VIEW_LABELS, isActivePath } from "./nav";
 
 /**
  * The app bar: the nav toggle, a breadcrumb that says where you are, the
- * search button and the gear menu. Slides away on a downward scroll.
+ * search button and the gear menu. It stays put: it used to slide away on a
+ * downward scroll, and every sticky thing parked under it jumped by its height
+ * each time it went — the question list, the filter band — which read as the
+ * page lurching whenever you scrolled the list.
  *
  * Owns the MEASURED app-bar height that every sticky thing parks against
- * (--app-bar-h). Measured, not assumed — while the bar is slid away or focus
- * mode hides it, its height is 0, and publishing 61px then is what once put a
- * band of nothing at the top of the viewport with the answer scrolling
- * through it.
+ * (--app-bar-h). Measured, not assumed — in focus mode the bar is hidden and
+ * its height is 0, and publishing 61px then is what once put a band of
+ * nothing at the top of the viewport with the answer scrolling through it.
  *
  * Does NOT own: what the search, help and settings buttons open (Layout holds
  * those dialogs and passes the openers).
@@ -59,27 +60,21 @@ export function AppBar({
   const [params] = useSearchParams();
   const { settings, update } = useSettings();
   const barRef = useRef<HTMLElement>(null);
-  const { hidden: barHidden } = useScrollDirection();
 
-  /**
-   * Publish the app bar's EFFECTIVE height for sticky page chrome. Every
-   * sticky offset in the app is derived from this one value: publishing 61px
-   * while the bar was slid away is what once put a band of nothing at the top
-   * of the viewport with the answer scrolling through it.
-   */
+  /** Publish the app bar's EFFECTIVE height for sticky page chrome. */
   useLayoutEffect(() => {
     const el = barRef.current;
     if (!el) return;
     const publish = () =>
       document.documentElement.style.setProperty(
         "--app-bar-h",
-        barHidden || focus ? "0px" : `${el.offsetHeight}px`,
+        focus ? "0px" : `${el.offsetHeight}px`,
       );
     publish();
     const ro = new ResizeObserver(publish);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [focus, barHidden]);
+  }, [focus]);
 
   const current = NAV.find((n) => isActivePath(n, loc.pathname));
   const view =
@@ -94,9 +89,8 @@ export function AppBar({
       // rather than occluded. The bar is chrome, and chrome is where the glass
       // treatment lives (see .glass in index.css) — never the page itself.
       className={cn(
-        "glass sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b px-3 transition-[transform,visibility] duration-200",
+        "glass sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b px-3",
         focus && "hidden",
-        barHidden ? "invisible -translate-y-full" : "visible translate-y-0",
       )}
     >
       <SidebarTrigger className="-ml-1" title="Toggle navigation  (Ctrl+B)" />
