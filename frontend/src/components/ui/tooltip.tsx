@@ -29,7 +29,7 @@ const TooltipContent = React.forwardRef<
       sideOffset={sideOffset}
       collisionPadding={12}
       className={cn(
-        "panel z-50 max-w-sm p-3 shadow-pop duration-150 data-[state=delayed-open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95",
+        "glass z-50 max-w-sm rounded-xl border border-surface0 p-3 shadow-pop duration-150 data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
         className
       )}
       {...props}

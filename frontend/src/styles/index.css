@@ -126,8 +126,9 @@ html {
 }
 
 /* A study surface is a page of work, not a control panel: no grain, no ambient
-   gradient glows. Anything that moves or shimmers behind body copy costs
-   attention on every card, for a whole session. */
+   gradient behind body copy. Anything that moves or shimmers behind text costs
+   attention on every card, for a whole session. The glass treatment below is
+   the one exception, and it is confined to CHROME — see .glass. */
 body {
   @apply bg-base text-text font-sans antialiased;
   line-height: 1.6;
@@ -232,10 +233,51 @@ select:disabled {
   .panel {
     @apply rounded-xl border border-surface0 bg-mantle;
   }
-  /* Deprecated alias kept so existing call sites render correctly; being
-     removed page by page. New code uses .panel. */
+  /* Liquid glass, for CHROME ONLY: the nav, the app bar, the sticky search and
+     filter band, menus, tooltips. Never the question list, the detail pane, a
+     dialog or anything else you read — blur under text-heavy, scroll-heavy
+     content softens it rather than helping it. That line is deliberate.
+
+     Three layers: a translucent surface tint; two soft ambient colour blobs in
+     the accent hues, fixed to the viewport so they read as light behind the
+     app rather than a pattern on each surface; and a blur of whatever scrolls
+     under. The ::after is the cursor-tracked highlight — lib/glass.ts writes
+     --mx / --my on the surface under the pointer. Reduced motion zeroes the
+     spring below; the highlight is a hover state, not motion, and stays. */
   .glass {
-    @apply panel;
+    position: relative;
+    background-color: rgb(var(--ctp-mantle) / 0.72);
+    background-image:
+      radial-gradient(42rem 30rem at 10% 0%, rgb(var(--ctp-mauve) / 0.14), transparent 62%),
+      radial-gradient(38rem 28rem at 100% 100%, rgb(var(--ctp-lavender) / 0.11), transparent 62%);
+    background-attachment: fixed;
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+  }
+  .glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(
+      13rem circle at var(--mx, 50%) var(--my, 50%),
+      rgb(var(--ctp-text) / 0.06),
+      transparent 65%
+    );
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+  @media (hover: hover) {
+    .glass:hover::after {
+      opacity: 1;
+    }
+  }
+  /* A floating glass panel opens with a small spring rather than appearing:
+     Radix stamps data-state on menus and tooltips, so nothing per component. */
+  .glass[data-state="open"],
+  .glass[data-state="delayed-open"] {
+    animation: pf-glass-open 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   /* Appears only if the wait is real. `both` holds the `from` state through
@@ -440,4 +482,9 @@ select:disabled {
 @keyframes pf-appear {
   from { visibility: hidden; }
   to { visibility: visible; }
+}
+
+@keyframes pf-glass-open {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
 }

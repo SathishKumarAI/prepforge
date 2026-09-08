@@ -11,6 +11,7 @@ each on its own branch. This entry grows one line per PR.
 | Item | PR | What landed | Measured |
 |---|---|---|---|
 | COD-154 | header row | `Recall` eyebrow over the title (`lib/brand.ts`, the one source of the name; sidebar, breadcrumb, tab title read it); the question count and an **All caught up** pill sit right of the title (`Orient compact`) | Library content starts at 206px, was 264px — one line reclaimed; `tsc`, build, contrast all clean |
+| COD-155 | glass chrome | `.glass` is real glass now (was a dead alias for `.panel`): 72% mantle tint, two fixed ambient blobs in the accent hues, `backdrop-filter: blur(20px) saturate(1.4)`, a cursor-tracked highlight (`lib/glass.ts`, one rAF-throttled listener) and a 260ms spring open on any glass with Radix `data-state`. Applied to the sidebar, the app bar, the sticky search/filter band, dropdown menus, tooltips. Not the list, the detail, or any dialog | computed on the running page: bar, sidebar and band all `blur(20px) saturate(1.4)` on `rgba(22,26,32,0.72)`, detail pane `none`; menu opens with `pf-glass-open 0.26s cubic-bezier(0.34,1.56,0.64,1)`; both themes screenshotted; contrast still clears |
 
 ---
 
