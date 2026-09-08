@@ -2,36 +2,35 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-09-08.
-- **COD-166 done (2026-09-08, later):** the Library's chrome stays put. The app bar no longer hides
-  on scroll, the filter band is not sticky, the list hides only from its button, and nothing selects
-  on hover (rows, lens tabs). `useScrollDirection` and `StickyChrome` are gone; the one sticky offset
-  is `components/page/underAppBar.ts`. Trap found on the way: Chrome fires `mouseover` when content
-  scrolls under a resting pointer, so any hover-select fires on scroll and on reflow.
-- **COD-167 done (2026-09-08, later):** Study's rating row sticks to the viewport bottom inside the
-  card; every card step scrolls to the top.
-- **COD-168 done (2026-09-08, later):** Library header compact — the review row under the tabs is
-  gone (the header fact is the button), the filter band is two deliberate rows. List starts at
-  346px, was 440.
-- **COD-169 done (2026-09-08, later):** a Next question · j button after a grade in the Library;
-  Recall mode says a grade moves on. Deliberately not done: centring Study's card (the empty right
-  column is the reading measure; `page/README.md` one-left-gutter rule).
-- **COD-170 done (2026-09-08, later; COD-171 filed for the "¶" in headings):** Library nits — sticky heading occludes the band under its
-  hairline, list rows wrap to two lines, no page eyebrow, captured titles decode (`—` → —),
-  `repair_titles.py` for an existing bank. `quiz_synth.py` was missing `re`/`hashlib` since the
-  split; `ingest()` works again. **Trap:** never `write_text` a 36 MB JSON in place without a
-  temp file — a failed write leaves 0 bytes; the rebuild is 8 min.
-- **COD-172 done (2026-09-08, later):** Topic and Difficulty are selects on the search row; list
-  starts at 247px.
-- **COD-173 done (2026-09-08, later):** no app bar. Search and Settings in the nav only; every sticky
-  offset is a constant. Phone: floating bottom-left trigger.
-- **COD-174 done (2026-09-08, later):** hover previews again, from a pointer that MOVED
-  (`hooks/useHoverIntent`). **Trap:** the URL → state effect keyed on `selectedId` snapped every
-  preview back; it is keyed on the URL id only now.
-- **COD-175 done (2026-09-08, later):** the one timer — nav footer countdown (5–30 min), pause/stop,
-  per-day minutes (`prepforge:timer`), summary, arrival prompt once per browser session, "learned
-  today" on Today. Nav has a visible Collapse / Expand button again.
-- **Next action:** nothing queued. Read the app as a user for ten minutes before adding anything. Read the app as a user for ten minutes before adding anything.
+- **Last touched:** 2026-09-08 (later).
+- **Where I stopped:** a nine-PR user session (#183 to #191, COD-166 to COD-175) is merged and
+  logged — the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md) is the account with the numbers.
+  In one line: the Library's chrome no longer moves under you (no auto-hide, no app bar, sticky
+  offsets are constants), hover previews rows and free lenses only from a pointer that moved
+  (`hooks/useHoverIntent`), Topic / Difficulty are selects beside the search box, there is ONE timer
+  (`hooks/useFocusTimer`, nav footer: 5–30 min, pause, per-day minutes, arrival prompt, "learned
+  today" on Today), and the nav has a visible Collapse / Expand button.
+- **Next action:** nothing queued. Read the app as a user for ten minutes before adding anything.
+  Backlog: COD-171 (trailing "¶" in ingested headings — strip from the question text only, ids hash
+  the raw heading; needs an 8-minute re-ingest, batch with the next bank change).
+- **Unverified:** the arrival prompt on a phone (the sheet + a modal at once) — only desktop 1440
+  and a 420px viewport without the prompt were screenshotted. The timer's counts (questions opened,
+  rated) were seen at 0 only; the diff logic is the Library session timer's, moved, not rewritten.
+- **Traps, this session:**
+  - Chrome re-dispatches the pointer's position after content scrolls or reflows under a resting
+    mouse, so any `mouseenter` selection fires on scroll. Select on `pointermove` that travelled
+    (`useHoverIntent`), never on enter.
+  - A URL → state effect that lists the state in its deps snaps every non-URL change back. Key it
+    on the URL value only (`QuestionsView`, `urlId`).
+  - `generated.json` is 36 MB and untracked. `write_text` in place; a failed write leaves 0 bytes and
+    the rebuild is `ingest.ingest("deterministic")`, 8 min 11 s. Write via a temp file
+    (`repair_titles.py` does).
+  - `:5173` is a different app (DSA Patterns); this repo's Vite ran on **:5177**; the user's own copy
+    is on `:5199`. The MCP browser is the user's real Chrome — a stray real-mouse event once looked
+    like a bug (a lens flipped to Grounded); it was not reproducible with event logging.
+  - A Radix dialog left open disables every hotkey. The arrival prompt is one, on purpose.
+- **Machines:** the bank repair is per machine. On the other machine run
+  `cd backend && ./.venv/bin/python repair_titles.py` once (idempotent), or re-ingest.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,
