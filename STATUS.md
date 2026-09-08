@@ -8,9 +8,11 @@ Update this when you STOP working, not when you start.
   `frontend/src/lib/brand.ts`; the repo, package and these docs still say PrepForge. What landed,
   with the numbers, is the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md); the reconciliation of
   the brief against the repo is the top of [`docs/UIUX-BACKLOG.md`](docs/UIUX-BACKLOG.md).
-- **Next action, deliberately not started:** COD-161 — `QuestionsView.tsx` is 805 lines (ceiling
-  500); split FilterBand / ListPeek / useQuestionPages out of it, snapshot-diffing the rendered
-  Library. Then the docs rename (PrepForge → Recall in README/docs) if the name sticks.
+- **COD-161 done (2026-09-08, later):** `QuestionsView.tsx` 805 → 450 lines; `FilterBand`,
+  `ListPeek`, `DeepStudyLinks` and `hooks/useQuestionPages` split out, rendered output diffed
+  before and after (only data differed). `components/library/README.md` is the change → file table.
+- **Next action, deliberately not started:** the docs rename (PrepForge → Recall in README/docs)
+  if the name sticks; COD-110's other two directories without a change → file README.
 - **Unverified:** nothing this session was left unverified — every PR body quotes the computed
   value or screenshot. One caveat: the session timer counts a question when its detail FETCH lands
   (~1–2 s in dev), not on the click; rows opened faster than that are counted late, not lost.
