@@ -1,16 +1,26 @@
 # Worklog
 
-## 2026-09-08 (later) — COD-166 to COD-169: the Library's chrome stays put, the Study grade row in reach, a shorter Library header, rate → next
+## 2026-09-08 (later) — COD-166 to COD-175: the Library stops moving under you; one filter, one timer, no app bar
 
-**Summary:** "the scrolling actions are not looking good, the text is going on top, the sidebar
-moves away when I want to find something". Looked at it in the browser: four "get out of the way"
-behaviours were fighting each other on one screen. The app bar slid away on a downward scroll, and
-because every sticky offset is measured from it (`--app-bar-h`), the list and the filter band
-jumped by 50px each time it went. The filter band was sticky glass the answer ran under. The list put
-itself away on a downward scroll and on any `?id=` link — a reload is one — and came back as a hover
-overlay. Rows selected on a 250ms hover, so scrolling the list under a resting pointer switched the
-open answer (Chrome fires mouseover on scroll); lens tabs did the same on a 400ms hover, so a click on
-Hide list that reflowed the tab row under the mouse flipped the lens to ELI5 by itself.
+**Summary:** a user session driven by what they saw, one PR per complaint, nine PRs (#183 to #191).
+It opened with "the scrolling actions are not looking good, the text is going on top, the sidebar
+moves away when I want to find something" and, looked at in the browser, that was four "get out of
+the way" behaviours fighting on one screen: the app bar slid away on scroll and every sticky offset
+was measured from it, the filter band was sticky glass the answer ran under, the list hid itself on
+scroll and on any `?id=` link, and rows and lens tabs selected on hover — which Chrome fires on a
+scroll or a reflow under a resting pointer. Then, one at a time as they came: the grade row out of
+reach in Study, 440px of header before the list, no visible way from a grade to the next question,
+the sticky heading's gap, rows cut off, "Recall" printed three times, a filter instead of chip rows,
+the top bar gone and Search moved left, the hovers back ("I don't wanna click") but only from a
+pointer that moved, one Pomodoro timer with daily minutes and an arrival prompt, and the nav's
+collapse button that had gone with the bar. Underneath: 5,288 bank titles carrying a literal
+`\u2014`, `ingest()` broken since the backend split, and a URL-sync effect that had made the old
+hover-select dead since the first click.
+
+**Rules that came out of it** (also in `docs/UIUX-BACKLOG.md` and the library README): chrome stays
+put; only a button hides a pane; hover previews only via `hooks/useHoverIntent` (a pointer that
+MOVED); one control per job — no breadcrumb repeating the nav, no second Settings, one select not a
+row of chips; never `write_text` a 36 MB JSON in place.
 
 | Item | PR | What landed | Measured |
 |---|---|---|---|

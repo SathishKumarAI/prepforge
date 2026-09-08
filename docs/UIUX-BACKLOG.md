@@ -4,6 +4,17 @@ A UI/UX-engineer pass focused on **craft**: hierarchy, motion, states, accessibi
 responsiveness, consistency. Complements the feature/bug audit in `AUDIT-BACKLOG.md`. Kanban-ready,
 checkbox tickets, no priority labels. Checked items are done this session.
 
+## Shipped 2026-09-08 (later) — what the user saw, COD-166 to COD-175
+
+Nine PRs from a session of looking at the running app with the user. Several reverse rows in the
+brief below, deliberately: the brand **eyebrow** is gone (three "Recall"s on one screen), the **app
+bar** is gone (a breadcrumb repeating the nav, a second Settings), nothing **slides away on scroll**
+(every sticky offset was measured from the bar), and **hover-select** is back only through
+`hooks/useHoverIntent` (a pointer that moved — Chrome re-dispatches the pointer after a scroll or a
+reflow). Also: Topic / Difficulty are selects beside the search box, one Pomodoro timer in the nav
+with per-day minutes and an arrival prompt, rows wrap to two lines, the Study grade row is sticky at
+the viewport bottom. The account with the numbers is the top of `WORKLOG.md`.
+
 ## Shipped 2026-09-08 — the "Recall" Library redesign brief (COD-154 to COD-160)
 
 A design brief arrived describing a Library mockup: a brand eyebrow, stats in the header row,
