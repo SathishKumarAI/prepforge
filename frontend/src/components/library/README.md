@@ -8,7 +8,7 @@ Ten files. Read this table, not the code.
 |---|---|
 | Which view a `?view=` maps to, the header counts, the session timer's place | `../../pages/Library.tsx` |
 | Selection, the two-pane grid, when the list is away, j/k, Recall on/off | `QuestionsView.tsx` |
-| Search box, topic/difficulty chips, Clear filters, the Recall and Hide-list buttons, the `/` key | `FilterBand.tsx` |
+| Search box, the Topic and Difficulty selects, Clear filters, the Recall and Hide-list buttons, the `/` key | `FilterBand.tsx` |
 | Page size, debounce, appending the next page, the scroll sentinel | `../../hooks/useQuestionPages.ts` |
 | The gutter handle and the hover overlay for a hidden list | `ListPeek.tsx` |
 | The "Go deeper" reading-list disclosure | `DeepStudyLinks.tsx` |
