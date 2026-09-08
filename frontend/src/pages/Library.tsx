@@ -9,8 +9,6 @@ import { QuestionsView } from "../components/library/QuestionsView";
 import { SavedView } from "../components/library/SavedView";
 import { CollectionsView } from "../components/library/CollectionsView";
 import { FeedView } from "../components/library/FeedView";
-import { SessionTimer } from "../components/library/SessionTimer";
-import { useLibrarySession } from "../hooks/useLibrarySession";
 import { useProgress } from "../hooks/useProgress";
 import { fetchBrowse, fetchSources } from "../lib/api";
 import { isDue } from "../lib/srs";
@@ -25,11 +23,9 @@ import { isDue } from "../lib/srs";
  *            in the header row beside the title rather than as a bar under it:
  *            the row had empty space on the right and the bar cost a line
  *            (COD-154). Same facts, same cap of four.
- *   act      the view switch, plus one link out to the Reader, plus the
- *            session timer (Start → clock + End → summary). The timer sits
- *            with the header controls because it scopes the whole visit, not
- *            one view. Its counts are derived from the progress store — see
- *            hooks/useLibrarySession, which only THIS component may call.
+ *   act      the view switch, plus one link out to the Reader. The session
+ *            timer that lived here is the app-wide one in the nav now
+ *            (shell/FocusTimer): one timer, not one per page.
  *   review   the list itself
  *   accent   the active view segment only
  *
@@ -65,7 +61,6 @@ export function Library() {
   const view = toView(params.get("view"));
 
   const { progress } = useProgress();
-  const { session, start: startSession, end: endSession } = useLibrarySession(progress);
   // How many questions exist, without the questions. `limit=0` answers exactly
   // the orient bar's question and nothing else — this used to hold the whole
   // 39.7 MB bank to print one number.
@@ -179,7 +174,6 @@ export function Library() {
       actions={
         <>
           {facts[view]}
-          <SessionTimer session={session} onStart={startSession} onEnd={endSession} />
           <Button asChild variant="ghost" size="sm">
             <Link to="/reader">
               <BookOpen aria-hidden="true" />

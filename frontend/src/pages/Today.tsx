@@ -4,7 +4,7 @@ import { Page, Band } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
 import { Loader } from "../components/States";
 import { Button } from "../components/ui/button";
-import { useNotes } from "../hooks/useNotes";
+import { useFocusTimer, hoursLabel } from "../hooks/useFocusTimer";
 import { useProgress } from "../hooks/useProgress";
 import { useUserCards } from "../hooks/useUserCards";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
@@ -15,7 +15,7 @@ import { dayKey, dueForecast, FORECAST_DAYS, isDue, type ForecastDay } from "../
  * Slot table
  *   route    /            (the app opens here)
  *   job      answer "what should I do right now" and start it in one click
- *   orient   due now, never seen, day streak
+ *   orient   due now, never seen, days studied, focus time today
  *   act      the single top-ranked action, as the page's only primary button
  *   review   the runners-up, the last fortnight of study days, and the next
  *            fortnight of cards falling due — the past and the future of the
@@ -33,7 +33,8 @@ export function Today() {
   // app's first screen on skeletons for seconds.
   const { rows: questions, loading } = useQuestionIndex(true);
   const { progress } = useProgress();
-  const { notes } = useNotes();
+  // Read-only here: no `progress` passed, so this is not the timer's counter.
+  const { todayMs } = useFocusTimer();
   const { cards: ownCards } = useUserCards();
 
   const { suggestions, due, unseen, forecast } = useMemo(() => {
@@ -83,7 +84,10 @@ export function Today() {
           <Fact label="due now" value={due || null} emphasis={due > 0} />
           <Fact label="never seen" value={unseen || null} />
           <Fact label="days studied" value={progress.studyDays.length || null} />
-          <Fact label="notes" value={notes.length || null} />
+          {/* Minutes from the focus timer, today. Replaced the notes count:
+              a number that changes what you do in the next thirty seconds
+              beats one that never does. */}
+          <Fact label="learned today" value={todayMs > 0 ? hoursLabel(todayMs) : null} />
         </Orient>
       }
       review={

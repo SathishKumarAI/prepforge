@@ -28,8 +28,10 @@ Update this when you STOP working, not when you start.
 - **COD-174 done (2026-09-08, later):** hover previews again, from a pointer that MOVED
   (`hooks/useHoverIntent`). **Trap:** the URL → state effect keyed on `selectedId` snapped every
   preview back; it is keyed on the URL id only now.
-- **Queued:** a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
-- **Next action:** the two queued items above. Read the app as a user for ten minutes before adding anything.
+- **COD-175 done (2026-09-08, later):** the one timer — nav footer countdown (5–30 min), pause/stop,
+  per-day minutes (`prepforge:timer`), summary, arrival prompt once per browser session, "learned
+  today" on Today. Nav has a visible Collapse / Expand button again.
+- **Next action:** nothing queued. Read the app as a user for ten minutes before adding anything. Read the app as a user for ten minutes before adding anything.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,

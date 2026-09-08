@@ -9,6 +9,7 @@ Library's views), `study/`, `card/`, `notes/`, `ui/` (shadcn primitives).
 | Change | File |
 |---|---|
 | Composition of the shell; focus mode; global keys (`?`, `f`, Ctrl+K) | `Layout.tsx` (parts in `shell/`) |
+| The focus timer's controls, the arrival prompt, the run summary | `shell/FocusTimer.tsx` |
 | Ctrl+K palette: what it lists and where it jumps | `CommandPalette.tsx` |
 | The Settings dialog and its fields | `SettingsPanel.tsx` |
 | The keyboard-shortcut sheet | `ShortcutHelp.tsx` |

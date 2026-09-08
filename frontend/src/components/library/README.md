@@ -14,7 +14,6 @@ Ten files. Read this table, not the code.
 | The "Go deeper" reading-list disclosure | `DeepStudyLinks.tsx` |
 | One line in the list | `QuestionRow.tsx` |
 | Everything about one question: lens tabs, reveal, rating, read aloud, notes, related | `QuestionDetail.tsx` |
-| The session clock pill and the end-of-session summary | `SessionTimer.tsx` (counts: `../../hooks/useLibrarySession.ts`) |
 | Saved / Collections / Feed views | `SavedView.tsx` / `CollectionsView.tsx` / `FeedView.tsx` |
 
 ## Rules these files keep

@@ -1,6 +1,6 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo } from "react";
-import { Keyboard, Search as SearchIcon, Settings as SettingsIcon } from "lucide-react";
+import { Keyboard, PanelLeftClose, PanelLeftOpen, Search as SearchIcon, Settings as SettingsIcon } from "lucide-react";
 import { prefetchRoute } from "../../lib/routeChunks";
 import {
   Sidebar,
@@ -21,11 +21,13 @@ import { useProgress } from "../../hooks/useProgress";
 import { useNotes } from "../../hooks/useNotes";
 import { isDue } from "../../lib/srs";
 import { APP_NAME, APP_TAGLINE } from "../../lib/brand";
+import { FocusTimer } from "./FocusTimer";
 import { NAV_GROUPS, isActivePath } from "./nav";
 
 /**
  * The navigation: brand block, the Search item (the Ctrl+K palette), the
- * grouped routes with their badges, and the Shortcuts / Settings footer. Collapses to an icon rail on desktop and becomes
+ * grouped routes with their badges, and the footer: the focus timer, then
+ * Shortcuts / Settings. Collapses to an icon rail on desktop and becomes
  * a sheet on a phone — the Sidebar primitive owns that; this owns only what
  * goes in it and what the badges count.
  *
@@ -44,7 +46,7 @@ export function AppSidebar({
   onHelp: () => void;
 }) {
   const loc = useLocation();
-  const { setOpenMobile } = useSidebar();
+  const { setOpenMobile, open, toggleSidebar } = useSidebar();
   const { progress } = useProgress();
   const { notes } = useNotes();
 
@@ -87,6 +89,20 @@ export function AppSidebar({
                   <span className="truncate text-micro text-overlay1">{APP_TAGLINE}</span>
                 </span>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* A visible collapse / expand button. The rail you can drag and
+              Ctrl+B both toggle the nav, and neither is discoverable — the app
+              bar's trigger was the visible one, and it went with the bar
+              (COD-173): "the left nav, I'm unable to open it". */}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={toggleSidebar}
+              tooltip={open ? "Collapse  (Ctrl+B)" : "Expand  (Ctrl+B)"}
+              className="text-overlay1"
+            >
+              {open ? <PanelLeftClose /> : <PanelLeftOpen />}
+              <span>Collapse</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           {/* Looks like a field, is a button: the field itself lives in the
@@ -147,6 +163,7 @@ export function AppSidebar({
 
       <SidebarFooter>
         <SidebarMenu>
+          <FocusTimer />
           <SidebarMenuItem>
             <SidebarMenuButton onClick={onHelp} tooltip="Keyboard shortcuts">
               <Keyboard />
