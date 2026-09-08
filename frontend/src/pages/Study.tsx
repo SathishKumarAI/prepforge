@@ -201,6 +201,15 @@ export function Study() {
     enabled: !loading,
   });
 
+  // A grade is pressed at the bottom of the answer, and the next question
+  // renders at the top of the page — above the viewport after any long answer,
+  // so the first thing you saw of card 4 was the middle of its answer. Back to
+  // the top on every step; instant, because a session is a rhythm.
+  const pos = session?.pos;
+  useEffect(() => {
+    if (pos !== undefined) window.scrollTo({ top: 0, behavior: "auto" });
+  }, [pos]);
+
   if (loading) return <Loader label="Preparing your session" />;
 
   // ---- in a session ------------------------------------------------------

@@ -8,6 +8,10 @@ Update this when you STOP working, not when you start.
   on hover (rows, lens tabs). `useScrollDirection` and `StickyChrome` are gone; the one sticky offset
   is `components/page/underAppBar.ts`. Trap found on the way: Chrome fires `mouseover` when content
   scrolls under a resting pointer, so any hover-select fires on scroll and on reflow.
+- **COD-167 done (2026-09-08, later):** Study's rating row sticks to the viewport bottom inside the
+  card; every card step scrolls to the top. Not done, candidates: Study's right column is empty
+  during a session; the Library header stack (title, tabs, review row, filter band, Go deeper) is
+  ~500px before the list starts.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,

@@ -105,7 +105,12 @@ function RatingRow({
   onRate: (r: Rating) => void;
 }) {
   return (
-    <div className="mt-6 border-t border-surface0 pt-5">
+    // Sticks to the bottom of the viewport while the answer is longer than the
+    // screen, so the grade is in reach the moment you have read enough — the
+    // row used to sit under the fold of every long answer, one scroll away
+    // from the thing the whole mode is for. Same fill as the panel and a
+    // negative margin out to its padding, so prose scrolls under it cleanly.
+    <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 rounded-b-xl border-t border-surface0 bg-mantle px-5 pb-5 pt-4 sm:-mx-7 sm:-mb-7 sm:px-7 sm:pb-7">
       <p className="mb-2.5 text-small text-overlay1">How well did that come back?</p>
       <div className="flex flex-wrap gap-2">
         {spec.ratings.map((r, i) => (
