@@ -8,6 +8,7 @@ import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
 import { Button } from "../ui/button";
 import { useQuestion } from "../../hooks/useQuestion";
+import { useHoverIntent } from "../../hooks/useHoverIntent";
 import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
 import { scrollToElement } from "../../lib/scroll";
 
@@ -15,11 +16,16 @@ import { scrollToElement } from "../../lib/scroll";
  * The Questions view of the Library: a filter band, a server-paged list on the
  * left that scrolls inside itself, one question's detail on the right.
  *
- * The list stays where it is. Three earlier rules put it away by themselves —
- * a downward scroll, arriving with ?id= in the URL (which a reload also does),
- * and a hover on a row switching the open question — and together they read as
- * the page moving under you whenever you scrolled the list to find something.
- * Now only the Hide list button hides it, and only a click or the keys select.
+ * The list stays where it is. Two earlier rules put it away by themselves —
+ * a downward scroll, arriving with ?id= in the URL (which a reload also does) —
+ * and together they read as the page moving under you whenever you scrolled
+ * the list to find something. Now only the Hide list button hides it.
+ *
+ * Hovering a row PREVIEWS it after 250 ms of a pointer that actually moved
+ * (hooks/useHoverIntent): the answer pane follows the mouse, the URL does not.
+ * A click or j/k commits — writes the URL. The old `mouseenter` version fired
+ * on scroll, because Chrome re-dispatches the pointer's position after
+ * content moves under it; movement is what tells a hand from a scroll.
  *
  * Owns: which question is selected, whether the list is hidden, recall mode,
  * and the keys that walk the list. Does NOT own the fetching
@@ -88,13 +94,18 @@ export function QuestionsView() {
    */
   const [detailOnly, setDetailOnly] = useState(() => Boolean(params.get("id")));
 
-  // The URL is the source of truth for these, not just at mount.
+  // The URL is the source of truth for these, not just at mount — a Ctrl+K
+  // pick or the back button changes ?id= and the pane must follow. Keyed on
+  // the URL's id ONLY: keyed on `selectedId` too, it ran after every hover
+  // preview and snapped the pane straight back to the URL's question, which
+  // is why the old hover-select looked dead as soon as a click had put an id
+  // in the URL. A click writes the same id it selected, so this is a no-op then.
+  const urlId = params.get("id");
   useEffect(() => {
-    const id = params.get("id");
-    if (!id || id === selectedId) return;
-    setSelectedId(id);
+    if (!urlId) return;
+    setSelectedId(urlId);
     setDetailOnly(true);
-  }, [params, selectedId]);
+  }, [urlId]);
 
   // ---- the list pane, hidden ---------------------------------------------
   // Above lg the two panes are fixed, so a long answer is capped at whatever
@@ -108,8 +119,12 @@ export function QuestionsView() {
     localStorage.setItem(RECALL_KEY, recall ? "1" : "0");
   }, [recall]);
 
+  // Preview only: the pane follows, the URL waits for a click or a key.
+  const hover = useHoverIntent<string>(setSelectedId);
+
   const select = useCallback(
     (id: string) => {
+      hover.cancel();
       setSelectedId(id);
       setDetailOnly(true);
       // Merge: `Library` writes ?view= with a bare object, so anything written
@@ -124,7 +139,7 @@ export function QuestionsView() {
         { replace: true },
       );
     },
-    [setParams],
+    [setParams, hover],
   );
 
   /**
@@ -258,6 +273,8 @@ export function QuestionsView() {
             q={q}
             selected={q.id === selectedId}
             onSelect={() => select(q.id)}
+            onMove={(e) => hover.move(q.id, e)}
+            onLeave={hover.cancel}
           />
         ))}
       </ul>

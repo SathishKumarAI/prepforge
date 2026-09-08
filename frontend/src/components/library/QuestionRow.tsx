@@ -1,3 +1,4 @@
+import type { PointerEvent } from "react";
 import { ACCENT_DOT, topicColor } from "../../lib/topics";
 import type { QuestionRowLite } from "../../lib/types";
 
@@ -30,20 +31,32 @@ export function QuestionRow({
   q,
   selected,
   onSelect,
+  onMove,
+  onLeave,
 }: {
   /** An index row, never a whole question — the answer is not in this list. */
   q: QuestionRowLite;
   selected: boolean;
   onSelect: () => void;
+  /** A real pointer move over the row — hover intent lives in the view. */
+  onMove: (e: PointerEvent<HTMLButtonElement>) => void;
+  onLeave: () => void;
 }) {
   return (
     <li>
       <button
         type="button"
         onClick={onSelect}
+        onPointerMove={onMove}
+        onPointerLeave={onLeave}
         aria-current={selected ? "true" : undefined}
+        // Hover is a full-strength fill, one step up the surface ladder from
+        // the selected row, so the eye finds the row under the pointer at a
+        // glance — the 60% wash it had before read as nothing on a light theme.
         className={`flex w-full items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-100 ${
-          selected ? "bg-surface0 text-text" : "text-subtext0 hover:bg-surface0/60 hover:text-text"
+          selected
+            ? "bg-surface0 font-medium text-text"
+            : "text-subtext0 hover:bg-surface1 hover:text-text"
         }`}
       >
         <span

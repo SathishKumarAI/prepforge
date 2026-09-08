@@ -121,11 +121,17 @@ and drop every card you had written.
 
 The question list is a column that **stays where it is** and scrolls inside itself, parked at the
 top of the viewport. There is no app bar any more: it repeated the nav (a breadcrumb, a second
-Settings) and cost 48px of every screen; Search and Settings live in the nav. Nothing hides the list but the **Hide list** button, and nothing selects a row but a click or
-j/k. It used to get out of the way by itself — on a downward scroll, on any `?id=` link (a reload is
-one), and rows switched the open answer on hover — and the three together read as the page moving
-under you whenever you scrolled the list to find something. The filter band stopped sliding away
-on scroll for the same reason.
+Settings) and cost 48px of every screen; Search and Settings live in the nav. Nothing hides the
+list but the **Hide list** button. It used to get out of the way by itself — on a downward scroll,
+on any `?id=` link (a reload is one) — and that read as the page moving under you whenever you
+scrolled the list to find something. The filter band stopped sliding away on scroll for the same
+reason.
+
+**Hovering a row previews it** after 250ms — the answer pane follows the mouse, the URL does not —
+and a click or j/k commits. The hover counts only from a pointer that actually MOVED
+(`hooks/useHoverIntent.ts`): Chrome re-dispatches the pointer's position after content scrolls or
+reflows under it, and a plain `mouseenter` fired on every one of those, so scrolling the list
+switched the open answer. Movement is what tells a hand from a scroll.
 
 With the list hidden, the left edge keeps its hover-peek and **Keep open** brings the list back.
 Picking a question while deep in the previous answer scrolls the new one's heading to the top.
@@ -317,9 +323,9 @@ for a lens is what opens. Every older file stays and is one click away in the **
 `LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT` override the defaults; leaving `LMSTUDIO_MODEL`
 blank uses whatever is loaded. With LM Studio off, all six fall back to Claude exactly as before.
 
-**Selecting a lens generates it — one press.** There is no confirm step, on any mode, and hover
-does nothing: free lenses used to switch on a 400ms hover, and a page that reflows under a resting
-pointer (a row click, Hide list) switched the lens by itself. The `$` on a tab says it bills Claude.
+**Selecting a lens generates it.** A free lens opens on a 400ms hover from a pointer that moved
+(the same intent rule as the list); a billed lens — `$` on the tab — needs a press, because a press
+is a decision and a path is not. There is no confirm step on any mode.
 
 `GET /generate/providers` reports which modes are free *right now* and the local model's id — the
 quickest way to check the local path is actually wired up. Starting LM Studio mid-session is picked

@@ -36,9 +36,10 @@ brief won and the code comments were rewritten rather than left contradicting it
   Filters band is for "what am I looking at"; do not add always-visible chips to it.
 - Every new clickable affordance carries a visible pressed/selected state (`aria-pressed` + a fill).
 - Metadata stays one muted line; colours go through the token set in both theme blocks.
-- Hover reveals chrome (the hidden list's peek, the collapsed sidebar's tooltips); it never
-  selects content. Row and lens hover-select were removed in COD-166 — a page that reflows under
-  a resting pointer selected things by itself.
+- Hover PREVIEWS (a row, a free lens) only from a pointer that moved — `hooks/useHoverIntent`.
+  Plain `mouseenter` selection is banned: Chrome re-dispatches the pointer after a scroll or a
+  reflow, and that selected things under a resting pointer (COD-166, restored with the gate in
+  COD-174).
 
 **Found on the way, filed:** `QuestionsView.tsx` is 805 lines (COD-161).
 

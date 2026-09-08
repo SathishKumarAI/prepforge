@@ -21,12 +21,17 @@ Ten files. Read this table, not the code.
 
 - **One list.** The in-grid column and the peek overlay render the same `listPane`
   element; only one is ever mounted, so the scroll sentinel has one owner.
-- **The list stays put.** Only the Hide list button hides it; only a click or j/k
-  selects. Auto-hide on scroll, hide-on-deep-link and hover-select were all removed
-  together (COD-166): scrolling the list to find a question moved the page, took the
-  list away and switched the open answer under a stationary pointer.
-- **Chrome does not slide away on scroll.** The app bar stays; the filter band scrolls
-  with the page. Everything sticky parks at `page/underAppBar.ts`.
+- **The list stays put.** Only the Hide list button hides it. Auto-hide on scroll and
+  hide-on-deep-link were removed (COD-166): scrolling the list to find a question moved
+  the page and took the list away.
+- **Hover previews, click commits.** A row previews after 250 ms of a pointer that MOVED
+  (`hooks/useHoverIntent`); the URL changes only on a click or j/k. `mouseenter` is
+  never used for selection: Chrome re-dispatches the pointer's position after a scroll
+  or a reflow, and that switched the open answer under a resting pointer.
+- **The URL → state sync is keyed on the URL's id only.** Keyed on `selectedId` as well,
+  it snapped every hover preview straight back to the URL's question.
+- **Nothing slides away on scroll.** The filter band scrolls with the page; sticky
+  things park at constant offsets (there is no app bar).
 - **The detail follows the URL, not the loaded rows.** A deep link to a question on
   page 15 opens that question; the list highlights it if and when its page arrives.
 - **`FilterBand` owns no state.** Every value comes in, every change goes out.

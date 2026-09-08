@@ -21,6 +21,7 @@ and share the in-flight request.
 | Which lenses are free right now (LM Studio probe) | `useProviders.ts` |
 | Totals over generated answers on disk | `useAnswerStats.ts` |
 | Single-key page shortcuts (ignores fields, buttons, open dialogs) | `useHotkeys.ts` |
+| Hover with intent: a timer armed only by a pointer that moved | `useHoverIntent.ts` |
 | Escape to close something | `useEscapeKey.ts` |
 | Read text aloud (Web Speech) | `useSpeech.ts` |
 | Live theme colours as strings, for a chart library | `useThemeColors.ts` |
