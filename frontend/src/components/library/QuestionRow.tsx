@@ -29,22 +29,17 @@ export function QuestionRow({
   q,
   selected,
   onSelect,
-  onPeek,
 }: {
   /** An index row, never a whole question — the answer is not in this list. */
   q: QuestionRowLite;
   selected: boolean;
   onSelect: () => void;
-  /** Hover with intent. `null` cancels a pending peek. */
-  onPeek: (on: boolean) => void;
 }) {
   return (
     <li>
       <button
         type="button"
         onClick={onSelect}
-        onMouseEnter={() => onPeek(true)}
-        onMouseLeave={() => onPeek(false)}
         aria-current={selected ? "true" : undefined}
         className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors duration-100 ${
           selected ? "bg-surface0 text-text" : "text-subtext0 hover:bg-surface0/60 hover:text-text"

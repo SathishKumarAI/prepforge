@@ -36,8 +36,9 @@ brief won and the code comments were rewritten rather than left contradicting it
   Filters band is for "what am I looking at"; do not add always-visible chips to it.
 - Every new clickable affordance carries a visible pressed/selected state (`aria-pressed` + a fill).
 - Metadata stays one muted line; colours go through the token set in both theme blocks.
-- The hover-peek pattern (hover previews, click pins) is the app's interaction language for
-  collapsible chrome; the list peek and the collapsed sidebar already use it.
+- Hover reveals chrome (the hidden list's peek, the collapsed sidebar's tooltips); it never
+  selects content. Row and lens hover-select were removed in COD-166 — a page that reflows under
+  a resting pointer selected things by itself.
 
 **Found on the way, filed:** `QuestionsView.tsx` is 805 lines (COD-161).
 

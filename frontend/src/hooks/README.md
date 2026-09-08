@@ -22,7 +22,6 @@ and share the in-flight request.
 | Totals over generated answers on disk | `useAnswerStats.ts` |
 | Single-key page shortcuts (ignores fields, buttons, open dialogs) | `useHotkeys.ts` |
 | Escape to close something | `useEscapeKey.ts` |
-| Scroll direction, for chrome that gets out of the way | `useScrollDirection.ts` |
 | Read text aloud (Web Speech) | `useSpeech.ts` |
 | Live theme colours as strings, for a chart library | `useThemeColors.ts` |
 | Phone breakpoint | `use-mobile.tsx` |

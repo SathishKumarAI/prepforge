@@ -1,5 +1,23 @@
 # Worklog
 
+## 2026-09-08 (later) — COD-166: the Library's chrome stays put
+
+**Summary:** "the scrolling actions are not looking good, the text is going on top, the sidebar
+moves away when I want to find something". Looked at it in the browser: four "get out of the way"
+behaviours were fighting each other on one screen. The app bar slid away on a downward scroll, and
+because every sticky offset is measured from it (`--app-bar-h`), the list and the filter band
+jumped by 50px each time it went. The filter band was sticky glass the answer ran under. The list put
+itself away on a downward scroll and on any `?id=` link — a reload is one — and came back as a hover
+overlay. Rows selected on a 250ms hover, so scrolling the list under a resting pointer switched the
+open answer (Chrome fires mouseover on scroll); lens tabs did the same on a 400ms hover, so a click on
+Hide list that reflowed the tab row under the mouse flipped the lens to ELI5 by itself.
+
+| Item | PR | What landed | Measured |
+|---|---|---|---|
+| COD-166 | chrome stays put | `useScrollDirection.ts` and `StickyChrome.tsx` deleted; `page/underAppBar.ts` keeps the one sticky offset. App bar never hides (only focus mode). Filter band scrolls with the page. List hides only from the Hide list button; `readingMode`, `pinOpen` and both hover-select timers are gone. Picking a row while deep in an answer scrolls the new heading under the bar (keyed on the LOADED question — keyed on the click it landed 28px short, the pane is briefly empty and the scroll clamps). | 11 files, +119 / −194. Deep link `?id=q006` keeps the list; page scrolled 700px, bar height stays 50px, list stuck at top 58px. List scrolled 800px with the pointer over a row: page scroll unchanged, heading unchanged. Row click from y=900: detail top lands at 66px (50 + 1rem). Lens tab hovered 800ms: still Answer. `tsc` 0, build 2.93s, 8/8 tests. |
+
+---
+
 ## 2026-09-08 (night) — the pending items: dead hook, probe grace, test flake, backend split, five UI gaps
 
 **Summary:** "complete all the pending tasks". Everything in Backlog for this repo, one branch each.

@@ -1,17 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { UNDER_APP_BAR } from "../page/StickyChrome";
+import { UNDER_APP_BAR } from "../page/underAppBar";
 import { Button } from "../ui/button";
 
-/**
- * Hover intent for the list peek — the same number the row peek uses
- * (QuestionsView.PEEK_MS), because two hover delays on one screen is two
- * different feels for the same gesture. Duplicated as a value rather than
- * imported, so this file has no reason to import the view it sits inside.
- */
+/** Hover intent for the list peek. */
 const PEEK_MS = 250;
 
 /**
- * The put-away list, reachable from the page gutter: a slim handle that opens
+ * The hidden list, reachable from the page gutter: a slim handle that opens
  * the list as an OVERLAY on hover, never a push — reflowing the paragraph
  * under the cursor is what makes the push version of this unusable.
  *

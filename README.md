@@ -119,18 +119,18 @@ and drop every card you had written.
 
 ### Reading mode in the Library
 
-The question list is *setup*: it answers "what should I read", and once that is decided it is sixty
-titles competing with the one answer you chose. On a wide screen it now behaves like the app bar and
-the filters — **it gets out of the way while you read**:
+The question list is a column that **stays where it is** and scrolls inside itself, parked under
+the app bar. Nothing hides it but the **Hide list** button, and nothing selects a row but a click or
+j/k. It used to get out of the way by itself — on a downward scroll, on any `?id=` link (a reload is
+one), and rows switched the open answer on hover — and the three together read as the page moving
+under you whenever you scrolled the list to find something. The app bar and the filter band stopped
+sliding away on scroll for the same reason: every sticky offset is measured from the bar, so a bar
+that comes and goes is a list that jumps.
 
-- Scrolling into an answer puts it away; scrolling back up, or reaching the top, brings it back. Only
-  with a question open, and never while you are still browsing — the list scrolls inside itself, so
-  page scroll means the *answer* is moving.
-- Arriving **at** a question — a shared link, a Ctrl+K pick, the back button — opens with the list
-  already away. Clicking a row does not: that means you are still choosing.
-- The left edge keeps its hover-peek, and **Keep open** pins the list for the rest of the visit.
+With the list hidden, the left edge keeps its hover-peek and **Keep open** brings the list back.
+Picking a question while deep in the previous answer scrolls the new one's heading under the bar.
 
-With the list away the page carries no 84rem cap — the header, the lens tabs and the related list
+With the list hidden the page carries no 84rem cap — the header, the lens tabs and the related list
 use the whole width — while the **running prose caps at 100ch**. Uncapped, a 1,438px answer runs
 about 180 characters a line and the eye loses the start of the next one on every return sweep. The
 prose is left-aligned rather than centred, so it shares its left edge with the question above it.
@@ -317,10 +317,9 @@ for a lens is what opens. Every older file stays and is one click away in the **
 `LMSTUDIO_URL` / `LMSTUDIO_MODEL` / `LMSTUDIO_TIMEOUT` override the defaults; leaving `LMSTUDIO_MODEL`
 blank uses whatever is loaded. With LM Studio off, all six fall back to Claude exactly as before.
 
-**Selecting a lens generates it — hovering counts.** There is no confirm step, on any mode. A tab
-you rest on for 400ms in the Library detail pane fires its generation, so with LM Studio off, a slow
-sweep across the row can bill several Claude calls. That 400ms is the only brake; it lives in
-`peekTab` in `QuestionDetail.tsx`.
+**Selecting a lens generates it — one press.** There is no confirm step, on any mode, and hover
+does nothing: free lenses used to switch on a 400ms hover, and a page that reflows under a resting
+pointer (a row click, Hide list) switched the lens by itself. The `$` on a tab says it bills Claude.
 
 `GET /generate/providers` reports which modes are free *right now* and the local model's id — the
 quickest way to check the local path is actually wired up. Starting LM Studio mid-session is picked

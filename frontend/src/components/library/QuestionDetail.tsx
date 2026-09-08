@@ -64,9 +64,7 @@ export function QuestionDetail({
   onNext?: () => void;
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
-  const tabTimer = useRef<number>();
   const articleRef = useRef<HTMLElement>(null);
-  const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
   const { progress, toggleBookmark, setNote, markRecent, getCard, rateCard } = useProgress();
@@ -150,25 +148,11 @@ export function QuestionDetail({
       : {}),
   });
 
-  // Selecting a lens generates it, hover or press alike. So hover reaches only
-  // the lenses that are free at this moment: with LM Studio running that is six
-  // of the eight tabs and the row behaves exactly as it did, and with it off a
-  // pointer crossing the row cannot spend anything. The billed lenses still
-  // generate — they need a press, which is a decision rather than a path.
-  //
-  // 400ms, longer than the list's 250ms: a tab is a much smaller target than a
-  // row, and landing on the wrong lens is more disruptive than landing on the
-  // wrong question.
-  function peekTab(v: "answer" | Mode) {
-    window.clearTimeout(tabTimer.current);
-    if (!canHover || !isFree(v)) return;
-    tabTimer.current = window.setTimeout(() => setTab(v), 400);
-  }
-  function pickTab(v: "answer" | Mode) {
-    window.clearTimeout(tabTimer.current);
-    setTab(v);
-  }
-  useEffect(() => () => window.clearTimeout(tabTimer.current), []);
+  // A lens is picked by a press, never by hover. Free lenses used to switch on
+  // a 400 ms hover, and the page reflows under a stationary pointer often
+  // enough — a row click scrolls the new answer's top under the bar, Hide list
+  // widens the column — that the tab row landed under the mouse and the lens
+  // changed by itself. A press is a decision; a path is not.
 
   return (
     /* 100ch, not the 68ch measure and not uncapped.
@@ -292,16 +276,13 @@ export function QuestionDetail({
 
       {/* One row, two kinds of thing — free and generated — because that is the
           order you use them in, not because they share an implementation. */}
-      <Tabs value={tab} onValueChange={(v) => pickTab(v as "answer" | Mode)} className="mb-1.5">
-        <TabsList className="flex-wrap" onMouseLeave={() => window.clearTimeout(tabTimer.current)}>
-          <TabsTrigger value="answer" onMouseEnter={() => peekTab("answer")}>
-            Answer
-          </TabsTrigger>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as "answer" | Mode)} className="mb-1.5">
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="answer">Answer</TabsTrigger>
           {LENS_TABS.map((t) => (
             <TabsTrigger
               key={t.mode}
               value={t.mode}
-              onMouseEnter={() => peekTab(t.mode)}
               title={isBilled(t.mode) ? "Billed to Claude — press to generate" : undefined}
             >
               {t.label}
@@ -320,16 +301,16 @@ export function QuestionDetail({
         </TabsList>
       </Tabs>
 
-      {/* One line, under the row it explains, because the answer to "did that
-          hover just cost me money" is worthless anywhere else on the page. */}
+      {/* One line, under the row it explains, because the answer to "will that
+          press cost me money" is worthless anywhere else on the page. */}
       <p className="mb-4 min-h-[1.1rem] max-w-prose text-micro text-overlay1">
         {!providersKnown ? null : localModel ? (
           <>
             Local model · <span className="font-mono">{localModel}</span> — {freeModes.length} lens
-            {freeModes.length === 1 ? "" : "es"} generate free on hover.
+            {freeModes.length === 1 ? "" : "es"} generate free.
           </>
         ) : (
-          <>LM Studio is off — every lens bills Claude, so they generate on a press, not a hover.</>
+          <>LM Studio is off — every lens bills Claude; the $ tabs say which.</>
         )}
       </p>
 
