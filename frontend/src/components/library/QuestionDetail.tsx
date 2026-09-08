@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, FileText, PencilLine } from "lucide-react";
+import {
+  ArrowLeft,
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  FileText,
+  PencilLine,
+  Square,
+  Volume2,
+} from "lucide-react";
 import { Kbd } from "../Kbd";
 import { useHotkeys } from "../../hooks/useHotkeys";
+import { useSpeech } from "../../hooks/useSpeech";
 import { previewInterval, type Rating } from "../../lib/srs";
 import { DifficultyBadge, TopicBadge } from "../Badge";
 import { DeepAnswer, LENS_TABS, type Mode } from "../DeepAnswer";
@@ -55,6 +65,7 @@ export function QuestionDetail({
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
   const tabTimer = useRef<number>();
+  const articleRef = useRef<HTMLElement>(null);
   const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
@@ -107,6 +118,22 @@ export function QuestionDetail({
     setRated(null);
   }, [q.id, recall]);
   const card = getCard(q.id);
+
+  /**
+   * Read aloud: the question, then whatever answer is ON SCREEN — the rendered
+   * text of the current lens, so a generated lens reads as itself and a
+   * hidden answer (recall mode) reads as the question alone, which is the
+   * hands-free version of "say it to yourself first". A new question stops
+   * the voice: the hook's cleanup runs on unmount, and `key={q.id}` above
+   * remounts this component per question.
+   */
+  const { supported: canSpeak, speaking, speak, stop } = useSpeech();
+  function readAloud() {
+    if (speaking) return stop();
+    const body = articleRef.current?.querySelector(".prose-answer")?.textContent ?? "";
+    speak(`${q.question} ${body}`);
+  }
+
   function rate(r: Rating) {
     setRated({ key: r, next: previewInterval(card, r) });
     rateCard(q.id, r);
@@ -157,7 +184,7 @@ export function QuestionDetail({
      * rather than centred so its left edge stays flush with the question above
      * it — a centred column under a full-width heading reads as a mistake.
      */
-    <article className="min-w-0 [&_.prose-answer]:max-w-[100ch]">
+    <article ref={articleRef} className="min-w-0 [&_.prose-answer]:max-w-[100ch]">
       {onBack && (
         <Button variant="ghost" size="sm" onClick={onBack} className="mb-3 lg:hidden">
           <ArrowLeft aria-hidden="true" />
@@ -221,6 +248,25 @@ export function QuestionDetail({
                   {bookmarked ? "Saved" : "Save"}
                 </TooltipContent>
               </Tooltip>
+              {canSpeak && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={readAloud}
+                      aria-pressed={speaking}
+                      aria-label={speaking ? "Stop reading" : "Read the question and answer aloud"}
+                      className={speaking ? "text-text" : undefined}
+                    >
+                      {speaking ? <Square aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="px-2 py-1 text-micro text-subtext0">
+                    {speaking ? "Stop" : "Read aloud"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -294,9 +340,9 @@ export function QuestionDetail({
           <p className="text-small text-subtext0">
             Say the answer to yourself first. Then check.
           </p>
-          <Button variant="primary" onClick={() => setRevealed(true)}>
+          <Button variant="secondary" onClick={() => setRevealed(true)}>
             Reveal answer
-            <Kbd className="text-on-accent/80">Space</Kbd>
+            <Kbd>Space</Kbd>
           </Button>
         </div>
       ) : tab === "answer" ? (
