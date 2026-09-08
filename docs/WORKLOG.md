@@ -1,5 +1,19 @@
 # Worklog
 
+## 2026-09-08 (evening) — modularisation round: every frontend file under the ceiling, a README per directory
+
+**Summary:** "keep the code more modularized, update the documents". Measured first: after COD-161 four
+frontend files were still over the 500-line ceiling (`sidebar.tsx` 773 is a shadcn primitive and stays;
+`Study.tsx` 631, `QuestionCard.tsx` 575, `Layout.tsx` 524) and five directories with more than four
+source files had no change → file README (COD-110). One PR per file, each snapshot-diffed; the READMEs
+last, so the tables describe the final layout. Backend sizes filed as COD-164, not started.
+
+| Item | PR | What landed | Measured |
+|---|---|---|---|
+| COD-162 | shell split | `Layout.tsx` 524 → 151. `shell/nav.ts` (routes, groups, view labels, `isActivePath`, `SIDEBAR_KEY`), `shell/AppSidebar.tsx` (156), `shell/AppBar.tsx` (195). Bodies moved verbatim by line range; Layout keeps focus mode, global keys, dialogs, composition | rendered sidebar, app bar, page and gear menu byte-identical before/after (17,156 / 4,732 / 6,606 / 5,486 chars); focus mode `--app-bar-h` 0px → 50px on Esc; Ctrl+B toggles and persists the same; tsc (with noUnusedLocals) clean, build, contrast, 8/8 |
+
+---
+
 ## 2026-09-08 (later) — QuestionsView split by concern (COD-161)
 
 **Summary:** `QuestionsView.tsx` had grown to 805 lines (ceiling 500). Split by concern, behaviour
