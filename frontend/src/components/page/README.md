@@ -50,7 +50,8 @@ point at when the next streak badge or tip banner is proposed.
 
 - `text-base` sets a **font size** as well as a colour — `base` exists in both
   the colour and `fontSize` scales. Use `text-crust` on accent fills.
-- `.glass` is a deprecated alias for `.panel`, kept only so un-swept call sites
-  still render. New code uses `.panel`.
+- `.glass` is the liquid-glass treatment and it is for **chrome only** — nav,
+  app bar, sticky filter band, menus, tooltips. A card, a list, a reading pane
+  or a dialog is `.panel` or opaque. Blur under text you read hurts it.
 - `Spine` degrades to a proportional bar above 48 cards; below that each card is
   its own segment. Both carry the same information — check the one you mean.

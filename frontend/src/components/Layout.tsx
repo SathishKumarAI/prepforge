@@ -72,6 +72,7 @@ import { MODES, toStudyMode } from "../lib/studyModes";
 import { THEME_OPTIONS, type ThemeMode } from "../lib/theme";
 import { cn } from "../lib/utils";
 import { APP_NAME, APP_TAGLINE } from "../lib/brand";
+import { trackGlassCursor } from "../lib/glass";
 
 /**
  * The app shell, on shadcn's Sidebar: a nav that collapses to an icon rail on
@@ -157,6 +158,10 @@ export function Layout({ children }: { children: ReactNode }) {
     document.addEventListener("fullscreenchange", sync);
     return () => document.removeEventListener("fullscreenchange", sync);
   }, []);
+
+  // The cursor-tracked highlight on every glass surface, one listener for the
+  // whole app (see lib/glass.ts).
+  useEffect(trackGlassCursor, []);
 
   // Global keys. Ignored while typing so "f" in a search box is just an f.
   // Ctrl+B is not here: SidebarProvider binds it.
@@ -414,10 +419,11 @@ function AppBar({
   return (
     <header
       ref={barRef}
-      // Opaque, not bg-base/95: content scrolls UNDER a sticky bar, so the bar
-      // has to occlude it.
+      // Glass: content scrolls UNDER a sticky bar and is blurred to a wash
+      // rather than occluded. The bar is chrome, and chrome is where the glass
+      // treatment lives (see .glass in index.css) — never the page itself.
       className={cn(
-        "sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-3 transition-[transform,visibility] duration-200",
+        "glass sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b px-3 transition-[transform,visibility] duration-200",
         focus && "hidden",
         barHidden ? "invisible -translate-y-full" : "visible translate-y-0",
       )}

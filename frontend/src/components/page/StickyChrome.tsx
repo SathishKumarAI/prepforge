@@ -47,10 +47,11 @@ export function StickyChrome({
       // cannot walk into a filter that is scrolled off screen and make focus
       // appear to vanish. It flips discretely at the END of the slide out and
       // immediately on the way back in, which is the behaviour we want.
-      // Opaque for the same reason the app bar and the question header are:
-      // filters that let the page ghost through them read as a rendering fault,
-      // and a backdrop blur does not fix it, it softens it.
-      className={`sticky z-20 -mx-1 bg-base px-1 duration-200 ${
+      // Glass, like the app bar it parks under: the band is chrome, and chrome
+      // is the one place blur is allowed (see .glass in index.css). What
+      // scrolls under it is blurred to a wash at 20px, not ghosted — the
+      // ghosting that made this opaque came from a 95% tint with no blur.
+      className={`glass sticky z-20 -mx-1 px-1 duration-200 ${
         hidden
           ? "invisible -translate-y-[calc(100%+var(--app-bar-h,0px))]"
           : "visible translate-y-0"
