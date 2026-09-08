@@ -1,23 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { Page, Band } from "../components/page/PageLayout";
+import { Page } from "../components/page/PageLayout";
 import { Orient, Fact } from "../components/page/Orient";
-import { Spine, type Outcome } from "../components/page/Spine";
+import { Spine } from "../components/page/Spine";
 import { Empty, Loader } from "../components/States";
+import { RecentSessions } from "../components/study/RecentSessions";
+import { SessionSummary } from "../components/study/SessionSummary";
+import { Setting } from "../components/study/Setting";
 import { StudyCard } from "../components/study/StudyCard";
 import { Button } from "../components/ui/button";
 import { Chip } from "../components/ui/chip";
 import { Segmented, SegmentedPanel } from "../components/ui/segmented";
-import { useHotkeys } from "../hooks/useHotkeys";
 import { useProgress } from "../hooks/useProgress";
+import { useStudySession, TIMED_SECONDS } from "../hooks/useStudySession";
 import { useUserCards } from "../hooks/useUserCards";
 import { useQuestionIndex } from "../hooks/useQuestionIndex";
-import { fetchQuestionBatch, type QuestionLite } from "../lib/api";
-import { isDue, isLeech, LEECH_LAPSES, type Rating } from "../lib/srs";
-import { MODES, MODE_ORDER, toStudyMode, type StudyMode } from "../lib/studyModes";
-import { isUserCardId, toQuestion, USER_CARD_TOPIC } from "../lib/userCards";
-import type { Question } from "../lib/types";
+import type { QuestionLite } from "../lib/api";
+import { isLeech, LEECH_LAPSES } from "../lib/srs";
+import { MODES, MODE_ORDER, toStudyMode } from "../lib/studyModes";
+import { NEW_PER_SESSION, planQueue, plannedSize } from "../lib/studyPlan";
+import { USER_CARD_TOPIC } from "../lib/userCards";
 
 /**
  * One study surface, three modes. Replaces /learn, /flashcards and /quiz.
@@ -36,44 +39,15 @@ import type { Question } from "../lib/types";
  *   moved    the YouTube quiz-builder went to Sources: it ingests content, it
  *            is not session setup, and it made this page ask nine questions
  *            before you could start one
+ *
+ * Owns: session SETUP — the preferences, the pool and its counts, which
+ * cards would be in a session — and the two screens. Does NOT own the queue
+ * order (lib/studyPlan.ts, pure), the running session and its keys
+ * (hooks/useStudySession.ts), or the card (components/study/StudyCard.tsx).
  */
 
 const SIZES = [10, 20, 40];
-const NEW_PER_SESSION = 6;
-const TIMED_SECONDS = 30;
 const PREFS_KEY = "pf-study-prefs";
-
-interface Session {
-  mode: StudyMode;
-  queue: Question[];
-  pos: number;
-  outcomes: Outcome[];
-  revealed: boolean;
-  picked: number | null;
-  correct: number;
-}
-
-/** Round-robin across topics so two consecutive cards are rarely alike. */
-function interleave(items: QuestionLite[]): QuestionLite[] {
-  const lanes = new Map<string, QuestionLite[]>();
-  for (const q of items) {
-    if (!lanes.has(q.topic)) lanes.set(q.topic, []);
-    lanes.get(q.topic)!.push(q);
-  }
-  const out: QuestionLite[] = [];
-  const queues = [...lanes.values()];
-  for (let more = true; more; ) {
-    more = false;
-    for (const lane of queues) {
-      const next = lane.shift();
-      if (next) {
-        out.push(next);
-        more = true;
-      }
-    }
-  }
-  return out;
-}
 
 export function Study() {
   const [params, setParams] = useSearchParams();
@@ -93,7 +67,7 @@ export function Study() {
    * from either of them costs nothing at all.
    */
   const { rows: questions, loading } = useQuestionIndex(true);
-  const { progress, getCard, markSeen, rateCard, setFlash, addQuiz } = useProgress();
+  const { progress } = useProgress();
   const { cards: userCards } = useUserCards();
 
   /**
@@ -138,13 +112,6 @@ export function Study() {
   const [weakFirst, setWeakFirst] = useState<boolean>(prefs.weakFirst ?? false);
   const [timed, setTimed] = useState<boolean>(prefs.timed ?? false);
   const [more, setMore] = useState(false);
-  const [session, setSession] = useState<Session | null>(null);
-  const [remaining, setRemaining] = useState(TIMED_SECONDS);
-  // Starting a session is a request now. It is one request for at most 40 cards,
-  // but it can be slow and it can fail, and a primary button that does nothing
-  // visible is the failure mode that makes people press it twice.
-  const [starting, setStarting] = useState(false);
-  const [cardsFailed, setCardsFailed] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(PREFS_KEY, JSON.stringify({ size, topic, weakFirst, timed }));
@@ -198,160 +165,41 @@ export function Study() {
     [progress.srs],
   );
 
-  const plannedSize =
-    mode === "recall"
-      ? Math.min(size, ready.length + Math.min(NEW_PER_SESSION, fresh.length))
-      : Math.min(size, ready.length);
+  const planned = plannedSize(mode, size, ready, fresh);
 
   const isWeak = (q: QuestionLite) =>
     progress.flash[q.id] !== "known" && progress.srs[q.id]?.stage !== "mastered";
 
-  /** The queue as ids — ordering only, which never needed an answer to decide. */
-  function planQueue(): QuestionLite[] {
-    if (mode === "recall") {
-      // Reviews before new material: retrieval first, encoding with what is left.
-      return [...interleave(ready), ...interleave(fresh).slice(0, NEW_PER_SESSION)].slice(0, size);
-    }
-    // Deterministic order (no Math.random), rotated by how much you have
-    // already done so a second session is not the same ten cards.
-    const ordered = [...ready].sort((a, b) => a.id.localeCompare(b.id));
-    const offset = Object.keys(progress.srs).length % Math.max(1, ordered.length);
-    let rotated = [...ordered.slice(offset), ...ordered.slice(0, offset)];
-    if (weakFirst) rotated = [...rotated].sort((a, b) => Number(isWeak(b)) - Number(isWeak(a)));
-    return rotated.slice(0, size);
-  }
-
-  /**
-   * The one place the whole questions are fetched, and it is at most `size` of
-   * them — 40 at the largest setting, against 18,284 before. The order the plan
-   * decided is the order the batch returns, so the topic interleave survives.
-   */
-  async function start() {
-    if (plannedSize === 0 || starting) return;
-    const planned = planQueue();
-    setStarting(true);
-    try {
-      // Your own cards are already here; only the bank's ids cost a request. The
-      // queue is then rebuilt in the PLANNED order rather than the response's,
-      // because the two sets have to interleave and only the plan knows how.
-      const bankIds = planned.filter((q) => !isUserCardId(q.id)).map((q) => q.id);
-      const fetched = bankIds.length ? await fetchQuestionBatch(bankIds) : [];
-      const byId = new Map(fetched.map((q) => [q.id, q]));
-      for (const card of userCards) byId.set(card.id, toQuestion(card));
-      const queue = planned
-        .map((q) => byId.get(q.id))
-        .filter((q): q is Question => Boolean(q));
-      if (queue.length === 0) return; // the bank was rebuilt out from under us
-      setSession({ mode, queue, pos: 0, outcomes: [], revealed: false, picked: null, correct: 0 });
-      setRemaining(TIMED_SECONDS);
-    } catch {
-      setCardsFailed(true);
-    } finally {
-      setStarting(false);
-    }
-  }
-
-  const current = session && session.pos < session.queue.length ? session.queue[session.pos] : null;
-
-  function advance(outcome: Outcome, wasCorrect = false) {
-    setSession((s) =>
-      s
-        ? {
-            ...s,
-            outcomes: [...s.outcomes, outcome],
-            pos: s.pos + 1,
-            revealed: false,
-            picked: null,
-            correct: s.correct + (wasCorrect ? 1 : 0),
-          }
-        : s,
-    );
-    setRemaining(TIMED_SECONDS);
-  }
-
-  function reveal() {
-    if (!current) return;
-    markSeen(current.id);
-    setSession((s) => (s ? { ...s, revealed: true } : s));
-  }
-
-  function rate(r: Rating) {
-    if (!current || !session) return;
-    // The registry says where a grade lands. These are not unified: `flash` is
-    // "do I know this", `srs` moves real due dates, and merging them would
-    // rewrite the meaning of every card graded before today.
-    if (MODES[session.mode].grades === "srs") rateCard(current.id, r);
-    else setFlash(current.id, r === "again" ? "learning" : "known");
-    advance(r);
-  }
-
-  function pick(i: number) {
-    if (!current || !session || session.picked !== null) return;
-    // Record the choice only. The score is incremented once, in advance(),
-    // when the answer is committed — counting it here as well double-counted
-    // every correct answer.
-    setSession((s) => (s ? { ...s, picked: i } : s));
-  }
-
-  function nextQuiz() {
-    if (!session || session.picked === null || !current) return;
-    const wasCorrect = session.picked === current.quiz?.correctIndex;
-    const last = session.pos + 1 >= session.queue.length;
-    advance(wasCorrect ? "good" : "again");
-    if (last) {
-      addQuiz({
-        date: new Date().toISOString(),
-        topic: topic ?? "Mixed",
-        total: session.queue.length,
-        correct: session.correct + (wasCorrect ? 1 : 0),
-      });
-    }
-  }
-
-  // Per-question countdown. A timeout is a miss, not a skip.
-  useEffect(() => {
-    if (!session || session.mode !== "quiz" || !timed || session.picked !== null || !current) return;
-    setRemaining(TIMED_SECONDS);
-    const id = setInterval(() => {
-      setRemaining((r) => {
-        if (r > 1) return r - 1;
-        clearInterval(id);
-        setSession((s) => (s && s.picked === null ? { ...s, picked: -1 } : s));
-        return 0;
-      });
-    }, 1000);
-    return () => clearInterval(id);
-    // Keyed on position, not on the whole session: pushing an outcome changes
-    // the session object, and depending on it would tear down and restart the
-    // countdown on every state write.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.pos, session?.mode, session?.picked, timed]);
-
-  useHotkeys(
-    {
-      " ": () => {
-        if (session && current && session.mode !== "quiz" && !session.revealed) reveal();
-      },
-      Enter: () => {
-        if (!session) start();
-        else if (session.mode === "quiz" && session.picked !== null) nextQuiz();
-      },
-      "1": () => key(0),
-      "2": () => key(1),
-      "3": () => key(2),
-      "4": () => key(3),
-    },
-    !loading,
-  );
-
-  function key(i: number) {
-    if (!session || !current) return;
-    if (session.mode === "quiz") pick(i);
-    else if (session.revealed) {
-      const r = MODES[session.mode].ratings[i];
-      if (r) rate(r.key);
-    }
-  }
+  const {
+    session,
+    current,
+    card,
+    remaining,
+    starting,
+    cardsFailed,
+    start,
+    end,
+    reveal,
+    rate,
+    pick,
+    nextQuiz,
+  } = useStudySession({
+    mode,
+    topic,
+    timed,
+    plan: () =>
+      planQueue({
+        mode,
+        size,
+        ready,
+        fresh,
+        weakFirst,
+        isWeak,
+        studied: Object.keys(progress.srs).length,
+      }),
+    userCards,
+    enabled: !loading,
+  });
 
   if (loading) return <Loader label="Preparing your session" />;
 
@@ -362,7 +210,7 @@ export function Study() {
       <Page
         title="Study"
         actions={
-          <Button variant="ghost" size="sm" onClick={() => setSession(null)}>
+          <Button variant="ghost" size="sm" onClick={end}>
             {done ? "Back to setup" : "End session"}
           </Button>
         }
@@ -380,12 +228,14 @@ export function Study() {
       >
         {done ? (
           <SessionSummary
-            session={session}
+            outcomes={session.outcomes}
+            total={session.queue.length}
             onAgain={start}
-            onSetup={() => setSession(null)}
+            onSetup={end}
           />
         ) : (
-          current && (
+          current &&
+          card && (
             <>
               {session.mode === "quiz" && timed && session.picked === null && (
                 <p className="mb-3 text-small text-overlay1">
@@ -396,7 +246,7 @@ export function Study() {
               <StudyCard
                 mode={session.mode}
                 question={current}
-                card={getCard(current.id)}
+                card={card}
                 revealed={session.revealed}
                 picked={session.picked}
                 onReveal={reveal}
@@ -510,7 +360,7 @@ export function Study() {
         </div>
       </details>
 
-      {plannedSize > 0 ? (
+      {planned > 0 ? (
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="primary" size="lg" onClick={start} disabled={starting}>
             {starting ? "Getting your cards…" : spec.cta}
@@ -521,8 +371,8 @@ export function Study() {
             </span>
           )}
           <span className="text-small text-overlay1">
-            <span className="tabular-nums text-subtext0">{plannedSize}</span> card
-            {plannedSize !== 1 ? "s" : ""}
+            <span className="tabular-nums text-subtext0">{planned}</span> card
+            {planned !== 1 ? "s" : ""}
             {mode === "recall" && fresh.length > 0 && (
               <>
                 {" · "}
@@ -550,82 +400,5 @@ export function Study() {
       )}
       </SegmentedPanel>
     </Page>
-  );
-}
-
-function Setting({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="mb-1.5 text-micro font-semibold uppercase tracking-[0.14em] text-overlay1">
-        {label}
-      </div>
-      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
-    </div>
-  );
-}
-
-function SessionSummary({
-  session,
-  onAgain,
-  onSetup,
-}: {
-  session: Session;
-  onAgain: () => void;
-  onSetup: () => void;
-}) {
-  const missed = session.outcomes.filter((o) => o === "again").length;
-  const total = session.queue.length;
-  return (
-    <div className="max-w-prose">
-      <h2 className="text-h2 font-medium text-text">
-        {total - missed} of {total} came back.
-      </h2>
-      <p className="mt-2 text-small text-subtext0">
-        {missed === 0
-          ? "Nothing missed. Those intervals just got longer — the next session will be shorter."
-          : `The ${missed} you missed are scheduled to come round again soon. That is the point of missing them here rather than in an interview.`}
-      </p>
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Button variant="primary" onClick={onAgain}>
-          Study again
-        </Button>
-        <Button variant="ghost" onClick={onSetup}>
-          Change the session
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/** The review zone: what has been recorded, not what is possible. */
-function RecentSessions() {
-  const { progress } = useProgress();
-  const sessions = [...progress.quizzes].reverse().slice(0, 6);
-  return (
-    <Band label="Recent quizzes" hint={`${progress.quizzes.length} recorded`}>
-      {sessions.length === 0 ? (
-        <p className="text-small text-overlay1">
-          Scored sessions show up here. Recall and drill are not scored — they move due dates
-          instead.
-        </p>
-      ) : (
-        <ul className="flex flex-col">
-          {sessions.map((q, i) => (
-            <li
-              key={i}
-              className="flex items-baseline justify-between gap-4 border-b border-surface0 py-2 last:border-0"
-            >
-              <span className="truncate text-small text-subtext0">{q.topic}</span>
-              <span className="shrink-0 text-small tabular-nums text-overlay1">
-                {q.correct}/{q.total}
-              </span>
-              <span className="shrink-0 text-micro tabular-nums text-overlay0">
-                {q.date.slice(0, 10)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Band>
   );
 }

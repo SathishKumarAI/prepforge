@@ -8,7 +8,6 @@ import { useProgress } from "../../hooks/useProgress";
 import { useUserCards } from "../../hooks/useUserCards";
 import { toast } from "../ui/sonner";
 import { fetchQuestionBatch } from "../../lib/api";
-import { toQuestion } from "../../lib/userCards";
 import type { Question } from "../../lib/types";
 
 /**
