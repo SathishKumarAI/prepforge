@@ -16,6 +16,19 @@ each on its own branch. This entry grows one line per PR.
 | COD-157 | recall mode | a **Recall** toggle on the filter row (remembered in `pf-library-recall`): the answer surface is replaced by "Say the answer to yourself first" + **Reveal answer · Space**; once revealed a rating row **Got it / Shaky / Missed it** (keys 1 2 3, interval preview) calls `rateCard` (good / hard / again) and, in recall mode, advances. Outside recall the row is there too and just records. `j` / `k` alias the arrow keys; `step()` is the one definition of "next" for keys and the auto-advance | on the running page: j q001→q002, k back; Space: `.prose-answer` absent → present, rating row present; `1`: `prepforge:progress.srs.q001` = `{interval:1, reps:1, due: tomorrow}`, URL advanced to q002, answer hidden again |
 | COD-158 | read aloud | a speaker button beside Save / Note (`hooks/useSpeech.ts`, Web Speech API, no dependency) reads the question then the rendered text of whatever lens is on screen — in recall mode, only the question; sentences are queued as separate utterances because Chrome drops one long utterance after ~15 s; press again to stop; unmount stops. Hidden where `speechSynthesis` is absent. Also fixed: the Space key cap on the Reveal button was on-accent-on-crust in dark (invisible) — button is secondary now | on the running page (3 voices): click → `speechSynthesis.speaking` true, button `aria-pressed` true / "Stop reading"; click → false; cap colours now overlay1 on crust |
 | COD-159 | session timer | **Start session** in the Library header becomes a glass pill (`mm:ss · N reviewed · End`); End opens a **Session summary** dialog: time, questions reviewed, rated, saved. `hooks/useLibrarySession.ts` derives the counts by diffing the progress store (a new `recent[0]`, a replaced `srs` card, a longer `bookmarks`) — nothing reports to it, nothing is stored, and the session survives leaving the page. The brief's timer did not exist in the repo; this is the minimum both need | on the running page: three rows opened 3 s apart → pill `00:08 3 reviewed`; a rating and a save in an earlier run → summary `1 rated · 1 saved`. Opening rows faster than the detail fetch lands (~1–2 s in dev) counts them when the fetch lands, not on the click |
+| COD-160 | docs | this entry; the brief's reconciliation table and its rules in `UIUX-BACKLOG.md`; STATUS rewritten; the rename noted in the docs index | — |
+
+### Deliberately not done, and what would make it worth doing
+
+- **The brief's tokens** (ember accent, Source Serif 4, Inter). Adopt only after running them
+  through `npm run contrast` in both themes and reading an hour of answers on them.
+- **Renaming the repo, package and docs** to Recall. One constant carries the UI name; do the rest
+  when the name has survived a week.
+- **Filters behind one button.** The brief wants the chip row hidden behind a Filters button; the
+  row is the page's only topic navigation, so hiding it needs a replacement first.
+- **Session history.** Summaries are shown once and dropped. Persist to `progress` when a second
+  surface (Today, Progress) wants to show them.
+- **COD-161**, the 805-line `QuestionsView.tsx`, filed and not started.
 
 ---
 

@@ -2,6 +2,9 @@
 
 Start here, then read `../STATUS.md` — that is where you stopped, what to do next, and the traps.
 
+> The UI calls itself **Recall** since 2026-09-08 (`frontend/src/lib/brand.ts`, COD-154). The
+> repo, the package and these docs still say PrepForge — same app.
+
 | Doc | What's inside |
 |---|---|
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | The pieces, **the five shapes the bank is fetched in**, request flow, what loads when, directory map, design decisions |

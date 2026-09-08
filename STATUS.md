@@ -2,8 +2,25 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-09-04 (later the same day).
-- **Where I stopped:** branch `feat/answer-history`, PR open — generated answers keep every version.
+- **Last touched:** 2026-09-08.
+- **Where I stopped:** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
+  PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
+  `frontend/src/lib/brand.ts`; the repo, package and these docs still say PrepForge. What landed,
+  with the numbers, is the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md); the reconciliation of
+  the brief against the repo is the top of [`docs/UIUX-BACKLOG.md`](docs/UIUX-BACKLOG.md).
+- **Next action, deliberately not started:** COD-161 — `QuestionsView.tsx` is 805 lines (ceiling
+  500); split FilterBand / ListPeek / useQuestionPages out of it, snapshot-diffing the rendered
+  Library. Then the docs rename (PrepForge → Recall in README/docs) if the name sticks.
+- **Unverified:** nothing this session was left unverified — every PR body quotes the computed
+  value or screenshot. One caveat: the session timer counts a question when its detail FETCH lands
+  (~1–2 s in dev), not on the click; rows opened faster than that are counted late, not lost.
+- **Traps, this session:** `:5173` is a different app (DSA Patterns); this repo's Vite was started
+  on **:5177** for screenshots (`npx vite --port 5177 --strictPort`), and someone else's copy of this
+  branch was already on `:5199`. A Radix dialog left open (Settings, whose Done button a synthetic
+  click missed) silently disables every `useHotkeys` binding — check `[role=dialog]` before
+  believing a key does nothing. The `.glass` class is REAL now (blur + tint); it is for chrome
+  only, never a list or a reading pane — `components/page/README.md` has the rule.
+- *(history)* **2026-09-04:** branch `feat/answer-history`, PR open — generated answers keep every version.
   A regenerate writes `<qid><lens>__YYYYMMDDTHHMMSS.md` and never overwrites; `generate()` serves the
   newest and returns them all in `versions`. The lens body has a **versions** row, an **ⓘ info** panel
   (model · provider · written · tokens · cost · file) and a **new answer** row: Local · Claude ·
