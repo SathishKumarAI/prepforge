@@ -135,7 +135,10 @@ def _save(url: str, title: str, md: str, topic: str, source: str = "web-capture"
     """Persist one page as library markdown. The only writer of that shape."""
     LIBRARY.mkdir(parents=True, exist_ok=True)
     fname = f"{_slug(title)}.md"
-    doc = f"---\ntitle: {json.dumps(title)}\nurl: {url}\ntopic: {topic}\nsource: {source}\n---\n\n{md}"
+    # ensure_ascii=False: the frontmatter is UTF-8 and ingest reads it as JSON;
+    # ASCII-escaped, an em dash used to reach the bank as the six characters
+    # `\\u2014` (ingest now decodes either way, but the file should read as prose).
+    doc = f"---\ntitle: {json.dumps(title, ensure_ascii=False)}\nurl: {url}\ntopic: {topic}\nsource: {source}\n---\n\n{md}"
     (LIBRARY / fname).write_text(doc, encoding="utf-8")
     log.info("read+saved: %s", fname)
     return {"ok": True, "title": title, "markdown": md, "saved": f"content/library/{fname}"}
@@ -200,7 +203,7 @@ def upload(filename: str, data: bytes, topic: str = "AI") -> dict:
 
     LIBRARY.mkdir(parents=True, exist_ok=True)
     fname = f"{_slug(title)}.md"
-    doc = f"---\ntitle: {json.dumps(title)}\nsource: upload:{ext or 'file'}\ntopic: {topic}\n---\n\n{md}"
+    doc = f"---\ntitle: {json.dumps(title, ensure_ascii=False)}\nsource: upload:{ext or 'file'}\ntopic: {topic}\n---\n\n{md}"
     (LIBRARY / fname).write_text(doc, encoding="utf-8")
 
     # register in the resource feed so it shows alongside web resources

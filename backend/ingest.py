@@ -185,12 +185,25 @@ def _drop_repeated_bodies(
 
 def _frontmatter_title(md: str, fallback: str) -> str:
     """Pull `title:` from YAML frontmatter (as written by capture/upload), else
-    derive a readable name from the filename."""
+    derive a readable name from the filename.
+
+    Capture writes the title with `json.dumps`, so a quoted value is a JSON
+    string and is decoded as one. Until 2026-09-08 it was only stripped of its
+    quotes, and every em dash capture had escaped as `\\u2014` reached the bank
+    as those six characters: 5,288 strings in generated.json read
+    "Linear Models \\u2014 scikit-learn". `repair_titles.py` fixes a bank
+    written before this."""
     m = re.match(r"^---\s*\n(.*?)\n---\s*\n", md, re.DOTALL)
     if m:
-        t = re.search(r'^title:\s*"?(.+?)"?\s*$', m.group(1), re.MULTILINE)
+        t = re.search(r"^title:\s*(.+?)\s*$", m.group(1), re.MULTILINE)
         if t:
-            return t.group(1).strip().strip('"')
+            raw = t.group(1).strip()
+            if raw.startswith('"'):
+                try:
+                    return json.loads(raw)
+                except ValueError:
+                    pass
+            return raw.strip('"')
     p = Path(fallback)
     # "docs/04-rag-and-retrieval/README.md" is titled by its folder, not "Readme".
     stem = p.parent.name if p.stem.lower() in {"readme", "index"} and p.parent.name else p.stem

@@ -194,7 +194,10 @@ export function QuestionDetail({
         // rendering fault rather than as a header. The hairline then makes the
         // edge deliberate: it says the text continues below, rather than looking
         // like the answer was cut off.
-        className="sticky z-10 -mx-1 mb-4 border-b border-surface0 bg-base px-1 pb-2.5 pt-2"
+        // The 1rem below the hairline is padding, not margin: as margin it was
+        // a transparent band the tab row and the model line scrolled through
+        // in fragments before disappearing under the box.
+        className="sticky z-10 -mx-1 bg-base px-1 pb-4 pt-2"
       >
         <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <TopicBadge topic={q.topic} />
@@ -272,6 +275,7 @@ export function QuestionDetail({
           </TooltipProvider>
         </div>
         <h2 className="font-display text-h2 font-medium leading-snug text-text">{q.question}</h2>
+        <div aria-hidden="true" className="mt-2.5 border-b border-surface0" />
       </header>
 
       {/* One row, two kinds of thing — free and generated — because that is the

@@ -59,6 +59,16 @@ def test_short_heading_borrows_its_document_title():
     assert same["question"] == "Explain: Enterprise Rag Assistant tradeoffs"
 
 
+def test_a_captured_title_is_decoded_as_the_json_string_capture_wrote():
+    # capture.py writes `title: "..."` with json.dumps, so an em dash may arrive
+    # as \\u2014 — the six characters, not the dash. 5,288 bank strings once did.
+    md = '---\ntitle: "Linear Models \\u2014 scikit-learn"\nurl: x\n---\n\n# h\n'
+    assert _frontmatter_title(md, "f.md") == "Linear Models \u2014 scikit-learn"
+    # unescaped and unquoted titles still read as themselves
+    assert _frontmatter_title('---\ntitle: "Plain \u2014 title"\n---\n\nbody', "f.md") == "Plain \u2014 title"
+    assert _frontmatter_title("---\ntitle: Bare title\n---\n\nbody", "f.md") == "Bare title"
+
+
 def test_readme_is_titled_by_its_folder():
     assert _frontmatter_title("# Hi\n\nbody", "11-ai-system-design/README.md") == "Ai System Design"
     assert _frontmatter_title("# Hi\n\nbody", "03-attention-mechanisms.md") == "Attention Mechanisms"

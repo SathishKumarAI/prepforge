@@ -16,7 +16,14 @@ Update this when you STOP working, not when you start.
 - **COD-169 done (2026-09-08, later):** a Next question · j button after a grade in the Library;
   Recall mode says a grade moves on. Deliberately not done: centring Study's card (the empty right
   column is the reading measure; `page/README.md` one-left-gutter rule).
-- **Next action:** nothing queued. Read the app as a user for ten minutes before adding anything.
+- **COD-170 done (2026-09-08, later; COD-171 filed for the "¶" in headings):** Library nits — sticky heading occludes the band under its
+  hairline, list rows wrap to two lines, no page eyebrow, captured titles decode (`—` → —),
+  `repair_titles.py` for an existing bank. `quiz_synth.py` was missing `re`/`hashlib` since the
+  split; `ingest()` works again. **Trap:** never `write_text` a 36 MB JSON in place without a
+  temp file — a failed write leaves 0 bytes; the rebuild is 8 min.
+- **Queued:** one filter control after the search box instead of the chip rows (user asked);
+  a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
+- **Next action:** the two queued items above. Read the app as a user for ten minutes before adding anything.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
   `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,
