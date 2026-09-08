@@ -76,36 +76,41 @@ export function FilterBand({
   const activeFilters = Boolean(topic || diff || query.trim());
 
   return (
-    <div className="mb-5 py-2 [.focus-mode_&]:hidden">
-      <div className="relative mb-2.5 max-w-xl">
-        <Search
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-overlay0"
-        />
-        <input
-          ref={searchRef}
-          value={query}
-          onChange={(e) => onQuery(e.target.value)}
-          aria-label="Search questions"
-          placeholder="Search questions, answers, tags"
-          className="input h-10 pl-9 pr-16"
-        />
-        {query ? (
-          <button
-            onClick={() => onQuery("")}
-            aria-label="Clear search"
-            className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-overlay0 hover:text-text"
-          >
-            <X aria-hidden="true" className="size-4" />
-          </button>
-        ) : (
-          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0">
-            /
-          </kbd>
-        )}
-      </div>
-
+    // Two rows, deliberately: search and topics, then difficulty and the two
+    // switches. The search box used to sit on a line of its own above one row
+    // of every chip, and with the tabs and header above that the list started
+    // 440px down a 788px viewport. One row of everything wrapped mid-group at
+    // 1440px (Easy on one line, Medium and Hard on the next).
+    <div className="mb-4 flex flex-col gap-1.5 [.focus-mode_&]:hidden">
       <div className="flex flex-wrap items-center gap-1.5">
+        <div className="relative w-full lg:mr-2 lg:w-64">
+          <Search
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-overlay0"
+          />
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={(e) => onQuery(e.target.value)}
+            aria-label="Search questions"
+            placeholder="Search questions, answers, tags"
+            className="input h-10 pl-9 pr-16"
+          />
+          {query ? (
+            <button
+              onClick={() => onQuery("")}
+              aria-label="Clear search"
+              className="absolute right-2 top-1/2 grid size-6 -translate-y-1/2 place-items-center rounded text-overlay0 hover:text-text"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          ) : (
+            <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0">
+              /
+            </kbd>
+          )}
+        </div>
+
         <Chip active={!topic} onClick={() => onTopic(null)} label="All topics" />
         {topics.map((t) => (
           <Chip
@@ -121,7 +126,9 @@ export function FilterBand({
             }
           />
         ))}
-        <span className="mx-1 h-4 w-px bg-surface0" />
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
         {DIFFS.map((d) => (
           <Chip
             key={d}
