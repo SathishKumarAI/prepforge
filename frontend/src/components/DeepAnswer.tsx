@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAnswerStats } from "../hooks/useAnswerStats";
 import { useProgress } from "../hooks/useProgress";
 import { useProviders } from "../hooks/useProviders";
 import { useSettings } from "../hooks/useSettings";
@@ -137,6 +138,8 @@ export function DeepAnswer({
   const { settings } = useSettings();
   const { progress, setCustom } = useProgress();
   const providers = useProviders();
+  // Totals for the ⓘ footer: this answer is one of N the same model wrote.
+  const stats = useAnswerStats(infoOpen);
 
   // A regenerate keeps the current answer on screen while the new one is
   // written; the old one is not lost either way — the backend keeps every
@@ -349,6 +352,16 @@ export function DeepAnswer({
                     <dd>{typeof shown.meta.cost_usd === "number" ? `$${shown.meta.cost_usd.toFixed(4)}` : "—"}{(shown.meta.web_searches ?? 0) > 0 ? ` · ${shown.meta.web_searches} web search${shown.meta.web_searches! > 1 ? "es" : ""}` : ""}</dd>
                     <dt className="text-overlay0">file</dt>
                     <dd className="truncate">{shown.meta.file ?? "—"}</dd>
+                    {stats && !stats.computing && (
+                      <>
+                        <dt className="text-overlay0">of</dt>
+                        <dd>
+                          {(stats.by_model?.find((m) => m.model === shown.meta?.model)?.answers ?? 0).toLocaleString()} answers by this model ·{" "}
+                          {stats.answers.toLocaleString()} on disk in total · ${(stats.cost_usd ?? 0).toFixed(2)} billed ·{" "}
+                          ≈{stats.local_hours_estimate} local GPU-hours — full table in Settings
+                        </dd>
+                      </>
+                    )}
                   </dl>
                 )}
               </div>

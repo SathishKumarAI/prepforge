@@ -19,6 +19,12 @@ Update this when you STOP working, not when you start.
   `--reload`**, so backend edits were invisible until both were killed and one restarted through
   `dev.sh`'s command. Radix `Tabs` ignore a synthetic `.click()`; the lens row also selects on
   **hover**, so a DevTools click that travels across it lands on a different lens than intended.
+- **Settings → Generated answers, and the ⓘ footer (branch `feat/answer-stats`).** `GET /generate/stats`
+  scans the answers folder once per change (30 s for 107,776 files, in a thread, cached in
+  `_stats.json`, gitignored) and reports: answers on disk, by lens, by model with tokens in/out and
+  cost, first→last written, and a GPU-hours figure that is an ESTIMATE from output tokens at the
+  measured 61 tok/s × 4 slots — the payload and the UI both say so. First open of Settings after the
+  folder changes shows "Counting … about 30 seconds" and fills in by itself (3 s poll).
 - **THE LENS BACKLOG IS DONE (2026-09-07 15:07).** Every one of the 17,927 questions has all six
   prose lenses on disk and in git: 107,776 files under `backend/content/answers/`, 460 MB, every
   one written by `openai/gpt-oss-20b` on this machine, nothing billed. Run v4 ended after 26.4 h

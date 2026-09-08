@@ -34,6 +34,8 @@ backend/content/reading_fetch.json
 # answer files in seconds, so it is never shared.
 backend/content/answers/_eval.md
 backend/content/answers/_eval.json
+# Same for the totals Settings shows: a 30 s scan, cached, regenerated whenever the folder changes.
+backend/content/answers/_stats.json
 
 # Scraper output cache (may contain fetched third-party content)
 backend/data/resources.json

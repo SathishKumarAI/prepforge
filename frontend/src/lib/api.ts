@@ -202,6 +202,28 @@ export async function fetchProviders(): Promise<Providers> {
   return get("/generate/providers");
 }
 
+/** Totals over every generated answer on disk. See GET /generate/stats. */
+export interface AnswerStats {
+  /** True while the backend is still scanning; poll again. `answers` is then the file count only. */
+  computing?: boolean;
+  answers: number;
+  by_lens?: Record<string, number>;
+  by_model?: { model: string; provider: string; answers: number; input_tokens: number; output_tokens: number; cost_usd: number }[];
+  input_tokens?: number;
+  output_tokens?: number;
+  cost_usd?: number;
+  local_answers?: number;
+  /** From output tokens at `estimate_basis` — an estimate, not a clock. */
+  local_hours_estimate?: number;
+  estimate_basis?: { tokens_per_second: number; parallel: number };
+  first_generated_at?: string | null;
+  last_generated_at?: string | null;
+}
+
+export async function fetchAnswerStats(): Promise<AnswerStats> {
+  return get("/generate/stats");
+}
+
 export interface ReadResult {
   ok?: boolean;
   title?: string;
