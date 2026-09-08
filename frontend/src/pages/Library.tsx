@@ -133,8 +133,13 @@ export function Library() {
         />
         {/* Zero due is not an absent number, it is the good state, so it gets
             words rather than an em dash. Green is status, not a second accent. */}
+        {/* The fact is the button. The Questions view used to repeat this as a
+            primary "Review N due cards" row under the tabs — the same number
+            twice, and a 72px row between the tabs and the list. */}
         {counts.due > 0 ? (
-          <Fact label="due for review" value={counts.due} />
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/study?mode=recall">Review {counts.due} due</Link>
+          </Button>
         ) : (
           <span className="pill border-green/30 text-green">All caught up</span>
         )}
@@ -193,7 +198,7 @@ export function Library() {
         onChange={(v) => setParams({ view: v }, { replace: true })}
         idPrefix="library-view"
         panelId="library-view-panel"
-        className="mb-6"
+        className="mb-4"
       />
 
       <SegmentedPanel id="library-view-panel" labelledBy={`library-view-tab-${view}`}>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { DeepStudyLinks } from "./DeepStudyLinks";
 import { FilterBand } from "./FilterBand";
 import { ListPeek } from "./ListPeek";
@@ -8,11 +8,9 @@ import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
 import { UNDER_APP_BAR } from "../page/underAppBar";
 import { Button } from "../ui/button";
-import { useProgress } from "../../hooks/useProgress";
 import { useQuestion } from "../../hooks/useQuestion";
 import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
 import { scrollToElement } from "../../lib/scroll";
-import { isDue } from "../../lib/srs";
 
 /**
  * The Questions view of the Library: a filter band, a server-paged list on the
@@ -46,14 +44,6 @@ const LIST_HIDDEN_KEY = "pf-library-list-hidden";
 const RECALL_KEY = "pf-library-recall";
 
 export function QuestionsView() {
-  const { progress } = useProgress();
-  // Counted over the graded cards, not over the bank — a due date is a property
-  // of a card you have graded, so this needs no questions at all. Same reasoning
-  // as the nav badge in Layout.
-  const dueCount = useMemo(
-    () => Object.values(progress.srs).filter((c) => c.seen && isDue(c)).length,
-    [progress.srs],
-  );
   const [topic, setTopic] = useState<string | null>(null);
   const [diff, setDiff] = useState<string | null>(null);
   // A link into the library can carry its search in ?q= — that is how a related
@@ -300,19 +290,6 @@ export function QuestionsView() {
 
   return (
     <>
-      {dueCount > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Button asChild variant="primary">
-            <Link to="/study?mode=recall">
-              Review {dueCount} due card{dueCount !== 1 ? "s" : ""}
-            </Link>
-          </Button>
-          <span className="text-small text-overlay1">
-            Reviews come first; new material fills what is left.
-          </span>
-        </div>
-      )}
-
       <FilterBand
         query={query}
         onQuery={setQuery}

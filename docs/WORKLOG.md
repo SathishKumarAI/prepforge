@@ -1,6 +1,6 @@
 # Worklog
 
-## 2026-09-08 (later) — COD-166, COD-167: the Library's chrome stays put; the Study grade row in reach
+## 2026-09-08 (later) — COD-166 to COD-168: the Library's chrome stays put, the Study grade row in reach, a shorter Library header
 
 **Summary:** "the scrolling actions are not looking good, the text is going on top, the sidebar
 moves away when I want to find something". Looked at it in the browser: four "get out of the way"
@@ -14,6 +14,7 @@ Hide list that reflowed the tab row under the mouse flipped the lens to ELI5 by 
 
 | Item | PR | What landed | Measured |
 |---|---|---|---|
+| COD-168 | Library header compact | The "Review N due cards" primary row under the tabs is gone; the header's due fact is now the Review button (`Library.tsx`). `FilterBand` is two deliberate rows — search + topic chips, difficulty + Recall + Hide list — instead of a search line above one row of every chip. Tabs `mb-6` → `mb-4`. | 1440×788 at page top: list starts at 346px (was 440), 11 rows visible (was 9). One row of everything wrapped mid-group at 1440 (Easy / Medium Hard), hence two rows. `tsc` 0, build ok, 8/8. |
 | COD-167 | grade row in reach | Study: `RatingRow` is `sticky bottom-0` inside the card (panel fill, negative margins out to the card's padding, so prose scrolls under it); `Study.tsx` scrolls to the top on every `session.pos` change. | 600px-tall viewport, long answer: row bottom at 601.6px of 602 while scrolled; Good pressed at scrollY 300 → card 2 at scrollY 0. `tsc` 0, build ok, 8/8 tests. |
 | COD-166 | chrome stays put | `useScrollDirection.ts` and `StickyChrome.tsx` deleted; `page/underAppBar.ts` keeps the one sticky offset. App bar never hides (only focus mode). Filter band scrolls with the page. List hides only from the Hide list button; `readingMode`, `pinOpen` and both hover-select timers are gone. Picking a row while deep in an answer scrolls the new heading under the bar (keyed on the LOADED question — keyed on the click it landed 28px short, the pane is briefly empty and the scroll clamps). | 11 files, +119 / −194. Deep link `?id=q006` keeps the list; page scrolled 700px, bar height stays 50px, list stuck at top 58px. List scrolled 800px with the pointer over a row: page scroll unchanged, heading unchanged. Row click from y=900: detail top lands at 66px (50 + 1rem). Lens tab hovered 800ms: still Answer. `tsc` 0, build 2.93s, 8/8 tests. |
 
