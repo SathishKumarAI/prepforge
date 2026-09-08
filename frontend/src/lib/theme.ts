@@ -7,6 +7,8 @@
 export type ThemeMode = "dark" | "light" | "system";
 export type TextSize = "sm" | "base" | "lg" | "xl";
 export type Density = "comfortable" | "compact";
+/** Line height of the answer body. "relaxed" is the 1.75 the prose has always had. */
+export type Leading = "normal" | "relaxed" | "loose";
 
 // which themes are light — kept for callers that need to branch on it
 const LIGHT_THEMES = new Set(["light"]);
@@ -32,6 +34,12 @@ export const DENSITIES: { value: Density; label: string }[] = [
   { value: "compact", label: "Compact" },
 ];
 
+export const LEADINGS: { value: Leading; label: string }[] = [
+  { value: "normal", label: "Tight" },
+  { value: "relaxed", label: "Normal" },
+  { value: "loose", label: "Airy" },
+];
+
 function prefersLight(): boolean {
   return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: light)").matches;
 }
@@ -55,4 +63,21 @@ export function applyDensity(density: Density): void {
   const root = document.documentElement;
   if (density === "comfortable") root.removeAttribute("data-density");
   else root.setAttribute("data-density", density);
+}
+
+export function applyLeading(leading: Leading): void {
+  const root = document.documentElement;
+  if (leading === "relaxed") root.removeAttribute("data-leading");
+  else root.setAttribute("data-leading", leading);
+}
+
+/**
+ * The in-app "reduce motion" switch. The CSS reads `data-motion="reduce"` with
+ * the same rule as the OS media query, and App hands framer-motion the same
+ * answer — so the two ways of asking for less motion cannot disagree.
+ */
+export function applyMotion(reduce: boolean): void {
+  const root = document.documentElement;
+  if (reduce) root.setAttribute("data-motion", "reduce");
+  else root.removeAttribute("data-motion");
 }

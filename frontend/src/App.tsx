@@ -1,5 +1,7 @@
 import { Suspense, lazy, useEffect } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { useSettings } from "./hooks/useSettings";
 import { useApplyTheme } from "./hooks/useApplyTheme";
 import { primeQuestionIndex } from "./hooks/useQuestionIndex";
 import { ROUTE_CHUNKS } from "./lib/routeChunks";
@@ -86,11 +88,15 @@ function NotFound() {
 export default function App() {
   useApplyTheme();
   useWarmIndex();
+  const { settings } = useSettings();
   return (
-    <>
+    // "user" honours the OS reduce-motion setting; "always" is the in-app
+    // switch. Lives here rather than in main.tsx because it has to read the
+    // same settings the CSS attribute is written from (useApplyTheme).
+    <MotionConfig reducedMotion={settings.reduceMotion ? "always" : "user"}>
       <Toaster />
       <LayoutRoutes />
-    </>
+    </MotionConfig>
   );
 }
 

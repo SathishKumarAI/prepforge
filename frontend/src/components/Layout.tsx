@@ -18,7 +18,6 @@ import {
   Settings as SettingsIcon,
   StickyNote,
   Sun,
-  SunMoon,
 } from "lucide-react";
 import { prefetchRoute } from "../lib/routeChunks";
 import { CommandPalette } from "./CommandPalette";
@@ -36,6 +35,7 @@ import {
 } from "./ui/breadcrumb";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -476,13 +476,18 @@ function AppBar({
           </kbd>
         </Button>
 
+        {/* A gear, beside the other session-level control. It governs how the
+            whole app looks and behaves for you — filters scope to "what I am
+            looking at", this scopes to "how the app behaves for me" — so any
+            new preference (a default timer length, say) belongs in here, not
+            scattered across pages. Deeper profile settings stay in the dialog. */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Appearance and settings" title="Appearance">
-              <SunMoon />
+            <Button variant="ghost" size="icon" aria-label="Settings" title="Settings">
+              <SettingsIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuLabel>Theme</DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={settings.theme}
@@ -495,6 +500,13 @@ function AppBar({
               ))}
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
+            <DropdownMenuCheckboxItem
+              checked={settings.reduceMotion}
+              onCheckedChange={(v) => update({ reduceMotion: Boolean(v) })}
+            >
+              Reduce motion
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={onHelp}>
               <Keyboard />
               Keyboard shortcuts
@@ -502,7 +514,7 @@ function AppBar({
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={onSettings}>
               <SettingsIcon />
-              Settings
+              All settings
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

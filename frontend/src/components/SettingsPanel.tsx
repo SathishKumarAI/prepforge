@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { useSettings } from "../hooks/useSettings";
 import type { Settings } from "../lib/settings";
-import { DENSITIES, TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
+import { DENSITIES, LEADINGS, TEXT_SIZES, THEME_OPTIONS } from "../lib/theme";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { BackupControls } from "./BackupControls";
 
@@ -55,6 +55,21 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
               {TEXT_SIZES.map((t) => (
                 <Chip key={t.value} active={settings.textSize === t.value} onClick={() => update({ textSize: t.value })} label={t.label} />
               ))}
+            </div>
+          </Field>
+
+          <Field label="Line height (answers)">
+            <div className="flex flex-wrap gap-2">
+              {LEADINGS.map((l) => (
+                <Chip key={l.value} active={settings.leading === l.value} onClick={() => update({ leading: l.value })} label={l.label} />
+              ))}
+            </div>
+          </Field>
+
+          <Field label="Motion">
+            <div className="flex flex-wrap gap-2">
+              <Chip active={!settings.reduceMotion} onClick={() => update({ reduceMotion: false })} label="Full" />
+              <Chip active={settings.reduceMotion} onClick={() => update({ reduceMotion: true })} label="Reduced" />
             </div>
           </Field>
 
