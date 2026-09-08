@@ -25,8 +25,10 @@ Update this when you STOP working, not when you start.
   starts at 247px.
 - **COD-173 done (2026-09-08, later):** no app bar. Search and Settings in the nav only; every sticky
   offset is a constant. Phone: floating bottom-left trigger.
-- **Queued:** hover-preview back, gated on real pointer movement (user asked: "I don't wanna click");
-  a stronger row hover highlight; a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
+- **COD-174 done (2026-09-08, later):** hover previews again, from a pointer that MOVED
+  (`hooks/useHoverIntent`). **Trap:** the URL → state effect keyed on `selectedId` snapped every
+  preview back; it is keyed on the URL id only now.
+- **Queued:** a study timer with Pomodoro lengths 5–30 min, daily learning hours, an arrival prompt (user asked).
 - **Next action:** the two queued items above. Read the app as a user for ten minutes before adding anything.
 - **Where I stopped (before that):** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,

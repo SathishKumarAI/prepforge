@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Kbd } from "../Kbd";
 import { useHotkeys } from "../../hooks/useHotkeys";
+import { useHoverIntent } from "../../hooks/useHoverIntent";
 import { useSpeech } from "../../hooks/useSpeech";
 import { previewInterval, type Rating } from "../../lib/srs";
 import { DifficultyBadge, TopicBadge } from "../Badge";
@@ -148,11 +149,16 @@ export function QuestionDetail({
       : {}),
   });
 
-  // A lens is picked by a press, never by hover. Free lenses used to switch on
-  // a 400 ms hover, and the page reflows under a stationary pointer often
-  // enough — a row click scrolls the new answer's top under the bar, Hide list
-  // widens the column — that the tab row landed under the mouse and the lens
-  // changed by itself. A press is a decision; a path is not.
+  // A FREE lens opens on a 400 ms hover from a pointer that moved
+  // (hooks/useHoverIntent); a billed one needs a press, because a press is a
+  // decision and a path is not. Movement is the gate: the plain `mouseenter`
+  // version switched the lens when the page reflowed under a resting pointer
+  // (Hide list widened the column and ELI5 landed under the mouse). 400 ms,
+  // longer than the list's 250: a tab is a smaller target than a row, and
+  // landing on the wrong lens is more disruptive than the wrong question.
+  const lensHover = useHoverIntent<Mode | "answer">((v) => {
+    if (isFree(v)) setTab(v);
+  }, 400);
 
   return (
     /* 100ch, not the 68ch measure and not uncapped.
@@ -274,13 +280,23 @@ export function QuestionDetail({
 
       {/* One row, two kinds of thing — free and generated — because that is the
           order you use them in, not because they share an implementation. */}
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "answer" | Mode)} className="mb-1.5">
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="answer">Answer</TabsTrigger>
+      <Tabs
+        value={tab}
+        onValueChange={(v) => {
+          lensHover.cancel();
+          setTab(v as "answer" | Mode);
+        }}
+        className="mb-1.5"
+      >
+        <TabsList className="flex-wrap" onPointerLeave={lensHover.cancel}>
+          <TabsTrigger value="answer" onPointerMove={(e) => lensHover.move("answer", e)}>
+            Answer
+          </TabsTrigger>
           {LENS_TABS.map((t) => (
             <TabsTrigger
               key={t.mode}
               value={t.mode}
+              onPointerMove={(e) => lensHover.move(t.mode, e)}
               title={isBilled(t.mode) ? "Billed to Claude — press to generate" : undefined}
             >
               {t.label}
