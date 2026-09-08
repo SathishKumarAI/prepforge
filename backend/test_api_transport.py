@@ -15,6 +15,15 @@ import main
 
 client = TestClient(main.app)
 
+# The bank's version deliberately folds in content/answers' mtime, so a new
+# local answer invalidates it. While answer_lenses.py is writing one every ~2 s
+# that makes the version a moving target, and a test that takes two requests
+# and expects one ETag can straddle a write (seen once as 6/7, COD-151). Freeze
+# it for this process: these tests are about how the bank TRAVELS, not about
+# what changes it — `test_a_changed_bank_invalidates_the_etag` forges its own.
+_STAMP = main._bank_stamp()
+main._bank_stamp = lambda: _STAMP
+
 
 def test_the_bank_is_gzipped_on_the_wire():
     """33.1 MB of near-identical JSON keys is the best case deflate has."""
