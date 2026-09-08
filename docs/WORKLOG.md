@@ -11,6 +11,7 @@ last, so the tables describe the final layout. Backend sizes filed as COD-164, n
 | Item | PR | What landed | Measured |
 |---|---|---|---|
 | COD-162 | shell split | `Layout.tsx` 524 → 151. `shell/nav.ts` (routes, groups, view labels, `isActivePath`, `SIDEBAR_KEY`), `shell/AppSidebar.tsx` (156), `shell/AppBar.tsx` (195). Bodies moved verbatim by line range; Layout keeps focus mode, global keys, dialogs, composition | rendered sidebar, app bar, page and gear menu byte-identical before/after (17,156 / 4,732 / 6,606 / 5,486 chars); focus mode `--app-bar-h` 0px → 50px on Esc; Ctrl+B toggles and persists the same; tsc (with noUnusedLocals) clean, build, contrast, 8/8 |
+| COD-163 | study split | `Study.tsx` 631 → 404. `lib/studyPlan.ts` (pure: `interleave`, `plannedSize`, `planQueue`, `NEW_PER_SESSION`), `hooks/useStudySession.ts` (the running session: start/end/reveal/rate/pick/next, the quiz countdown, the keys, `TIMED_SECONDS`), `components/study/{SessionSummary,RecentSessions,Setting}.tsx`. Study keeps setup and the two screens. Also removed a dead `toQuestion` import in `SavedView.tsx` that `--noUnusedLocals` found | six states byte-identical from the same saved progress: recall setup 6,606; card 3,537; revealed 6,702; after rating 3,616; back to setup 6,605; quiz setup 6,840 chars. tsc (noUnusedLocals), build, contrast, 8/8 |
 
 ---
 
