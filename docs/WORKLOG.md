@@ -1,5 +1,16 @@
 # Worklog
 
+## 2026-09-08 (night) — the pending items: dead hook, probe grace, test flake, backend split, five UI gaps
+
+**Summary:** "complete all the pending tasks". Everything in Backlog for this repo, one branch each.
+This entry grows one row per PR.
+
+| Item | PR | What landed | Measured |
+|---|---|---|---|
+| COD-109 | dead hook | `hooks/useQuestions.ts` deleted. Its only live export, `reloadQuestions()`, downloaded the whole 39.7 MB bank into a map nothing read; `CollectionsView` and `FeedView` now call `reloadQuestionIndex()` (new, in `useQuestionIndex`): drop the ETag, conditional refetch of the 1.17 MB index, every consumer re-renders. `fetchQuestions` removed from `api.ts` — no page requests `GET /questions` any more, in any path | tsc (noUnusedLocals) clean, build ok, 8/8; after an ingest the refetch is the index, not the bank |
+
+---
+
 ## 2026-09-08 (evening) — modularisation round: every frontend file under the ceiling, a README per directory
 
 **Summary:** "keep the code more modularized, update the documents". Measured first: after COD-161 four

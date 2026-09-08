@@ -86,6 +86,19 @@ export function primeQuestionIndex(): Promise<void> {
 }
 
 /**
+ * The bank changed under us — an ingest, a quiz built from a video — so the
+ * next load must ask the server rather than trust the copy in memory. Drops
+ * the cached rows' claim to be current but keeps them on screen; the
+ * conditional request that follows brings the new ones and every consumer
+ * re-renders through `publish`. Replaces the old `reloadQuestions()`, which
+ * downloaded the whole 39.7 MB bank into a map nothing read (COD-109).
+ */
+export function reloadQuestionIndex(): Promise<void> {
+  cachedEtag = null;
+  return loadOnce();
+}
+
+/**
  * `loading` exists because an empty index and a bank with no match render the
  * same way otherwise — and "Nothing matches kafka" while 18,284 titles are still
  * on the wire is a lie the user cannot tell from the truth.

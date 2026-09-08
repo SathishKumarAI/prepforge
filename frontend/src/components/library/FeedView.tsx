@@ -7,7 +7,7 @@ import { TopicBadge } from "../Badge";
 import { Empty, Loader } from "../States";
 import { Button } from "../ui/button";
 import { addFeed, addResource, fetchResources, ingestLibrary, ingestVault, quizFromResource, refreshResources } from "../../lib/api";
-import { reloadQuestions } from "../../hooks/useQuestions";
+import { reloadQuestionIndex } from "../../hooks/useQuestionIndex";
 import { toast } from "../ui/sonner";
 import type { Resource } from "../../lib/types";
 
@@ -309,7 +309,7 @@ function ResourceCard({ r, onOpen }: { r: Resource; onOpen: () => void }) {
         toast.error(res.message ?? "Couldn't build a quiz from this resource.", { id: t });
         return;
       }
-      await reloadQuestions();
+      await reloadQuestionIndex();
       toast.success(`Quiz ready · ${res.synth_quizzes ?? 0} questions`, {
         id: t,
         description: "Opening the quiz, scoped to this resource.",
