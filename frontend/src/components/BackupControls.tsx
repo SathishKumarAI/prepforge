@@ -11,6 +11,7 @@ import {
   mergeNotes,
   mergeProgress,
   parseBackup,
+  sampleOf,
   type BackupFile,
 } from "../lib/backup";
 import { loadNotes, saveNotes } from "../lib/notes";
@@ -153,6 +154,18 @@ export function BackupControls() {
             {plural(counts.notes, "note")}, {plural(counts.quizzes, "quiz session")},{" "}
             {plural(counts.clips, "voice clip")}.
           </p>
+          {/* Counts say how much is in the file; these say whose it is. A
+              backup from the wrong browser has the right shape and the wrong
+              card, and only a line of your own words tells you. */}
+          {sampleOf(pending.file).length > 0 && (
+            <ul className="mt-2 flex flex-col gap-0.5 text-micro text-overlay1">
+              {sampleOf(pending.file).map((line) => (
+                <li key={line} className="truncate">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          )}
           {pending.dropped > 0 && (
             <p className="mt-1 text-small text-yellow">
               {pending.dropped} card{pending.dropped === 1 ? "" : "s"} in that file had unreadable

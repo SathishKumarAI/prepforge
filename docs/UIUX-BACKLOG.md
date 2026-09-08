@@ -102,8 +102,10 @@ recorded here because the reasoning is the part that does not survive in a diff.
       it was worth remembering, and stopped there) and counts them in due/never-seen/forecast; the
       Ctrl+K palette searches them alongside the bank and has a "Library — cards I made" command;
       `?scope=mine` is the deep link both use, with its own empty state.
-- [ ] The restore panel names counts but never shows a card or note from the file, so "is this the
-      right backup?" is still answered by the filename.
+- [x] The restore panel names counts but never shows a card or note from the file — **fixed
+      2026-09-08** (COD-117). Under the counts: the newest card you wrote, the newest note, the last
+      day you studied (`backup.sampleOf`, at most three clipped lines). Counts say how much; these say
+      whose.
 
 ## Swept 2026-09-02 — a UI bug hunt, and what came back clean
 
