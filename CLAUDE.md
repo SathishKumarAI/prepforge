@@ -1,5 +1,28 @@
 # CLAUDE.md — interview_prep
 
+## Where to look
+
+Read the table, not the code. Every source directory with more than four files has a
+`README.md` whose first section is a change → file table.
+
+| Question | Read |
+|---|---|
+| Where did I stop, what is next, what are the traps | `STATUS.md` |
+| What shipped, with the numbers | `docs/WORKLOG.md` (newest first) |
+| A page, a route | `frontend/src/pages/README.md` |
+| The nav, the app bar, focus mode | `frontend/src/components/shell/` via `components/README.md` |
+| The Library's list, filters, detail, recall mode, session timer | `frontend/src/components/library/README.md` |
+| A study session, its plan, its keys | `frontend/src/pages/README.md` → `hooks/useStudySession.ts`, `lib/studyPlan.ts` |
+| Persistence, SRS, settings, types | `frontend/src/lib/README.md` |
+| A store or a fetch hook | `frontend/src/hooks/README.md` |
+| A shadcn primitive and what we changed in it | `frontend/src/components/ui/README.md` |
+| Colours, type scale, the accent, glass | `frontend/src/components/page/README.md`, `docs/DESIGN-THEMES.md` |
+| The API and the five ways the bank is fetched | `docs/ARCHITECTURE.md` |
+
+Rules that bite: files are ~300 lines target, 500 ceiling (`ui/sidebar.tsx` is vendor and
+exempt); glass is for chrome, never for anything read; one accent; `—` not `0` for an
+unreported value; a Radix dialog left open disables every hotkey.
+
 <!-- plane-agent-rules:v2 -->
 ## Issue tracking (Plane, local)
 

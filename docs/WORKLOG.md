@@ -13,6 +13,26 @@ last, so the tables describe the final layout. Backend sizes filed as COD-164, n
 | COD-162 | shell split | `Layout.tsx` 524 → 151. `shell/nav.ts` (routes, groups, view labels, `isActivePath`, `SIDEBAR_KEY`), `shell/AppSidebar.tsx` (156), `shell/AppBar.tsx` (195). Bodies moved verbatim by line range; Layout keeps focus mode, global keys, dialogs, composition | rendered sidebar, app bar, page and gear menu byte-identical before/after (17,156 / 4,732 / 6,606 / 5,486 chars); focus mode `--app-bar-h` 0px → 50px on Esc; Ctrl+B toggles and persists the same; tsc (with noUnusedLocals) clean, build, contrast, 8/8 |
 | COD-163 | study split | `Study.tsx` 631 → 404. `lib/studyPlan.ts` (pure: `interleave`, `plannedSize`, `planQueue`, `NEW_PER_SESSION`), `hooks/useStudySession.ts` (the running session: start/end/reveal/rate/pick/next, the quiz countdown, the keys, `TIMED_SECONDS`), `components/study/{SessionSummary,RecentSessions,Setting}.tsx`. Study keeps setup and the two screens. Also removed a dead `toQuestion` import in `SavedView.tsx` that `--noUnusedLocals` found | six states byte-identical from the same saved progress: recall setup 6,606; card 3,537; revealed 6,702; after rating 3,616; back to setup 6,605; quiz setup 6,840 chars. tsc (noUnusedLocals), build, contrast, 8/8 |
 | COD-165 | card split | `QuestionCard.tsx` 575 → 296. `components/card/CollapsibleAnswer.tsx` (34), `card/MoreToRead.tsx` (43), `card/RelatedLinks.tsx` (212: the disclosure, per-link hover preview, the one-fetch-per-id cache), `lib/stripMd.ts` (10, shared by the card's preview line and the tooltip). `OriginIcon` stays with the card | Saved view: list, expanded card and open Related list byte-identical (6,411 / 14,142 / 14,160 chars); the hover preview still fetches and fills (title → skeleton → answer text). tsc (noUnusedLocals), build, contrast, 8/8 |
+| COD-110 | READMEs | change → file tables for `src/lib` (23 files), `src/hooks` (18), `src/components` (16 + subdirs), `src/components/ui` (19, with the list of edits that differ from upstream shadcn), `src/pages` (6). `CLAUDE.md` gains a where-to-look table. `ui/sidebar.tsx` recorded as vendor and exempt from the ceiling | every file named in a table exists (checked by script); no code change |
+
+### Method, so the next split is the same split
+
+1. Measure: `wc -l` over `src`, and which directories exceed four source files without a README.
+2. Snapshot the rendered surface on the untouched branch — normalised `outerHTML` of the region,
+   in every state you can reach by script (open, hidden, empty, a session running).
+3. Slice by line range with a script, moving bodies verbatim; write only imports and headers.
+4. `tsc --noEmit --noUnusedLocals` (stricter than the project's build — it found one dead import).
+5. Re-run the snapshot; diff. Text-stripped structure must be identical; where data differs
+   (a hover selected a different row) say so in the PR.
+6. README with the change → file table in the same PR as the split that made it needed.
+
+### Deliberately not done
+
+- **Backend** (COD-164): three modules over the ceiling and no README. Same method; the pytest
+  files are the gate.
+- **`ui/sidebar.tsx`**: vendor. Recorded in `ui/README.md` rather than split.
+- **`Dashboard.tsx` (452), `DeepAnswer.tsx` (440), `QuestionDetail.tsx` (480), `QuestionsView.tsx` (450)**:
+  under the ceiling, over the target. Next candidates if any of them grows.
 
 ---
 

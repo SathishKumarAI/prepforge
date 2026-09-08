@@ -11,8 +11,16 @@ Update this when you STOP working, not when you start.
 - **COD-161 done (2026-09-08, later):** `QuestionsView.tsx` 805 → 450 lines; `FilterBand`,
   `ListPeek`, `DeepStudyLinks` and `hooks/useQuestionPages` split out, rendered output diffed
   before and after (only data differed). `components/library/README.md` is the change → file table.
-- **Next action, deliberately not started:** the docs rename (PrepForge → Recall in README/docs)
-  if the name sticks; COD-110's other two directories without a change → file README.
+- **Modularisation round done (2026-09-08, evening):** every frontend file we wrote is under the
+  500-line ceiling — `Layout.tsx` 524 → 151 (`components/shell/`), `Study.tsx` 631 → 404
+  (`lib/studyPlan.ts`, `hooks/useStudySession.ts`, `components/study/`), `QuestionCard.tsx`
+  575 → 296 (`components/card/`, `lib/stripMd.ts`). `ui/sidebar.tsx` (773) is shadcn vendor code
+  and exempt. Each split was diffed against a rendered snapshot and came back byte-identical.
+  COD-110 closed: `lib/`, `hooks/`, `components/`, `components/ui/`, `pages/` each have a
+  change → file README, and `CLAUDE.md` has a where-to-look table pointing at them.
+- **Next action, deliberately not started:** COD-164 — the backend (`main.py` 816, `ingest.py`
+  786, `generate.py` 701, no `backend/README.md`), same method: split by concern, the tests as
+  the gate. Then the docs rename (PrepForge → Recall) if the name sticks.
 - **Unverified:** nothing this session was left unverified — every PR body quotes the computed
   value or screenshot. One caveat: the session timer counts a question when its detail FETCH lands
   (~1–2 s in dev), not on the click; rows opened faster than that are counted late, not lost.
