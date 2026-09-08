@@ -145,6 +145,28 @@ def test_a_server_without_the_native_endpoint_still_works():
     assert g.local_model() == "stub-14b"
 
 
+def test_one_slow_probe_does_not_forget_a_model_seen_a_moment_ago():
+    """COD-152: under a saturated GPU /models can take longer than the 1.5 s
+    probe timeout. Cached as a miss, that told every caller for 10 s that LM
+    Studio was off and marked six free lenses as billed. A failure within a
+    minute of a hit at the same URL is a slow server, not an absent one."""
+    g._probe = (0.0, None)
+    g._seen = (0.0, None, "")
+    assert g.local_model() == "stub-14b"  # the hit
+    g._probe = (0.0, None)  # TTL expired; the next call probes again
+    real_get = g.httpx.get
+
+    def gpu_busy(*_a, **_k):
+        raise g.httpx.ReadTimeout("gpu busy")
+
+    g.httpx.get = gpu_busy
+    try:
+        assert g.local_model() == "stub-14b", "one slow probe forgot the model"
+        assert g.free_modes() != []
+    finally:
+        g.httpx.get = real_get
+
+
 def test_no_local_server_means_no_free_lenses():
     g.LOCAL_URL = "http://127.0.0.1:1/v1"  # nothing listens on port 1
     g._probe = (0.0, None)
@@ -155,6 +177,7 @@ def test_no_local_server_means_no_free_lenses():
 if __name__ == "__main__":
     start_stub()
     order = [
+        test_one_slow_probe_does_not_forget_a_model_seen_a_moment_ago,
         test_a_prose_lens_runs_local_and_costs_nothing,
         test_the_reasoning_block_is_stripped,
         test_grounded_never_routes_local,

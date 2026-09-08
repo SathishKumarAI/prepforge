@@ -63,6 +63,12 @@ PROVIDERS = ("auto", "local", "claude", "claude_search")
 # and it is listed alongside the rest — see `_chat_model_from_native`.
 CHAT_TYPES = ("llm", "vlm")
 _probe: tuple[float, str | None] = (0.0, None)
+# The last model a probe actually SAW, when, and at which URL. A probe that
+# fails within PROBE_GRACE_S of that is a saturated GPU answering slowly, not an
+# absent server — so the hit is kept instead of caching the miss (COD-152).
+# Keyed on the URL: pointing at a different server forgets it.
+_seen: tuple[float, str | None, str] = (0.0, None, "")
+PROBE_GRACE_S = 60
 
 STAR_SYSTEM = (
     "You are coaching a candidate to answer this interview question OUT LOUD using the "
@@ -178,8 +184,13 @@ def local_model() -> str | None:
     the server being down. `LMSTUDIO_MODEL` overrides when several are loaded.
     The 10s TTL is what lets you start LM Studio mid-session without restarting
     the backend — long enough that a tab row's worth of hovers costs one probe.
+
+    A miss is NOT cached if the same URL answered within the last minute: under
+    a loaded GPU one `/models` call can outlast the 1.5 s timeout, and caching
+    that told every caller for 10 s that LM Studio was off — the tab row marked
+    six free lenses as billed. Measured from the 49,342-pair burn (COD-149).
     """
-    global _probe
+    global _probe, _seen
     now = time.monotonic()
     if now - _probe[0] < 10:
         return _probe[1]
@@ -200,6 +211,10 @@ def local_model() -> str | None:
                 found = ids[0] if ids else None
     except Exception:
         found = None
+    if found:
+        _seen = (now, found, LOCAL_URL)
+    elif _seen[1] and _seen[2] == LOCAL_URL and now - _seen[0] < PROBE_GRACE_S:
+        found = _seen[1]
     _probe = (now, found)
     return found
 
