@@ -184,7 +184,7 @@ def judge(question: str, answer: str, model: str) -> dict | None:
 
 def collect(mode: str) -> list[tuple[dict, Path]]:
     """Every question that has a locally-generated answer on disk for this mode."""
-    import main as api
+    import bank as api
 
     out = []
     for q in api._assemble_questions():

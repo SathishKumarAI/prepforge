@@ -90,7 +90,7 @@ def test_nothing_at_all_is_not_a_question():
 def test_the_api_and_the_ingest_use_the_same_rule():
     # Two call sites, one definition. A second copy is how they drift, and the
     # drift would show up as cards the ingest refuses but the bank still serves.
-    import main as api
+    import bank as api
 
     qs = [
         {"id": "a", "question": "and how can it be improved?", "answer": "x"},

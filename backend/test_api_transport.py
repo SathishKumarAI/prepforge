@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+import bank
 import main
 
 client = TestClient(main.app)
@@ -21,8 +22,8 @@ client = TestClient(main.app)
 # and expects one ETag can straddle a write (seen once as 6/7, COD-151). Freeze
 # it for this process: these tests are about how the bank TRAVELS, not about
 # what changes it — `test_a_changed_bank_invalidates_the_etag` forges its own.
-_STAMP = main._bank_stamp()
-main._bank_stamp = lambda: _STAMP
+_STAMP = bank._bank_stamp()
+bank._bank_stamp = lambda: _STAMP
 
 
 def test_the_bank_is_gzipped_on_the_wire():
@@ -50,26 +51,26 @@ def test_a_client_that_already_has_the_bank_gets_304_and_no_body():
 
 
 def test_the_full_bank_carries_the_same_etag_machinery():
-    res = client.get("/questions", headers={"if-none-match": main._bank_etag()})
+    res = client.get("/questions", headers={"if-none-match": bank._bank_etag()})
     assert res.status_code == 304, res.status_code
 
 
 def test_the_etag_tracks_the_source_files_not_a_clock():
     """Two reads with nothing touched must agree, or every load is a full one."""
-    assert main._bank_etag() == main._bank_etag()
+    assert bank._bank_etag() == bank._bank_etag()
 
 
 def test_a_changed_bank_invalidates_the_etag():
     """The 304 is only safe if ingesting new cards changes this. Forge a stamp
     rather than touching a real 36 MB file, which would be a slow side effect."""
-    before = main._bank_etag()
-    real = main._bank_stamp
+    before = bank._bank_etag()
+    real = bank._bank_stamp
     try:
-        main._bank_stamp = lambda: tuple(t + 1 for t in real())
-        assert main._bank_etag() != before
+        bank._bank_stamp = lambda: tuple(t + 1 for t in real())
+        assert bank._bank_etag() != before
     finally:
-        main._bank_stamp = real
-    assert main._bank_etag() == before
+        bank._bank_stamp = real
+    assert bank._bank_etag() == before
 
 
 def test_cache_control_says_revalidate_not_trust_me():
