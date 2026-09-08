@@ -27,5 +27,5 @@ below — diff before overwriting.
 - `dropdown-menu.tsx`, `tooltip.tsx`: `.glass` surface; open animation removed in
   favour of the `.glass[data-state=open]` spring; close animation kept.
 - `sidebar.tsx`: the inner `[data-sidebar=sidebar]` panel is `.glass` instead of `bg-sidebar`.
-- `tailwind.config.js` maps every shadcn token (`background`, `popover`, `sidebar.*`)
+- `../../../tailwind.config.js` maps every shadcn token (`background`, `popover`, `sidebar.*`)
   onto the palette variables, so these files never name a colour.
