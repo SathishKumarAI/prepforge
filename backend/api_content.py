@@ -14,6 +14,7 @@ from fastapi import APIRouter, File, Form, UploadFile
 from pydantic import BaseModel
 
 import capture as capture_mod
+import answer_stats as stats_mod
 import generate as generate_mod
 import ingest as ingest_mod
 import pipeline as pipeline_mod
@@ -61,7 +62,7 @@ def generate_stats():
     tokens, cost, an estimated GPU-hours figure with the rate it assumed. The
     first call after the folder changes answers `computing: true` and starts
     the 30 s scan; poll until it does not."""
-    return generate_mod.answer_stats()
+    return stats_mod.answer_stats()
 
 
 @router.get("/generate/cached/{qid}")

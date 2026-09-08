@@ -10,7 +10,7 @@ Run: ./.venv/Scripts/python.exe test_answer_stats.py
 import tempfile
 from pathlib import Path
 
-import generate as g
+import answer_stats as g
 
 
 def _write(d: Path, name: str, **fm):
