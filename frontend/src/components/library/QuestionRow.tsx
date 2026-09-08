@@ -17,7 +17,7 @@ import type { QuestionRowLite } from "../../lib/types";
  *   because one of them is an "M". Sixty single letters down the right edge is
  *   a column of noise beside the column you are actually reading.
  * - The origin icon. Provenance matters when you are reading a card, and the
- *   detail header prints it in words ("PrepForge bank", "ai-system-design-
+ *   detail header prints it in words ("Recall bank", "ai-system-design-
  *   guide"). Sixty mostly-identical glyphs here said nothing that one line
  *   over there says better.
  *

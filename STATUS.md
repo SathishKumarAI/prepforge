@@ -5,7 +5,7 @@ Update this when you STOP working, not when you start.
 - **Last touched:** 2026-09-08.
 - **Where I stopped:** the Recall redesign brief is filed (COD-154 to COD-160) and BUILT, six
   PRs squash-merged (#163 to #168), docs PR last. The UI calls itself **Recall** now — one constant,
-  `frontend/src/lib/brand.ts`; the repo, package and these docs still say PrepForge. What landed,
+  `frontend/src/lib/brand.ts`; docs and package followed on 2026-09-08 (night). What landed,
   with the numbers, is the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md); the reconciliation of
   the brief against the repo is the top of [`docs/UIUX-BACKLOG.md`](docs/UIUX-BACKLOG.md).
 - **COD-161 done (2026-09-08, later):** `QuestionsView.tsx` 805 → 450 lines; `FilterBand`,
@@ -18,9 +18,14 @@ Update this when you STOP working, not when you start.
   and exempt. Each split was diffed against a rendered snapshot and came back byte-identical.
   COD-110 closed: `lib/`, `hooks/`, `components/`, `components/ui/`, `pages/` each have a
   change → file README, and `CLAUDE.md` has a where-to-look table pointing at them.
-- **Next action, deliberately not started:** COD-164 — the backend (`main.py` 816, `ingest.py`
-  786, `generate.py` 701, no `backend/README.md`), same method: split by concern, the tests as
-  the gate. Then the docs rename (PrepForge → Recall) if the name sticks.
+- **Pending queue cleared (2026-09-08, night):** COD-109 (dead hook), 152 (probe grace), 151
+  (transport flake), 34 (vault English book, +Windows folder fix), 164 (backend split + README),
+  117 (restore preview), and the rename: everything a person reads says Recall. Not renamed, on
+  purpose: the GitHub repo (`prepforge`), `localStorage` keys (`prepforge:`), the IndexedDB names,
+  the backup `app` field and the extension's queue key — renaming any of those loses saved data.
+  Every backend file we wrote is under 500 lines; `backend/README.md` is the map.
+- **Next action:** nothing in Backlog for this repo. Candidates if any file grows: `QuestionDetail`
+  480, `Dashboard` 452, `QuestionsView` 450, `DeepAnswer` 440, `ingest.py` 478, `generate.py` 433.
 - **Unverified:** nothing this session was left unverified — every PR body quotes the computed
   value or screenshot. One caveat: the session timer counts a question when its detail FETCH lands
   (~1–2 s in dev), not on the click; rows opened faster than that are counted late, not lost.

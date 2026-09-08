@@ -1,6 +1,6 @@
 # The two themes, and what they are tuned against
 
-PrepForge ships **two** palettes — `dark` (the default, on `:root`) and `light`
+Recall ships **two** palettes — `dark` (the default, on `:root`) and `light`
 (`[data-theme="light"]`) — plus `system`, which picks one of them from the OS.
 They are not two moods. They are the two answers to *how much light is in the
 room*, which is the only question a reader actually asks.

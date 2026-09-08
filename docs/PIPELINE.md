@@ -1,6 +1,6 @@
 # The Learning Pipeline
 
-PrepForge is built around **how memory actually works**, not just a pile of flashcards. The `Learn`
+Recall is built around **how memory actually works**, not just a pile of flashcards. The `Learn`
 page runs each card through a four-stage pipeline grounded in cognitive-science research.
 
 ## Why (the evidence)

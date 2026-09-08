@@ -1,4 +1,4 @@
-"""PrepForge backend — FastAPI. Serves the Q&A bank and the aggregated resource feed.
+"""Recall backend — FastAPI. Serves the Q&A bank and the aggregated resource feed.
 
 This file is the app and its middleware. The routes live in two modules and the
 bank in a third:
@@ -28,7 +28,7 @@ import api_questions
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("prepforge")
 
-app = FastAPI(title="PrepForge API", version="1.0")
+app = FastAPI(title="Recall API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],

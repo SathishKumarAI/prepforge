@@ -1,4 +1,4 @@
-# PrepForge — Feature Backlog
+# Recall — Feature Backlog
 
 Single source of truth. **We build from this list, phase by phase.** Pick an item →
 move it `→ In progress` → `→ Shipped (date)`. Every code item carries an **edge cases**

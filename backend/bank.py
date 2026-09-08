@@ -31,7 +31,7 @@ def _origin(q: dict, kind: str) -> dict:
     """Where this question came from, for every question — the curated bank, a cloned
     repo, an uploaded doc, or the vault. Shown on the card so provenance is never a guess."""
     if kind == "curated":
-        return {"kind": "curated", "label": "PrepForge bank"}
+        return {"kind": "curated", "label": "Recall bank"}
     if kind == "vault":
         return {"kind": "vault", "label": "Obsidian vault"}
     src = (q.get("source_file") or "").replace("\\", "/")

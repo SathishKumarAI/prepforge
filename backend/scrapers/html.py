@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 log = logging.getLogger("scrapers.html")
 
-_UA = "Mozilla/5.0 (compatible; PrepForgeBot/1.0; +local)"
+_UA = "Mozilla/5.0 (compatible; RecallBot/1.0; +local)"
 
 
 def scrape(sources: list[dict]) -> list[dict]:

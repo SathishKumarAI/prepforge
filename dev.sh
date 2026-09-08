@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start PrepForge backend + frontend together. Ctrl-C stops both.
+# Start Recall backend + frontend together. Ctrl-C stops both.
 # Works from Git Bash on Windows too: a venv there is .venv/Scripts, not .venv/bin.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

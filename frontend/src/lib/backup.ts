@@ -192,15 +192,15 @@ export function parseBackup(text: string): ParseResult {
   } catch {
     return { ok: false, error: "That file is not JSON." };
   }
-  if (!isObj(raw)) return { ok: false, error: "That file is not a PrepForge backup." };
+  if (!isObj(raw)) return { ok: false, error: "That file is not a Recall backup." };
   if (raw.app !== "prepforge") {
-    return { ok: false, error: "That file is JSON, but it is not a PrepForge backup." };
+    return { ok: false, error: "That file is JSON, but it is not a Recall backup." };
   }
   const version = typeof raw.version === "number" ? raw.version : 0;
   if (version > BACKUP_VERSION) {
     return {
       ok: false,
-      error: `That backup is version ${version}; this build reads up to ${BACKUP_VERSION}. Update PrepForge first — importing half of it would be worse.`,
+      error: `That backup is version ${version}; this build reads up to ${BACKUP_VERSION}. Update Recall first — importing half of it would be worse.`,
     };
   }
 
@@ -331,8 +331,10 @@ export function sampleOf(
   return out;
 }
 
-/** `prepforge-backup-2026-09-02.json` — sorts chronologically in a folder. */
+/** `recall-backup-2026-09-02.json` — sorts chronologically in a folder. Older
+ *  `prepforge-backup-*.json` files still restore: the check is the `app` field
+ *  inside, which stays "prepforge" for exactly that reason. */
 export function backupFilename(exported: string): string {
   const day = /^\d{4}-\d{2}-\d{2}/.exec(exported)?.[0] ?? "export";
-  return `prepforge-backup-${day}.json`;
+  return `recall-backup-${day}.json`;
 }
