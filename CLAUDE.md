@@ -10,7 +10,7 @@ Read the table, not the code. Every source directory with more than four files h
 | Where did I stop, what is next, what are the traps | `STATUS.md` |
 | What shipped, with the numbers | `docs/WORKLOG.md` (newest first) |
 | A page, a route | `frontend/src/pages/README.md` |
-| The nav, the app bar, focus mode | `frontend/src/components/shell/` via `components/README.md` |
+| The nav, search, focus mode | `frontend/src/components/shell/` via `components/README.md` |
 | The Library's list, filters, detail, recall mode, session timer | `frontend/src/components/library/README.md` |
 | A study session, its plan, its keys | `frontend/src/pages/README.md` → `hooks/useStudySession.ts`, `lib/studyPlan.ts` |
 | Persistence, SRS, settings, types | `frontend/src/lib/README.md` |

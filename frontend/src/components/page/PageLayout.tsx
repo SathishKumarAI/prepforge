@@ -41,10 +41,8 @@ export function Page({
     <div className="page">
       <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          {/* No eyebrow. The product's name sat here above "Library" while the
-              breadcrumb one line up read "Recall › Library" and the nav's
-              brand block said it again: three Recalls on one screen. The
-              breadcrumb survives a collapsed nav, so it carries the name. */}
+          {/* No eyebrow. The product's name sat here above "Library" while
+              the nav's brand block said it one column over. */}
           <h1 className="text-h3 font-semibold tracking-tight text-text">{title}</h1>
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}

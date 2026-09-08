@@ -180,14 +180,8 @@ export function QuestionDetail({
           Measured before this existed: on a long answer, scrolling to read it
           put the heading at -421px — off screen entirely — so half way down an
           answer there was nothing on the page saying what it was answering.
-          Parks against --app-bar-h like every other sticky thing here; in focus
-          mode Layout measures the hidden bar at 0 and this rises to meet it. */}
+          Flush with the top of the viewport. */}
       <header
-        // Parks flush against the bar, with no half-rem gap: a transparent slit
-        // between two sticky elements is a letterbox the answer scrolls through,
-        // one line at a time. The breathing room is padding INSIDE the opaque
-        // box instead, where nothing can pass behind it.
-        style={{ top: "var(--app-bar-h, 0px)" }}
         // Fully opaque, not bg-base/95. Content scrolls UNDER a sticky header,
         // so the header has to occlude it — at 95% the next line of the answer
         // ghosted through and sat bisected across the boundary, which reads as a
@@ -197,7 +191,7 @@ export function QuestionDetail({
         // The 1rem below the hairline is padding, not margin: as margin it was
         // a transparent band the tab row and the model line scrolled through
         // in fragments before disappearing under the box.
-        className="sticky z-10 -mx-1 bg-base px-1 pb-4 pt-2"
+        className="sticky top-0 z-10 -mx-1 bg-base px-1 pb-4 pt-2"
       >
         <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <TopicBadge topic={q.topic} />

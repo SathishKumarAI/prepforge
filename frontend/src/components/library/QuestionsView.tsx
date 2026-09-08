@@ -6,7 +6,6 @@ import { ListPeek } from "./ListPeek";
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
-import { UNDER_APP_BAR } from "../page/underAppBar";
 import { Button } from "../ui/button";
 import { useQuestion } from "../../hooks/useQuestion";
 import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
@@ -184,9 +183,7 @@ export function QuestionsView() {
   useEffect(() => {
     const el = detailRef.current;
     if (!el || !selected) return;
-    const barH =
-      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--app-bar-h")) || 0;
-    if (el.getBoundingClientRect().top < barH) scrollToElement(el, "start");
+    if (el.getBoundingClientRect().top < 0) scrollToElement(el, "start");
   }, [selected?.id]);
 
   /**
@@ -335,19 +332,16 @@ export function QuestionsView() {
               : "lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
           }`}
         >
-          {/* The list scrolls inside itself and parks under the app bar, so
-              reading a long answer never scrolls the list away from you. Its
-              offset is --app-bar-h, the measured value the bar publishes;
-              a constant here and the two would overlap by exactly one notch. */}
+          {/* The list scrolls inside itself and parks at the top, so reading
+              a long answer never scrolls the list away from you. */}
           {!listHidden && (
             <div
-              style={UNDER_APP_BAR}
               // `overscroll-contain`: reaching the end of the list must not hand
               // the rest of the wheel gesture to the page. Without it, scrolling
               // the questions carries on into the document and takes the answer
               // you were reading off the top — you scrolled one pane and lost
               // the other. It is the whole point of a pane that scrolls itself.
-              className={`lg:sticky lg:h-[calc(100vh-var(--app-bar-h,0px)-2rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 ${
+              className={`lg:sticky lg:top-2 lg:h-[calc(100vh-1rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 ${
                 detailOnly ? "hidden lg:block" : ""
               }`}
             >
@@ -363,7 +357,7 @@ export function QuestionsView() {
 
           <div
             ref={detailRef}
-            style={{ scrollMarginTop: "calc(var(--app-bar-h, 0px) + 1rem)" }}
+            style={{ scrollMarginTop: "1rem" }}
             className={detailOnly ? "" : "hidden lg:block"}
           >
             {selected ? (

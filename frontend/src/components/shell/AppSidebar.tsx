@@ -1,6 +1,6 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useEffect, useMemo } from "react";
-import { Keyboard, Settings as SettingsIcon } from "lucide-react";
+import { Keyboard, Search as SearchIcon, Settings as SettingsIcon } from "lucide-react";
 import { prefetchRoute } from "../../lib/routeChunks";
 import {
   Sidebar,
@@ -24,8 +24,8 @@ import { APP_NAME, APP_TAGLINE } from "../../lib/brand";
 import { NAV_GROUPS, isActivePath } from "./nav";
 
 /**
- * The navigation: brand block, the grouped routes with their badges, and the
- * Shortcuts / Settings footer. Collapses to an icon rail on desktop and becomes
+ * The navigation: brand block, the Search item (the Ctrl+K palette), the
+ * grouped routes with their badges, and the Shortcuts / Settings footer. Collapses to an icon rail on desktop and becomes
  * a sheet on a phone — the Sidebar primitive owns that; this owns only what
  * goes in it and what the badges count.
  *
@@ -34,10 +34,12 @@ import { NAV_GROUPS, isActivePath } from "./nav";
  */
 export function AppSidebar({
   focus,
+  onSearch,
   onSettings,
   onHelp,
 }: {
   focus: boolean;
+  onSearch: () => void;
   onSettings: () => void;
   onHelp: () => void;
 }) {
@@ -85,6 +87,18 @@ export function AppSidebar({
                   <span className="truncate text-micro text-overlay1">{APP_TAGLINE}</span>
                 </span>
               </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* Looks like a field, is a button: the field itself lives in the
+              palette. Expanded it reads "Search… Ctrl K"; as an icon rail it is
+              the magnifier with a tooltip. */}
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={onSearch} tooltip="Search  (Ctrl+K)">
+              <SearchIcon />
+              <span className="text-overlay1">Search…</span>
+              <kbd className="ml-auto rounded border border-surface1 bg-crust px-1.5 py-0.5 font-mono text-micro text-overlay0 group-data-[collapsible=icon]:hidden">
+                Ctrl K
+              </kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
