@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
+import {
+  ChevronRight,
+  ExternalLink,
+  EyeOff,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
+  X,
+} from "lucide-react";
 import { QuestionDetail } from "./QuestionDetail";
 import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
@@ -19,6 +27,13 @@ const DIFFS = ["easy", "medium", "hard"];
 
 /** Whether the list pane is put away. Same shape as Layout's `pf-sidebar-open`. */
 const LIST_HIDDEN_KEY = "pf-library-list-hidden";
+
+/**
+ * Recall mode: every answer starts hidden, Space reveals it, then you rate
+ * yourself and the rating schedules the card. Remembered, because it is a way
+ * of working through the list rather than a per-question choice.
+ */
+const RECALL_KEY = "pf-library-recall";
 
 /**
  * Hover intent, for both the row peek and the list peek. One number, because
@@ -219,6 +234,10 @@ export function QuestionsView() {
    */
   const [pinOpen, setPinOpen] = useState(false);
   const [peeking, setPeeking] = useState(false);
+  const [recall, setRecall] = useState(() => localStorage.getItem(RECALL_KEY) === "1");
+  useEffect(() => {
+    localStorage.setItem(RECALL_KEY, recall ? "1" : "0");
+  }, [recall]);
   const revealTimer = useRef<number>();
   // Hover selects on a real pointer only. On touch, mouseenter fires from the
   // tap that is already selecting, so honouring it would do the work twice.
@@ -364,23 +383,42 @@ export function QuestionsView() {
    */
   const { question: selected } = useQuestion(selectedId ?? filtered[0]?.id ?? null);
 
-  // Arrow keys walk the list, so the whole surface is reachable without a mouse
-  // and without tabbing through 48 rows to reach the 49th.
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-      const el = document.activeElement;
-      if (el instanceof HTMLElement && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+  /**
+   * One step through the loaded rows. Shared by the arrow keys, j/k, and the
+   * rating row's "advance after grading" — three callers, one definition of
+   * what "next" means, so they cannot drift.
+   */
+  const step = useCallback(
+    (dir: 1 | -1) => {
       const i = shown.findIndex((q) => q.id === selectedRow?.id);
       if (i === -1) return;
-      const next = shown[i + (e.key === "ArrowDown" ? 1 : -1)];
-      if (!next) return;
+      const next = shown[i + dir];
+      if (next) select(next.id);
+    },
+    [shown, selectedRow, select],
+  );
+
+  // Arrow keys walk the list, so the whole surface is reachable without a mouse
+  // and without tabbing through 48 rows to reach the 49th. j/k are the same
+  // keys for a hand that lives on the home row — the most frequent action in a
+  // drilling session should be the cheapest one.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const dir = e.key === "ArrowDown" || e.key === "j" ? 1 : e.key === "ArrowUp" || e.key === "k" ? -1 : 0;
+      if (!dir || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      if (
+        el instanceof HTMLElement &&
+        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)
+      )
+        return;
+      if (document.querySelector("[role='dialog']")) return;
       e.preventDefault();
-      select(next.id);
+      step(dir);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [shown, selectedRow, select]);
+  }, [step]);
 
   if (loading) return <CardSkeletonGrid count={6} />;
   if (error)
@@ -533,12 +571,26 @@ export function QuestionsView() {
               Clear filters
             </Button>
           )}
+          {/* The study switch for this list. Pressed state is a fill, not a
+              hue: a second accent on the filter row would make the one accent
+              mean less. */}
+          <Button
+            variant={recall ? "secondary" : "ghost"}
+            size="sm"
+            className="ml-auto"
+            onClick={() => setRecall((v) => !v)}
+            aria-pressed={recall}
+            title="Recall mode — each answer stays hidden until you press Space, then you rate yourself"
+          >
+            <EyeOff aria-hidden="true" />
+            Recall
+          </Button>
           {/* lg-only: below it the panes never share the screen, so `detailOnly`
               already owns this and a second control would contradict it. */}
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto hidden lg:inline-flex"
+            className="hidden lg:inline-flex"
             onClick={() => (listAway ? showListForGood() : hideList())}
             aria-pressed={listAway}
             title={
@@ -669,8 +721,10 @@ export function QuestionsView() {
               <QuestionDetail
                 key={selected.id}
                 q={selected}
+                recall={recall}
                 onBack={() => setDetailOnly(false)}
                 onSelect={select}
+                onNext={() => step(1)}
               />
             ) : (
               <p className="text-small text-overlay1">Pick a question to read it.</p>

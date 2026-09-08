@@ -15,7 +15,10 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
     title: "Browsing",
     items: [
       { keys: "/", desc: "Jump to the search box" },
+      { keys: "j k", desc: "Next / previous question (arrows work too)" },
       { keys: "Enter", desc: "Open the focused question" },
+      { keys: "Space", desc: "Reveal the answer, in Recall mode" },
+      { keys: "1 2 3", desc: "Rate it: Got it / Shaky / Missed it" },
     ],
   },
   {

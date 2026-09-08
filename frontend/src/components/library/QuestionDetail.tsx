@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, ExternalLink, FileText, PencilLine } from "lucide-react";
+import { Kbd } from "../Kbd";
+import { useHotkeys } from "../../hooks/useHotkeys";
+import { previewInterval, type Rating } from "../../lib/srs";
 import { DifficultyBadge, TopicBadge } from "../Badge";
 import { DeepAnswer, LENS_TABS, type Mode } from "../DeepAnswer";
 import { Markdown } from "../Markdown";
@@ -10,6 +13,17 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/
 import { useProgress } from "../../hooks/useProgress";
 import { useProviders } from "../../hooks/useProviders";
 import type { Question, VaultSource } from "../../lib/types";
+
+/**
+ * The self-rating, in the reader's words rather than SM-2's. Three, not four:
+ * "easy" exists in Study for a card you have met before, and here you are
+ * usually meeting it for the first time. Keys 1–3 match the order.
+ */
+const RATINGS: { key: Rating; label: string }[] = [
+  { key: "good", label: "Got it" },
+  { key: "hard", label: "Shaky" },
+  { key: "again", label: "Missed it" },
+];
 
 /**
  * The reading half of the Library: one question, everything about it.
@@ -25,20 +39,26 @@ import type { Question, VaultSource } from "../../lib/types";
  */
 export function QuestionDetail({
   q,
+  recall = false,
   onBack,
   onSelect,
+  onNext,
 }: {
   q: Question;
+  /** Recall mode: the answer stays hidden until revealed, and a rating advances. */
+  recall?: boolean;
   /** Only rendered below lg, where the detail replaces the list. */
   onBack?: () => void;
   onSelect: (id: string) => void;
+  /** Move to the next question — after a rating in recall mode. */
+  onNext?: () => void;
 }) {
   const [tab, setTab] = useState<"answer" | Mode>("answer");
   const tabTimer = useRef<number>();
   const canHover = window.matchMedia("(hover: hover)").matches;
   const [noteOpen, setNoteOpen] = useState(false);
   const [openSource, setOpenSource] = useState<VaultSource | null>(null);
-  const { progress, toggleBookmark, setNote, markRecent } = useProgress();
+  const { progress, toggleBookmark, setNote, markRecent, getCard, rateCard } = useProgress();
   // Reading a question here is what "recent" means; the palette offers these
   // before you have typed. Hovering the list does not count — that is a glance.
   useEffect(() => markRecent(q.id), [q.id, markRecent]);
@@ -70,6 +90,38 @@ export function QuestionDetail({
     setTab("answer");
     setNoteOpen(false);
   }, [q.id]);
+
+  /**
+   * Recall: guess, then check. The answer — every lens, not only the bank's —
+   * sits behind one reveal; the rating row appears once you have seen it and
+   * not before, because rating an answer you have not tried to recall is
+   * reading with extra steps. Reset per question and per mode switch.
+   */
+  const [revealed, setRevealed] = useState(!recall);
+  // What you rated and the interval it earned, captured at the moment of
+  // rating: `card` below is live, and after rateCard it already IS the next
+  // card, so previewing from it would print the step after the one you took.
+  const [rated, setRated] = useState<{ key: Rating; next: string } | null>(null);
+  useEffect(() => {
+    setRevealed(!recall);
+    setRated(null);
+  }, [q.id, recall]);
+  const card = getCard(q.id);
+  function rate(r: Rating) {
+    setRated({ key: r, next: previewInterval(card, r) });
+    rateCard(q.id, r);
+    // Grading is the last thing you do with a card in recall mode, so it moves
+    // on. Outside recall you may still be reading; the row just records it.
+    if (recall) onNext?.();
+  }
+  // Bound only while they mean something: a mapped key is preventDefault'ed,
+  // so Space bound while the answer is showing would stop the page scrolling.
+  useHotkeys({
+    ...(!revealed ? { " ": () => setRevealed(true) } : {}),
+    ...(revealed && !rated
+      ? { "1": () => rate("good"), "2": () => rate("hard"), "3": () => rate("again") }
+      : {}),
+  });
 
   // Selecting a lens generates it, hover or press alike. So hover reaches only
   // the lenses that are free at this moment: with LM Studio running that is six
@@ -235,7 +287,19 @@ export function QuestionDetail({
         )}
       </p>
 
-      {tab === "answer" ? (
+      {!revealed ? (
+        // The whole answer surface, replaced — not blurred. A blurred answer
+        // leaks its length and shape, which is a hint you did not earn.
+        <div className="panel flex flex-col items-start gap-3 p-5">
+          <p className="text-small text-subtext0">
+            Say the answer to yourself first. Then check.
+          </p>
+          <Button variant="primary" onClick={() => setRevealed(true)}>
+            Reveal answer
+            <Kbd className="text-on-accent/80">Space</Kbd>
+          </Button>
+        </div>
+      ) : tab === "answer" ? (
         q.answer ? (
           <Markdown>{q.answer}</Markdown>
         ) : (
@@ -245,6 +309,34 @@ export function QuestionDetail({
         )
       ) : (
         <DeepAnswer question={q.question} topic={q.topic} qid={q.id} controlled={tab} />
+      )}
+
+      {/* The mechanic the name promises: what you just read becomes a card the
+          scheduler knows about. Same three-step shape as Study's rating row,
+          fewer words. Once rated, the row says so rather than inviting a
+          second grade — one reading, one grade. */}
+      {revealed && (
+        <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-surface0 pt-4">
+          {rated ? (
+            <p className="text-small text-overlay1">
+              Rated <span className="text-text">{RATINGS.find((r) => r.key === rated.key)?.label}</span>{" "}
+              — back in {rated.next}.
+            </p>
+          ) : (
+            <>
+              <span className="mr-1 text-small text-overlay1">How did that go?</span>
+              {RATINGS.map((r, i) => (
+                <Button key={r.key} variant="outline" size="sm" onClick={() => rate(r.key)}>
+                  {r.label}
+                  <span className="tabular-nums text-micro text-overlay0">
+                    {previewInterval(card, r.key)}
+                  </span>
+                  <Kbd>{String(i + 1)}</Kbd>
+                </Button>
+              ))}
+            </>
+          )}
+        </div>
       )}
 
       {q.sources && q.sources.length > 0 && (
