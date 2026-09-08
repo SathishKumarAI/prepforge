@@ -1,6 +1,6 @@
 // User profile + interests + appearance. Local-only. Feeds the generator persona and Learn mix.
 import { load, save } from "./storage";
-import { DEFAULT_THEME, type Density, type TextSize, type ThemeMode } from "./theme";
+import { DEFAULT_THEME, type Density, type Leading, type TextSize, type ThemeMode } from "./theme";
 
 export interface Settings {
   name: string;
@@ -12,6 +12,8 @@ export interface Settings {
   theme: ThemeMode; // appearance
   textSize: TextSize; // global text scale
   density: Density; // card/list spacing
+  leading: Leading; // answer-body line height
+  reduceMotion: boolean; // the in-app switch; the OS setting is honoured regardless
   themeMigration?: number; // last applied default-theme migration (see loadSettings)
 }
 
@@ -45,6 +47,8 @@ export const EMPTY_SETTINGS: Settings = {
   theme: DEFAULT_THEME,
   textSize: "base",
   density: "comfortable",
+  leading: "relaxed",
+  reduceMotion: false,
   themeMigration: THEME_MIGRATION,
 };
 
@@ -59,6 +63,8 @@ export function loadSettings(): Settings {
   s.theme = s.theme ?? DEFAULT_THEME;
   s.textSize = s.textSize ?? "base";
   s.density = s.density ?? "comfortable";
+  s.leading = s.leading ?? "relaxed";
+  s.reduceMotion = Boolean(s.reduceMotion);
   // One-time move off a retired theme. Writing the marker is what makes this
   // run once. The fallback is unconditional rather than migration-gated: a
   // theme id that no longer has a CSS block would otherwise render the default

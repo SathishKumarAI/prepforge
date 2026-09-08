@@ -108,6 +108,12 @@
 :root[data-density="compact"] .pf-card { padding-top: 0.6rem; padding-bottom: 0.6rem; }
 :root[data-density="compact"] .prose-answer { line-height: 1.6; }
 
+/* answer line height — <html data-leading>; the default 1.75 lives on
+   .prose-answer itself. Compact density sets 1.6 too; an explicit choice here
+   wins over it because it is declared later with the same specificity. */
+:root[data-leading="normal"] .prose-answer { line-height: 1.6; }
+:root[data-leading="loose"] .prose-answer { line-height: 1.95; }
+
 /* text scaling — <html data-textsize> */
 :root[data-textsize="sm"] { font-size: 15px; }
 :root[data-textsize="lg"] { font-size: 17.5px; }
@@ -225,6 +231,17 @@ select:disabled {
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }
+}
+/* The same rule for the in-app switch (Settings, or the gear in the app bar).
+   Duplicated rather than shared: a media query and an attribute cannot be one
+   selector list. Keep the two blocks identical. */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
 }
 
 @layer components {
