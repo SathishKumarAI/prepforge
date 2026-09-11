@@ -8,6 +8,7 @@ import { QuestionRow } from "./QuestionRow";
 import { CardSkeletonGrid, Empty } from "../States";
 import { Button } from "../ui/button";
 import { useQuestion } from "../../hooks/useQuestion";
+import { useHotkeys } from "../../hooks/useHotkeys";
 import { useHoverIntent } from "../../hooks/useHoverIntent";
 import { PAGE, useQuestionPages } from "../../hooks/useQuestionPages";
 import { scrollToElement } from "../../lib/scroll";
@@ -19,7 +20,9 @@ import { scrollToElement } from "../../lib/scroll";
  * The list stays where it is. Two earlier rules put it away by themselves —
  * a downward scroll, arriving with ?id= in the URL (which a reload also does) —
  * and together they read as the page moving under you whenever you scrolled
- * the list to find something. Now only the Hide list button hides it.
+ * the list to find something. Nothing hides it now but you: the Hide list
+ * button, or "l", which is the same toggle for the times the button is not on
+ * screen (focus mode takes the whole band with it).
  *
  * Hovering a row PREVIEWS it after 250 ms of a pointer that actually moved
  * (hooks/useHoverIntent): the answer pane follows the mouse, the URL does not.
@@ -164,6 +167,23 @@ export function QuestionsView() {
 
   const showList = useCallback(() => setListHidden(false), []);
   const hideList = useCallback(() => setListHidden(true), []);
+  /**
+   * "l" for list, because the button that does this is the FIRST thing focus
+   * mode takes away (`FilterBand` is `[.focus-mode_&]:hidden`) — and focus mode
+   * is exactly when you want the answer to have the page. Without a key,
+   * entering focus mode with the list showing left no way to put it away, and
+   * "Keep open" in the peek was a one-way door: it brought the list back and
+   * then nothing could hide it again short of leaving focus mode.
+   *
+   * lg-only, like the button it stands in for: below lg the peek overlay is
+   * `hidden`, so a hidden list there is a list with no way back. Read at press
+   * time rather than as state — a resize between presses is then simply right.
+   */
+  useHotkeys({
+    l: () => {
+      if (window.matchMedia("(min-width: 1024px)").matches) setListHidden((v) => !v);
+    },
+  });
 
   // The row drives the list's own state — which one is highlighted, and what the
   // arrow keys step through. It exists only if that question is on a page that

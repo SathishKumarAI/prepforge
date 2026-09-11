@@ -16,6 +16,7 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
     items: [
       { keys: "/", desc: "Jump to the search box" },
       { keys: "j k", desc: "Next / previous question (arrows work too)" },
+      { keys: "l", desc: "Hide or show the question list — works in focus mode" },
       { keys: "Enter", desc: "Open the focused question" },
       { keys: "Space", desc: "Reveal the answer, in Recall mode" },
       { keys: "1 2 3", desc: "Rate it: Got it / Shaky / Missed it" },

@@ -2,8 +2,19 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-09-08 (later).
-- **Where I stopped:** a nine-PR user session (#183 to #191, COD-166 to COD-175) is merged and
+- **Last touched:** 2026-09-11.
+- **Where I stopped:** `l` toggles the Library's question list, so focus mode is no longer a
+  one-way door. The Hide list button lives in `FilterBand`, and `FilterBand` is
+  `[.focus-mode_&]:hidden` — so entering focus mode with the list showing left NO control and no
+  key to put it away, and "Keep open" in the peek brought the list back with nothing to hide it
+  again. Bound through the existing `hooks/useHotkeys` (so a dialog, a text field and a modifier
+  chord all suppress it), lg-only like the button, `matchMedia` read at press time.
+- **Next action:** nothing queued. Plane was unreachable (`localhost:8080` refused) so this has no
+  work item — file one if the board matters for it.
+- **Unverified, this session:** the peek overlay's hover in focus mode was proven at the handler
+  (a dispatched `mouseover` opened it), not with a real pointer — chrome-devtools' `hover` timed
+  out on the 6px handle. Outside focus mode a real hover did open it.
+- **Where I stopped (2026-09-08, later):** a nine-PR user session (#183 to #191, COD-166 to COD-175) is merged and
   logged — the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md) is the account with the numbers.
   In one line: the Library's chrome no longer moves under you (no auto-hide, no app bar, sticky
   offsets are constants), hover previews rows and free lenses only from a pointer that moved
