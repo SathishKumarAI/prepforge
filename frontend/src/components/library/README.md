@@ -20,9 +20,10 @@ Ten files. Read this table, not the code.
 
 - **One list.** The in-grid column and the peek overlay render the same `listPane`
   element; only one is ever mounted, so the scroll sentinel has one owner.
-- **The list stays put.** Only the Hide list button hides it. Auto-hide on scroll and
-  hide-on-deep-link were removed (COD-166): scrolling the list to find a question moved
-  the page and took the list away.
+- **The list stays put.** Only you hide it — the Hide list button, or `l` (the same
+  toggle, lg-only, for when the button is off screen: focus mode hides the whole filter
+  band). Auto-hide on scroll and hide-on-deep-link were removed (COD-166): scrolling the
+  list to find a question moved the page and took the list away.
 - **Hover previews, click commits.** A row previews after 250 ms of a pointer that MOVED
   (`hooks/useHoverIntent`); the URL changes only on a click or j/k. `mouseenter` is
   never used for selection: Chrome re-dispatches the pointer's position after a scroll
