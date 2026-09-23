@@ -4,6 +4,21 @@ A UI/UX-engineer pass focused on **craft**: hierarchy, motion, states, accessibi
 responsiveness, consistency. Complements the feature/bug audit in `AUDIT-BACKLOG.md`. Kanban-ready,
 checkbox tickets, no priority labels. Checked items are done this session.
 
+## Shipped 2026-09-23 — the digit meant the opposite thing on the other screen
+
+A design critique (dual-agent, 27/40; snapshot at `.impeccable/critique/2026-09-23T08-26-49Z__frontend-src.md`,
+which is gitignored and local to the machine that ran it) turned up two P0s. This is the first.
+
+- [x] **Library's rating row is worst → best, like Study's.** `1` was **Got it** in the Library and
+      **Again** in Study (`lib/studyModes.ts` FOUR_POINT and TWO_POINT are both worst-first). The
+      habit built on one screen wrote the maximum SM-2 penalty on the other — silently, with no undo
+      and, in recall mode, an auto-advance past the evidence. `RATINGS` is reordered and the keys are
+      now **derived from the array** rather than hardcoded, so a reorder cannot desync them again.
+- [x] **The shortcut sheet documents both scales.** It claimed `1 2 3 — Got it / Shaky / Missed it`
+      and said nothing about Study's `1 2 3 4`. Both are listed, both labelled "worst first".
+- [ ] The rating is still irreversible: no undo on either surface, and recall mode advances past it.
+      That is the other half of this defect and it is not fixed here.
+
 ## Shipped 2026-09-08 (later) — what the user saw, COD-166 to COD-175
 
 Nine PRs from a session of looking at the running app with the user. Several reverse rows in the
