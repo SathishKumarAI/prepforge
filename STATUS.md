@@ -2,7 +2,39 @@
 
 Update this when you STOP working, not when you start.
 
-- **Last touched:** 2026-09-08 (later).
+- **Last touched:** 2026-09-23.
+- **Where I stopped:** a design critique of the whole frontend (dual-agent: a design review and a
+  detector/browser pass), scored 27/40, then shipped its two P0s — #194 (the rating row is worst-first
+  on both surfaces, keys derived from the array) and #195 (an `ErrorBoundary` inside `Layout`, reset
+  on the pathname). The critique snapshot is `.impeccable/critique/2026-09-23T08-26-49Z__frontend-src.md`
+  — **gitignored**, so it exists only on this machine; the findings that matter are summarised in the
+  top section of [`docs/UIUX-BACKLOG.md`](docs/UIUX-BACKLOG.md).
+- **Next action:** `Today` reads a dead backend as "Nothing is queued" — `hooks/useQuestionIndex`
+  publishes `[]` on a failed fetch while tracking a `failed` flag it never exports. Library already
+  has the right state (`QuestionsView.tsx:263-275`). Two lines in the hook, three in the page.
+- **Decisions taken this session, so they stop resurfacing:**
+  - **Audience is the author.** First-run findings (the undismissable arrival prompt, the
+    `uvicorn --port 8787` error copy, no onboarding for spaced repetition) are NOT defects while that
+    holds. They become defects the day someone else opens this.
+  - **Desktop only.** The phone and tablet findings are recorded in `docs/UIUX-BACKLOG.md` and
+    deliberately not fixed: the fixed sidebar trigger covers content at 390px (`elementFromPoint`
+    under it returns a question button), nav sheet rows are 280×33, the sheet has no `aria-modal` and
+    `#root` is neither `aria-hidden` nor `inert`, and touch targets run 33-41px throughout.
+- **Verified green on `main` after both merges:** `npx tsc --noEmit` exit 0, `npm test` 8/8,
+  `npm run contrast` all pairs clear in 2 themes.
+- **Traps, this session:** the dev server came up on **:5173** (not :5177 — the DSA Patterns app was
+  not running); the arrival prompt blurs every first screenshot until
+  `sessionStorage["pf-timer-asked"]="1"` is set; `resize_page` will not go below 501px on this OS, so
+  phone viewports need `emulate`; driving the MCP browser writes to the REAL progress store — the
+  `q010` test rating was removed afterwards.
+- **Still open, highest value first:** no undo on a rating (either surface); no offline state (the
+  index survives in IndexedDB, per-question fetches do not); 9 lens tabs across 4 taxonomies with a
+  caption that promises `$` markers the tabs do not render; session length 10/20/40 all yield 6 cards
+  on a fresh install; no skip link (31 tabs from load to the first question).
+- **PR #193** (`fix/library-list-toggle-in-focus-mode`, the `l` toggle) is still OPEN and predates
+  this work — its STATUS entry is on that branch, so expect a conflict here when it merges.
+
+- **Last touched (before that):** 2026-09-08 (later).
 - **Where I stopped:** a nine-PR user session (#183 to #191, COD-166 to COD-175) is merged and
   logged — the top entry of [`docs/WORKLOG.md`](docs/WORKLOG.md) is the account with the numbers.
   In one line: the Library's chrome no longer moves under you (no auto-hide, no app bar, sticky

@@ -30,6 +30,31 @@ The second P0:
       dead backend as "Nothing is queued" (`useQuestionIndex` publishes `[]` on failure while
       tracking `failed` it never exports). Next candidate.
 
+**Decided, not deferred.** Two answers that close whole classes of finding, written here so they are
+not re-litigated next session:
+
+- **The audience is the author.** The arrival prompt that cannot be dismissed, the error copy naming
+  `uvicorn main:app --port 8787`, and the absence of any explanation of spaced repetition are correct
+  for one user and walls for a second one. There is no second one. These are not defects today; they
+  become defects the day someone else opens this app.
+- **Desktop only.** Phone and tablet were measured for the first time in this critique and are
+  deliberately left as they are. Recorded so the same findings do not read as new next time:
+  - The fixed sidebar trigger (41×44 at x17,y784) paints over content at 390px — with it hidden,
+    `elementFromPoint(37.5, 806)` on `/library` returns a question button. Same on `/study`,
+    `/progress`.
+  - The phone nav sheet's rows are 280×**33**; the sheet is `role="dialog"` with **no `aria-modal`**,
+    and `#root` is neither `aria-hidden` nor `inert`, so a screen reader can wander the page behind it.
+  - Touch targets run 33-41px across every route (session pills 40×44, topic pills 35-39×44,
+    "Take a quiz" 74×**17**, Library rows 357×**34**, the whole 768px icon rail at 33px).
+  - No skip link anywhere: **31 tab stops** from page load to the first question.
+
+**Measured clean in the same pass**, so nobody re-opens them: `npm run contrast` 24/24 pairs in both
+themes; `tsc --noEmit` exit 0; zero console errors on five routes; zero horizontal overflow at 390
+and 768; focus ring visible everywhere at 7.86:1; tab order follows the DOM; the question list is
+keyboard-reachable. The mechanical design detector found exactly one thing — the `cubic-bezier(0.34,
+1.56, 0.64, 1)` spring at `styles/index.css:297` — which is scoped to `.glass[data-state=open]`
+chrome and is deliberate.
+
 ## Shipped 2026-09-08 (later) — what the user saw, COD-166 to COD-175
 
 Nine PRs from a session of looking at the running app with the user. Several reverse rows in the
