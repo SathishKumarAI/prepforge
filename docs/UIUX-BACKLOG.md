@@ -19,6 +19,17 @@ which is gitignored and local to the machine that ran it) turned up two P0s. Thi
 - [ ] The rating is still irreversible: no undo on either surface, and recall mode advances past it.
       That is the other half of this defect and it is not fixed here.
 
+The second P0:
+
+- [x] **A route that throws no longer blanks the app.** Five routes are `lazy()`; one chunk that
+      404s after a redeploy, or any thrown render, took the whole page with it — there was no
+      `ErrorBoundary` anywhere in the tree. `components/ErrorBoundary.tsx` sits **inside** `Layout`,
+      so the nav survives and a broken route is one click from a working one, and it resets on the
+      pathname, so the fallback cannot outlive the route that caused it.
+- [ ] Fetch failures are still per-page: a boundary cannot see them. `Today` in particular reads a
+      dead backend as "Nothing is queued" (`useQuestionIndex` publishes `[]` on failure while
+      tracking `failed` it never exports). Next candidate.
+
 ## Shipped 2026-09-08 (later) — what the user saw, COD-166 to COD-175
 
 Nine PRs from a session of looking at the running app with the user. Several reverse rows in the
