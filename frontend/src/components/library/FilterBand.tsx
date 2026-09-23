@@ -173,10 +173,12 @@ export function FilterBand({
         className="hidden lg:inline-flex"
         onClick={listAway ? onShowList : onHideList}
         aria-pressed={listAway}
+        // The key is named here because this button is the only place it can
+        // be: in focus mode, where you most want it, this whole band is gone.
         title={
           listAway
-            ? "Show the question list"
-            : "Hide the question list — hover the left edge to peek at it"
+            ? "Show the question list (L)"
+            : "Hide the question list (L) — hover the left edge to peek at it"
         }
       >
         {listAway ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}

@@ -31,8 +31,18 @@ Update this when you STOP working, not when you start.
   index survives in IndexedDB, per-question fetches do not); 9 lens tabs across 4 taxonomies with a
   caption that promises `$` markers the tabs do not render; session length 10/20/40 all yield 6 cards
   on a fresh install; no skip link (31 tabs from load to the first question).
-- **PR #193** (`fix/library-list-toggle-in-focus-mode`, the `l` toggle) is still OPEN and predates
-  this work — its STATUS entry is on that branch, so expect a conflict here when it merges.
+- **Last touched (before that):** 2026-09-11.
+- **Where I stopped:** `l` toggles the Library's question list, so focus mode is no longer a
+  one-way door. The Hide list button lives in `FilterBand`, and `FilterBand` is
+  `[.focus-mode_&]:hidden` — so entering focus mode with the list showing left NO control and no
+  key to put it away, and "Keep open" in the peek brought the list back with nothing to hide it
+  again. Bound through the existing `hooks/useHotkeys` (so a dialog, a text field and a modifier
+  chord all suppress it), lg-only like the button, `matchMedia` read at press time.
+- **Next action:** nothing queued. Plane was unreachable (`localhost:8080` refused) so this has no
+  work item — file one if the board matters for it.
+- **Unverified, this session:** the peek overlay's hover in focus mode was proven at the handler
+  (a dispatched `mouseover` opened it), not with a real pointer — chrome-devtools' `hover` timed
+  out on the 6px handle. Outside focus mode a real hover did open it.
 
 - **Last touched (before that):** 2026-09-08 (later).
 - **Where I stopped:** a nine-PR user session (#183 to #191, COD-166 to COD-175) is merged and
