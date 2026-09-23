@@ -24,6 +24,7 @@ Library's views), `study/`, `card/`, `notes/`, `ui/` (shadcn primitives).
 | Topic / difficulty badge | `Badge.tsx` |
 | A key cap | `Kbd.tsx` |
 | Loading, skeleton, empty surfaces | `States.tsx` |
+| What a route shows after it throws mid-render | `ErrorBoundary.tsx` |
 
 ## Rules
 

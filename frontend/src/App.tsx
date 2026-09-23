@@ -6,6 +6,7 @@ import { useApplyTheme } from "./hooks/useApplyTheme";
 import { primeQuestionIndex } from "./hooks/useQuestionIndex";
 import { ROUTE_CHUNKS } from "./lib/routeChunks";
 import { Layout } from "./components/Layout";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Loader } from "./components/States";
 import { Button } from "./components/ui/button";
 import { Toaster } from "./components/ui/sonner";
@@ -126,30 +127,33 @@ function useWarmIndex() {
 }
 
 function LayoutRoutes() {
+  const { pathname } = useLocation();
   return (
     <Layout>
-      <Suspense fallback={<Loader label="Loading" />}>
-        <Routes>
-          <Route path="/" element={<Today />} />
-          <Route path="/study" element={<Study />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/notes" element={<Notes />} />
-          <Route path="/progress" element={<Dashboard />} />
-          <Route path="/reader" element={<Reader />} />
+      <ErrorBoundary resetKey={pathname}>
+        <Suspense fallback={<Loader label="Loading" />}>
+          <Routes>
+            <Route path="/" element={<Today />} />
+            <Route path="/study" element={<Study />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/progress" element={<Dashboard />} />
+            <Route path="/reader" element={<Reader />} />
 
-          {/* retired destinations */}
-          <Route path="/learn" element={<LegacyRedirect />} />
-          <Route path="/flashcards" element={<LegacyRedirect />} />
-          <Route path="/quiz" element={<LegacyRedirect />} />
-          <Route path="/bookmarks" element={<LegacyRedirect />} />
-          <Route path="/sources" element={<LegacyRedirect />} />
-          <Route path="/resources" element={<LegacyRedirect />} />
-          <Route path="/dashboard" element={<LegacyRedirect />} />
-          <Route path="/graph" element={<LegacyRedirect />} />
+            {/* retired destinations */}
+            <Route path="/learn" element={<LegacyRedirect />} />
+            <Route path="/flashcards" element={<LegacyRedirect />} />
+            <Route path="/quiz" element={<LegacyRedirect />} />
+            <Route path="/bookmarks" element={<LegacyRedirect />} />
+            <Route path="/sources" element={<LegacyRedirect />} />
+            <Route path="/resources" element={<LegacyRedirect />} />
+            <Route path="/dashboard" element={<LegacyRedirect />} />
+            <Route path="/graph" element={<LegacyRedirect />} />
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </Layout>
   );
 }
