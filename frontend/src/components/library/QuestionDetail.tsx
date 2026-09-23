@@ -28,12 +28,18 @@ import type { Question, VaultSource } from "../../lib/types";
 /**
  * The self-rating, in the reader's words rather than SM-2's. Three, not four:
  * "easy" exists in Study for a card you have met before, and here you are
- * usually meeting it for the first time. Keys 1–3 match the order.
+ * usually meeting it for the first time.
+ *
+ * Worst → best, like `lib/studyModes.ts` FOUR_POINT and TWO_POINT, because the
+ * digit is the same digit: 1 was "Got it" here and "Again" in Study, so the
+ * habit built on one screen wrote the maximum penalty on the other, silently,
+ * with no undo and (in recall mode) an auto-advance past the evidence. Keys are
+ * derived from this array below — a reorder cannot desync them again.
  */
 const RATINGS: { key: Rating; label: string }[] = [
-  { key: "good", label: "Got it" },
-  { key: "hard", label: "Shaky" },
   { key: "again", label: "Missed it" },
+  { key: "hard", label: "Shaky" },
+  { key: "good", label: "Got it" },
 ];
 
 /**
@@ -145,7 +151,7 @@ export function QuestionDetail({
   useHotkeys({
     ...(!revealed ? { " ": () => setRevealed(true) } : {}),
     ...(revealed && !rated
-      ? { "1": () => rate("good"), "2": () => rate("hard"), "3": () => rate("again") }
+      ? Object.fromEntries(RATINGS.map((r, i) => [String(i + 1), () => rate(r.key)]))
       : {}),
   });
 

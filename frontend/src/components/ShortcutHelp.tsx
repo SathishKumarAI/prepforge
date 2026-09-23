@@ -18,7 +18,15 @@ const GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
       { keys: "j k", desc: "Next / previous question (arrows work too)" },
       { keys: "Enter", desc: "Open the focused question" },
       { keys: "Space", desc: "Reveal the answer, in Recall mode" },
-      { keys: "1 2 3", desc: "Rate it: Got it / Shaky / Missed it" },
+      { keys: "1 2 3", desc: "Rate it, worst first: Missed it / Shaky / Got it" },
+    ],
+  },
+  {
+    title: "A study session",
+    items: [
+      { keys: "Space", desc: "Reveal the answer" },
+      { keys: "1 2 3 4", desc: "Rate it, worst first: Again / Hard / Good / Easy" },
+      { keys: "Enter", desc: "Start a session, or take the next quiz question" },
     ],
   },
   {
